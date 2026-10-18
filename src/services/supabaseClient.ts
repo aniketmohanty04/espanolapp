@@ -5,6 +5,9 @@ import { PlayerProgress } from '../types';
 const STORAGE_URL_KEY = 'aventura_supabase_url';
 const STORAGE_KEY_KEY = 'aventura_supabase_key';
 
+export const DEFAULT_SUPABASE_URL = 'https://dxamjklrbeulpgdkxsha.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_Ob0ACaYB-nnV-k-CWWcIuQ_2ZZ_OMKV';
+
 let cachedClient: SupabaseClient | null = null;
 let lastClientKey = '';
 
@@ -80,6 +83,10 @@ export const supabaseService = {
 
     if (envUrl && envKey) {
       return { url: envUrl, anonKey: envKey, isConfigured: true, source: 'env' };
+    }
+
+    if (DEFAULT_SUPABASE_URL && DEFAULT_SUPABASE_ANON_KEY) {
+      return { url: DEFAULT_SUPABASE_URL, anonKey: DEFAULT_SUPABASE_ANON_KEY, isConfigured: true, source: 'env' };
     }
 
     return { url: localUrl || envUrl, anonKey: localKey || envKey, isConfigured: false, source: 'none' };
