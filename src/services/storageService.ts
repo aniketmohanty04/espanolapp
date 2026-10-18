@@ -1,4 +1,5 @@
 import { PlayerProgress, PlayerProfile, PlayerCharacter } from '../types';
+import { supabaseService } from './supabaseClient';
 
 const STORAGE_KEY = 'aventura_espanola_progress_v2';
 const PROFILE_KEY = 'aventura_espanola_profile_v1';
@@ -7,6 +8,10 @@ const PROFILE_KEY = 'aventura_espanola_profile_v1';
 const inMemoryStore: Record<string, string> = {};
 
 function getStorageItem(key: string): string | null {
+  // When Supabase cloud database is configured, player progress is maintained in memory/cloud, NOT in browser localStorage
+  if (supabaseService.getConfig().isConfigured) {
+    return inMemoryStore[key] || null;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       return localStorage.getItem(key);
@@ -18,6 +23,19 @@ function getStorageItem(key: string): string | null {
 }
 
 function setStorageItem(key: string, value: string): void {
+  inMemoryStore[key] = value;
+  // When Supabase is configured, do NOT store player progress in browser localStorage!
+  if (supabaseService.getConfig().isConfigured) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // fallback
+    }
+    return;
+  }
+
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, value);
@@ -25,10 +43,10 @@ function setStorageItem(key: string, value: string): void {
   } catch {
     // fallback
   }
-  inMemoryStore[key] = value;
 }
 
 function removeStorageItem(key: string): void {
+  delete inMemoryStore[key];
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(key);
@@ -36,7 +54,6 @@ function removeStorageItem(key: string): void {
   } catch {
     // fallback
   }
-  delete inMemoryStore[key];
 }
 
 export const DEFAULT_CHARACTER: PlayerCharacter = {
@@ -163,6 +180,23 @@ export const storageService = {
       setStorageItem(STORAGE_KEY, JSON.stringify(progress));
     } catch (err) {
       console.error('Failed to save player progress:', err);
+    }
+  },
+
+  purgeLocalProgress(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('aventura_espanola_progress_v1');
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('aventura_db_progress_v1_') || key === 'aventura_db_users_v1' || key === STORAGE_KEY)) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    } catch {
+      // fallback
     }
   },
 

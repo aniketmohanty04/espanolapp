@@ -55,6 +55,9 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 function getStoredUsers(): Record<string, DatabaseUser> {
+  if (supabaseService.getConfig().isConfigured) {
+    return memoryUsers;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       const data = localStorage.getItem(DB_USERS_KEY);
@@ -67,6 +70,17 @@ function getStoredUsers(): Record<string, DatabaseUser> {
 }
 
 function saveStoredUsers(users: Record<string, DatabaseUser>): void {
+  Object.assign(memoryUsers, users);
+  if (supabaseService.getConfig().isConfigured) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(DB_USERS_KEY);
+      }
+    } catch {
+      // fallback
+    }
+    return;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(DB_USERS_KEY, JSON.stringify(users));
@@ -74,11 +88,13 @@ function saveStoredUsers(users: Record<string, DatabaseUser>): void {
   } catch {
     // fallback
   }
-  Object.assign(memoryUsers, users);
 }
 
 function getStoredProgress(email: string): PlayerProgress | null {
   const normEmail = email.trim().toLowerCase();
+  if (supabaseService.getConfig().isConfigured) {
+    return memoryProgress[normEmail] || null;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       const data = localStorage.getItem(DB_PROGRESS_PREFIX + normEmail);
@@ -92,6 +108,20 @@ function getStoredProgress(email: string): PlayerProgress | null {
 
 function saveStoredProgress(email: string, progress: PlayerProgress): void {
   const normEmail = email.trim().toLowerCase();
+  memoryProgress[normEmail] = progress;
+
+  if (supabaseService.getConfig().isConfigured) {
+    // Supabase stores player progress in remote table player_progress - purge from localStorage
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(DB_PROGRESS_PREFIX + normEmail);
+      }
+    } catch {
+      // fallback
+    }
+    return;
+  }
+
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(DB_PROGRESS_PREFIX + normEmail, JSON.stringify(progress));
@@ -99,7 +129,6 @@ function saveStoredProgress(email: string, progress: PlayerProgress): void {
   } catch {
     // fallback
   }
-  memoryProgress[normEmail] = progress;
 }
 
 export const authDatabaseService = {
@@ -293,18 +322,7 @@ export const authDatabaseService = {
           users[normEmail] = remoteData.user;
           saveStoredUsers(users);
 
-          const existingLocal = getStoredProgress(normEmail);
           let resolvedProgress = remoteData.progress;
-          if (existingLocal) {
-            const localCoins = existingLocal.stats?.coins ?? 0;
-            const remoteCoins = remoteData.progress.stats?.coins ?? 0;
-            const localLevels = Object.keys(existingLocal.completedLevels || {}).length;
-            const remoteLevels = Object.keys(remoteData.progress.completedLevels || {}).length;
-            if (localLevels > remoteLevels || (localLevels === remoteLevels && localCoins > remoteCoins)) {
-              resolvedProgress = existingLocal;
-              supabaseService.saveRemoteUser(remoteData.user, existingLocal).catch(err => console.warn(err));
-            }
-          }
 
           // Ensure player's registered displayName is preserved on profile and character
           if (remoteData.user.displayName) {
@@ -428,11 +446,31 @@ export const authDatabaseService = {
   },
 
   /**
-   * Load user progress from database
+   * Load user progress from memory / active session
    */
   loadUserProgress(email: string): PlayerProgress | null {
     if (!email) return null;
     return getStoredProgress(email);
+  },
+
+  /**
+   * Load user progress directly from Supabase Cloud (authoritative remote store)
+   */
+  async loadUserProgressAsync(email: string): Promise<PlayerProgress | null> {
+    if (!email) return null;
+    const normEmail = email.trim().toLowerCase();
+    if (supabaseService.getConfig().isConfigured) {
+      try {
+        const remote = await supabaseService.fetchRemoteUser(normEmail);
+        if (remote?.progress) {
+          memoryProgress[normEmail] = remote.progress;
+          return remote.progress;
+        }
+      } catch (err) {
+        console.warn('Failed to load user progress from Supabase:', err);
+      }
+    }
+    return memoryProgress[normEmail] || null;
   },
 
   /**

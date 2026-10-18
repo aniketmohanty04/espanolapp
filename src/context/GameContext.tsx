@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { PlayerProgress, PlayerCharacter, PlayerProfile, GameScreen, Question, City, Level } from '../types';
 import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from '../services/storageService';
 import { authDatabaseService } from '../services/authDatabaseService';
+import { supabaseService } from '../services/supabaseClient';
 import { soundService } from '../services/soundService';
 import { ALL_CITIES, getNextCity } from '../data/citiesData';
 import confetti from 'canvas-confetti';
@@ -83,9 +84,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return storageService.loadProgress();
   });
   
-  // Seed demo account and init DB on start
+  // Seed demo account and load authoritative progress from Supabase cloud on start
   useEffect(() => {
     authDatabaseService.init().catch(err => console.warn('Auth DB init error:', err));
+
+    if (supabaseService.getConfig().isConfigured) {
+      storageService.purgeLocalProgress();
+    }
+
+    const sessionEmail = authDatabaseService.getCurrentSessionEmail();
+    if (sessionEmail && supabaseService.getConfig().isConfigured) {
+      authDatabaseService.loadUserProgressAsync(sessionEmail).then(remoteProg => {
+        if (remoteProg) {
+          setProgress(remoteProg);
+          if (remoteProg.profile?.onboardingStep >= 5) {
+            setCurrentScreen('world-map');
+          } else if (remoteProg.profile?.onboardingStep >= 2) {
+            setCurrentScreen('character-creator');
+          }
+        }
+      }).catch(err => console.warn('Failed to load initial Supabase progress:', err));
+    }
   }, []);
 
   // Determine initial screen based on onboarding state
@@ -182,13 +201,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   }, []);
 
-  // Database Auth: Login existing user and restore their exact saved progress
+  // Database Auth: Login existing user and restore their exact saved progress from Supabase
   const loginUser = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { user, progress: loadedProgress } = await authDatabaseService.login(email, password);
       setCurrentUserEmail(user.email);
       setProgress(loadedProgress);
-      storageService.saveProgress(loadedProgress);
       
       // Route user to where they left off
       if (loadedProgress.profile?.onboardingStep >= 5) {
@@ -204,7 +222,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Database Auth: Register new user account and persist their initial progress
+  // Database Auth: Register new user account and persist their initial progress directly to Supabase
   const registerUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { user, progress: registeredProgress } = await authDatabaseService.register(
@@ -215,7 +233,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       setCurrentUserEmail(user.email);
       setProgress(registeredProgress);
-      storageService.saveProgress(registeredProgress);
       setCurrentScreen('character-creator');
       return { success: true };
     } catch (err: any) {
@@ -223,13 +240,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [progress]);
 
-  // Database Auth: Log out user, save their current progress, and return to Welcome screen
+  // Database Auth: Log out user, save their current progress to Supabase, and return to Welcome screen
   const logoutUser = useCallback(() => {
     if (currentUserEmail) {
       authDatabaseService.saveUserProgress(currentUserEmail, progress);
     }
     authDatabaseService.logout();
     setCurrentUserEmail(null);
+    storageService.purgeLocalProgress();
     const guestProgress: PlayerProgress = {
       ...INITIAL_PROGRESS,
       profile: {
@@ -242,7 +260,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     setProgress(guestProgress);
-    storageService.saveProgress(guestProgress);
     setCurrentScreen('welcome');
   }, [currentUserEmail, progress]);
 

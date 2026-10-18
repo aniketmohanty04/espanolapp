@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { supabaseService } from '../services/supabaseClient';
 import { authDatabaseService } from '../services/authDatabaseService';
-import { INITIAL_PROGRESS } from '../services/storageService';
+import { storageService, INITIAL_PROGRESS } from '../services/storageService';
+import { PlayerProgress } from '../types';
 
 describe('Supabase Remote Cloud Database Integration', () => {
   beforeEach(() => {
@@ -57,5 +58,38 @@ describe('Supabase Remote Cloud Database Integration', () => {
     const loginResult = await authDatabaseService.login('viajero_local@prueba.es', 'claveLocal123');
     expect(loginResult.user.email).toBe('viajero_local@prueba.es');
     expect(loginResult.progress.stats.coins).toBe(INITIAL_PROGRESS.stats.coins);
+  });
+
+  it('does NOT store player progress in localStorage when Supabase is configured', () => {
+    const mockStorage: Record<string, string> = {};
+    (globalThis as any).localStorage = {
+      getItem: (k: string) => mockStorage[k] ?? null,
+      setItem: (k: string, v: string) => { mockStorage[k] = v; },
+      removeItem: (k: string) => { delete mockStorage[k]; },
+      get length() { return Object.keys(mockStorage).length; },
+      key: (i: number) => Object.keys(mockStorage)[i] ?? null
+    };
+
+    // 1. Enable Supabase configuration
+    supabaseService.saveConfig('https://dxamjklrbeulpgdkxsha.supabase.co', 'sb_publishable_dummy_key');
+    expect(supabaseService.getConfig().isConfigured).toBe(true);
+
+    const customProgress: PlayerProgress = {
+      ...INITIAL_PROGRESS,
+      stats: { ...INITIAL_PROGRESS.stats, coins: 9999 }
+    };
+
+    // 2. storageService.saveProgress should NOT write to localStorage
+    storageService.saveProgress(customProgress);
+    expect(globalThis.localStorage.getItem('aventura_espanola_progress_v2')).toBeNull();
+
+    // 3. authDatabaseService.saveUserProgress should NOT write to localStorage
+    authDatabaseService.saveUserProgress('test@prueba.es', customProgress);
+    expect(globalThis.localStorage.getItem('aventura_db_progress_v1_test@prueba.es')).toBeNull();
+
+    // 4. purgeLocalProgress cleans up any leftover keys
+    globalThis.localStorage.setItem('aventura_espanola_progress_v2', '{"dummy": true}');
+    storageService.purgeLocalProgress();
+    expect(globalThis.localStorage.getItem('aventura_espanola_progress_v2')).toBeNull();
   });
 });
