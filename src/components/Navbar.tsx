@@ -21,9 +21,11 @@ import {
   Compass,
   Home,
   LogOut,
-  Cloud
+  Cloud,
+  Heart
 } from 'lucide-react';
 import { supabaseService } from '../services/supabaseClient';
+import { formatLifeTimer } from './OutOfLivesModal';
 
 interface NavbarProps {
   onOpenHub?: () => void;
@@ -34,6 +36,7 @@ interface NavbarProps {
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
   onOpenFestival: () => void;
+  onOpenLivesModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -44,9 +47,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSyllabus,
   onOpenAchievements,
   onOpenSettings,
-  onOpenFestival
+  onOpenFestival,
+  onOpenLivesModal
 }) => {
-  const { progress, logoutUser, currentUserEmail } = useGame();
+  const { progress, logoutUser, currentUserEmail, secondsUntilNextLife } = useGame();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const mistakeCount = Object.values(progress.incorrectQuestions).filter(q => !q.mastered).length;
@@ -152,6 +156,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{progress.stats.xp.toLocaleString()} XP</span>
             </div>
 
+            {/* Lives / Hearts Badge */}
+            <button
+              onClick={onOpenLivesModal}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full border shadow-xs text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                (progress.stats.lives ?? 3) === 0 
+                  ? 'border-rose-400 bg-rose-50 text-rose-700 animate-pulse' 
+                  : 'bg-white hover:bg-rose-50/50 border-[#E8DFD5] text-rose-600'
+              }`} 
+              title={(progress.stats.lives ?? 3) < 3 && secondsUntilNextLife ? `Vidas: ${progress.stats.lives}/3 (Próxima vida gratis en ${formatLifeTimer(secondsUntilNextLife)}). Haz clic para recargar.` : `Vidas: ${progress.stats.lives}/3. Haz clic para recargar.`}
+            >
+              <Heart className={`w-4 h-4 fill-rose-500 text-rose-500 ${(progress.stats.lives ?? 3) > 0 ? 'animate-pulse' : 'opacity-40'}`} />
+              <span>{progress.stats.lives ?? 3}/3</span>
+              {(progress.stats.lives ?? 3) < 3 && secondsUntilNextLife && (
+                <span className="text-[10px] text-slate-500 font-mono hidden md:inline ml-0.5">
+                  ⏱️ {formatLifeTimer(secondsUntilNextLife)}
+                </span>
+              )}
+            </button>
+
             {/* Traveler Avatar Badge */}
             <div
               className="flex items-center space-x-1.5 focus:outline-none"
@@ -246,6 +269,35 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Navigation Options List */}
             <div className="p-4 space-y-2 flex-1">
               
+              {/* Lives / Corazones Card */}
+              {onOpenLivesModal && (
+                <button
+                  onClick={() => handleNavClick(onOpenLivesModal)}
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl border-2 transition-all group text-left shadow-xs cursor-pointer ${
+                    (progress.stats.lives ?? 3) === 0
+                      ? 'bg-rose-50 border-rose-300 hover:bg-rose-100'
+                      : 'bg-white hover:bg-rose-50/40 border-[#E8DFD5]'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                      <Heart className="w-4 h-4 fill-rose-500" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-black text-[#24140E] group-hover:text-rose-700 transition-colors block font-serif">
+                        Vidas: {progress.stats.lives ?? 3} / 3 ❤️
+                      </span>
+                      <span className="text-[11px] text-[#7A6B60]">
+                        {(progress.stats.lives ?? 3) < 3 && secondsUntilNextLife
+                          ? `Regenera en ${formatLifeTimer(secondsUntilNextLife)} o recarga 500 🪙`
+                          : 'Vidas al máximo (3/3)'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-rose-500 transition-colors" />
+                </button>
+              )}
+
               {/* Camino AI Chatbot */}
               {onOpenHub && (
                 <button

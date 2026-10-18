@@ -16,6 +16,7 @@ import { AchievementsModal } from './components/AchievementsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { FinalAssessmentModal } from './components/FinalAssessmentModal';
 import { JourneyHub } from './components/JourneyHub';
+import { OutOfLivesModal } from './components/OutOfLivesModal';
 import { getCityById, getLevelById, ALL_CITIES } from './data/citiesData';
 
 const GameMain: React.FC = () => {
@@ -43,6 +44,7 @@ const GameMain: React.FC = () => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showFinalAssessment, setShowFinalAssessment] = useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
+  const [showOutOfLivesModal, setShowOutOfLivesModal] = useState<boolean>(false);
 
   // Home view mode: editorial Journey Hub or Spain World Map
   const [homeViewMode, setHomeViewMode] = useState<'journey-hub' | 'world-map'>('journey-hub');
@@ -127,6 +129,7 @@ const GameMain: React.FC = () => {
           setIsFestivalOpen(true);
           setActiveCityId(null);
         }}
+        onOpenLivesModal={() => setShowOutOfLivesModal(true)}
       />
 
       {/* Main Screen Router */}
@@ -140,7 +143,20 @@ const GameMain: React.FC = () => {
           <CityScreen
             city={activeCity}
             onBackToMap={() => setActiveCityId(null)}
-            onOpenLevel={(levelId) => setActiveLevelId(levelId)}
+            onOpenLevel={(levelId) => {
+              if ((progress.stats.lives ?? 3) <= 0) {
+                setShowOutOfLivesModal(true);
+                return;
+              }
+              const lvlIdx = activeCity.levels.findIndex(l => l.id === levelId);
+              if (lvlIdx > 0) {
+                const prevLevel = activeCity.levels[lvlIdx - 1];
+                if (!progress.completedLevels[prevLevel.id]) {
+                  return; // Cannot unlock next level before completing smaller level!
+                }
+              }
+              setActiveLevelId(levelId);
+            }}
             onOpenBoss={() => setActiveBossCityId(activeCity.id)}
           />
         ) : homeViewMode === 'world-map' ? (
@@ -161,8 +177,16 @@ const GameMain: React.FC = () => {
         ) : (
           <JourneyHub
             onStartJourney={() => {
+              if ((progress.stats.lives ?? 3) <= 0) {
+                setShowOutOfLivesModal(true);
+                return;
+              }
               const firstCity = ALL_CITIES[0];
               const unfinished = firstCity.levels.find(l => !progress.completedLevels[l.id]) || firstCity.levels[0];
+              const unfinishedIdx = firstCity.levels.findIndex(l => l.id === unfinished.id);
+              if (unfinishedIdx > 0 && !progress.completedLevels[firstCity.levels[unfinishedIdx - 1].id]) {
+                return;
+              }
               setActiveCityId(firstCity.id);
               setActiveLevelId(unfinished.id);
             }}
@@ -173,7 +197,21 @@ const GameMain: React.FC = () => {
               }
             }}
             onPlayLevel={(cityId, levelId) => {
+              if ((progress.stats.lives ?? 3) <= 0) {
+                setShowOutOfLivesModal(true);
+                return;
+              }
               if (progress.unlockedCityIds.includes(cityId)) {
+                const targetCity = getCityById(cityId);
+                if (targetCity) {
+                  const lvlIdx = targetCity.levels.findIndex(l => l.id === levelId);
+                  if (lvlIdx > 0) {
+                    const prevLevel = targetCity.levels[lvlIdx - 1];
+                    if (!progress.completedLevels[prevLevel.id]) {
+                      return; // Cannot unlock next level before completing smaller level!
+                    }
+                  }
+                }
                 setActiveCityId(cityId);
                 setActiveLevelId(levelId);
               }
@@ -292,6 +330,12 @@ const GameMain: React.FC = () => {
       {showFinalAssessment && (
         <FinalAssessmentModal onClose={() => setShowFinalAssessment(false)} />
       )}
+
+      {/* Out Of Lives & Regeneration Modal */}
+      <OutOfLivesModal
+        isOpen={showOutOfLivesModal}
+        onClose={() => setShowOutOfLivesModal(false)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-[#EADFCF] bg-[#FAF7F2] py-4 px-6 text-center text-xs text-[#7A6B60]">

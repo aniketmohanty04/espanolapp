@@ -189,6 +189,7 @@ export interface PlayerStats {
   lastActiveDate: string;
   lives: number;
   maxLives: number;
+  lastLifeLostAt?: string;
 }
 
 export interface CompletedLevelRecord {

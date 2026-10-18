@@ -1158,21 +1158,29 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                   {tierLevels.map(level => {
                     const record = progress.completedLevels[level.id];
                     const isCompleted = Boolean(record);
+                    const isUnlocked = isLevelUnlocked(level.levelNumber - 1);
 
                     return (
                       <div
                         key={level.id}
-                        onClick={() => setSelectedLevelForPreview(level)}
-                        className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col justify-between cursor-pointer group hover:scale-[1.01] ${
-                          isCompleted
-                            ? 'bg-emerald-50/40 hover:bg-emerald-50/70 border-emerald-300 shadow-xs'
-                            : 'bg-white hover:bg-[#FFFDF9] border-[#E8DFD5] hover:border-amber-400 shadow-xs'
+                        onClick={() => {
+                          if (isUnlocked) {
+                            setSelectedLevelForPreview(level);
+                          }
+                        }}
+                        className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col justify-between ${
+                          !isUnlocked
+                            ? 'bg-stone-100 border-stone-200 opacity-60 cursor-not-allowed select-none'
+                            : isCompleted
+                            ? 'bg-emerald-50/40 hover:bg-emerald-50/70 border-emerald-300 shadow-xs cursor-pointer group hover:scale-[1.01]'
+                            : 'bg-white hover:bg-[#FFFDF9] border-[#E8DFD5] hover:border-amber-400 shadow-xs cursor-pointer group hover:scale-[1.01]'
                         }`}
                       >
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-[#7A6B60]">
-                              Nivel {level.levelNumber}
+                            <span className="text-xs font-bold text-[#7A6B60] flex items-center space-x-1">
+                              {!isUnlocked && <Lock className="w-3 h-3 text-stone-500 mr-1 inline" />}
+                              <span>Nivel {level.levelNumber}</span>
                             </span>
                             <div className="flex items-center space-x-1 text-amber-500">
                               {[1, 2, 3].map(starIndex => (
@@ -1188,7 +1196,9 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                             </div>
                           </div>
 
-                          <h3 className="text-base font-black text-[#24140E] font-serif group-hover:text-[#E05615] transition-colors">
+                          <h3 className={`text-base font-black font-serif transition-colors ${
+                            !isUnlocked ? 'text-stone-500' : 'text-[#24140E] group-hover:text-[#E05615]'
+                          }`}>
                             {level.title}
                           </h3>
                           <p className="text-xs text-[#B45309] font-bold mt-0.5">
@@ -1203,9 +1213,13 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                           <span className="text-sky-800 font-bold">
                             +{level.xpReward} XP • +{level.coinReward} monedas
                           </span>
-                          <div className="flex items-center space-x-1 font-bold text-[#E05615] group-hover:translate-x-1 transition-transform">
-                            <span>{isCompleted ? 'Repasar' : 'Comenzar'}</span>
-                            <ChevronRight className="w-4 h-4" />
+                          <div className={`flex items-center space-x-1 font-bold ${
+                            !isUnlocked 
+                              ? 'text-stone-400' 
+                              : 'text-[#E05615] group-hover:translate-x-1 transition-transform'
+                          }`}>
+                            <span>{isCompleted ? 'Repasar' : isUnlocked ? 'Comenzar' : 'Bloqueado'}</span>
+                            {isUnlocked ? <ChevronRight className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
                           </div>
                         </div>
                       </div>

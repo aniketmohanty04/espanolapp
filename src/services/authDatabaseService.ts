@@ -157,8 +157,8 @@ export const authDatabaseService = {
           level: 2,
           streak: 4,
           lastActiveDate: new Date().toISOString().split('T')[0],
-          lives: 5,
-          maxLives: 5
+          lives: 3,
+          maxLives: 3
         },
         profile: {
           id: demoUser.id,

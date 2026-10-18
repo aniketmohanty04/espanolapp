@@ -103,9 +103,19 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 }) => {
   const { progress } = useGame();
   
-  // Currently active or selected city in the stepper
-  const [selectedCityId, setSelectedCityId] = useState<string>('madrid');
-  const [selectedLevelIdx, setSelectedLevelIdx] = useState<number>(0);
+  // Currently active or selected city in the stepper (defaults to furthest unlocked city and first unfinished level)
+  const [selectedCityId, setSelectedCityId] = useState<string>(() => {
+    const unlocked = progress.unlockedCityIds;
+    return (unlocked && unlocked.length > 0) ? unlocked[unlocked.length - 1] : 'madrid';
+  });
+  const [selectedLevelIdx, setSelectedLevelIdx] = useState<number>(() => {
+    const initialCityId = (progress.unlockedCityIds && progress.unlockedCityIds.length > 0) 
+      ? progress.unlockedCityIds[progress.unlockedCityIds.length - 1] 
+      : 'madrid';
+    const city = getCityById(initialCityId) || ALL_CITIES[0];
+    const firstUnfinished = city.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
+    return firstUnfinished !== -1 ? firstUnfinished : 0;
+  });
   const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
 
   // Stepper scroll container reference
@@ -621,7 +631,8 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                   key={city.id}
                   onClick={() => {
                     setSelectedCityId(city.id);
-                    setSelectedLevelIdx(0);
+                    const firstUnfinished = city.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
+                    setSelectedLevelIdx(firstUnfinished !== -1 ? firstUnfinished : 0);
                     // Only launch if city is already unlocked!
                     if (isUnlocked && isSelected) {
                       if (idx === 0) {
@@ -807,29 +818,34 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 {activeLevel.description || `A stranger asks you where you are going. Choose the words that will get you through ${selectedCity.name}.`}
               </p>
 
-              {/* Level Quick Selector (1 to 10 in current city) */}
+              {/* Level Quick Selector (1 to 10 in current city) - Strictly locked sequentially */}
               <div className="flex items-center space-x-1.5 mb-6 overflow-x-auto py-1">
                 {selectedCity.levels.map((lvl, lIdx) => {
                   const isDone = Boolean(progress.completedLevels[lvl.id]);
+                  const isUnlocked = isCityUnlocked && (lIdx === 0 || Boolean(progress.completedLevels[selectedCity.levels[lIdx - 1]?.id]));
                   const isCurrent = lIdx === selectedLevelIdx;
 
                   return (
                     <button
                       key={lvl.id}
-                      disabled={!isCityUnlocked}
-                      onClick={() => setSelectedLevelIdx(lIdx)}
-                      className={`w-7 h-7 rounded-full font-black text-xs transition-transform ${
-                        !isCityUnlocked
-                          ? 'bg-[#2E1B12] text-slate-600 cursor-not-allowed opacity-60'
+                      disabled={!isUnlocked}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setSelectedLevelIdx(lIdx);
+                        }
+                      }}
+                      className={`w-7 h-7 rounded-full font-black text-xs transition-transform flex items-center justify-center ${
+                        !isUnlocked
+                          ? 'bg-[#2E1B12] text-slate-600 cursor-not-allowed opacity-50 border border-white/5'
                           : isCurrent
                           ? 'bg-[#E05615] text-white scale-110 shadow'
                           : isDone
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-[#382318] text-slate-400 hover:text-white cursor-pointer'
+                          ? 'bg-emerald-600 text-white cursor-pointer'
+                          : 'bg-[#382318] text-slate-300 hover:text-white cursor-pointer'
                       }`}
-                      title={`Nivel ${lvl.levelNumber}: ${lvl.title}`}
+                      title={!isUnlocked ? `Nivel ${lvl.levelNumber} bloqueado (completa primero el nivel ${lvl.levelNumber - 1})` : `Nivel ${lvl.levelNumber}: ${lvl.title}`}
                     >
-                      {lvl.levelNumber}
+                      {!isUnlocked ? <Lock className="w-3 h-3 text-slate-500" /> : lvl.levelNumber}
                     </button>
                   );
                 })}
@@ -854,43 +870,96 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 
               {/* Play Mission Primary Button (Golden Amber Pill) */}
               <div className="flex items-center space-x-2">
-                {isCityUnlocked ? (
-                  <>
-                    <button
-                      onClick={() => onSelectCityPath(selectedCity.id)}
-                      className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
-                      title="Ver sendero completo"
-                    >
-                      Sendero 🛤️
-                    </button>
-                    <button
-                      onClick={() => onPlayLevel(selectedCity.id, activeLevel.id)}
-                      className="px-6 py-3 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-2 cursor-pointer"
-                    >
-                      <span>Play mission</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      disabled
-                      className="px-4 py-2.5 rounded-full bg-white/5 text-slate-500 text-xs font-bold cursor-not-allowed border border-white/5"
-                      title="Sendero bloqueado"
-                    >
-                      <Lock className="w-3.5 h-3.5 mr-1 inline" />
-                      <span>Sendero 🔒</span>
-                    </button>
-                    <button
-                      disabled
-                      className="px-6 py-3 rounded-full bg-slate-800 text-slate-400 font-black text-sm flex items-center space-x-2 cursor-not-allowed border border-slate-700 select-none"
-                      title="Completa la ciudad anterior para desbloquear esta misión"
-                    >
-                      <Lock className="w-4 h-4 text-amber-400" />
-                      <span>Misión Bloqueada</span>
-                    </button>
-                  </>
-                )}
+                {(() => {
+                  const isCurrentLevelUnlocked = isCityUnlocked && (selectedLevelIdx === 0 || Boolean(progress.completedLevels[selectedCity.levels[selectedLevelIdx - 1]?.id]));
+                  const hasLives = (progress.stats.lives ?? 3) > 0;
+
+                  if (!isCityUnlocked) {
+                    return (
+                      <>
+                        <button
+                          disabled
+                          className="px-4 py-2.5 rounded-full bg-white/5 text-slate-500 text-xs font-bold cursor-not-allowed border border-white/5"
+                          title="Sendero bloqueado"
+                        >
+                          <Lock className="w-3.5 h-3.5 mr-1 inline" />
+                          <span>Sendero 🔒</span>
+                        </button>
+                        <button
+                          disabled
+                          className="px-6 py-3 rounded-full bg-slate-800 text-slate-400 font-black text-sm flex items-center space-x-2 cursor-not-allowed border border-slate-700 select-none"
+                          title="Completa la ciudad anterior para desbloquear esta misión"
+                        >
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Misión Bloqueada</span>
+                        </button>
+                      </>
+                    );
+                  }
+
+                  if (!isCurrentLevelUnlocked) {
+                    return (
+                      <>
+                        <button
+                          onClick={() => onSelectCityPath(selectedCity.id)}
+                          className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                          title="Ver sendero completo"
+                        >
+                          Sendero 🛤️
+                        </button>
+                        <button
+                          disabled
+                          className="px-6 py-3 rounded-full bg-slate-800/90 text-amber-300 font-bold text-xs sm:text-sm flex items-center space-x-2 cursor-not-allowed border border-amber-500/30 select-none shadow-md"
+                          title={`Completa el nivel anterior para desbloquear el Nivel ${activeLevel.levelNumber}`}
+                        >
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Nivel {activeLevel.levelNumber} Bloqueado</span>
+                        </button>
+                      </>
+                    );
+                  }
+
+                  if (!hasLives) {
+                    return (
+                      <>
+                        <button
+                          onClick={() => onSelectCityPath(selectedCity.id)}
+                          className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                          title="Ver sendero completo"
+                        >
+                          Sendero 🛤️
+                        </button>
+                        <button
+                          onClick={() => onPlayLevel(selectedCity.id, activeLevel.id)}
+                          className="px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-2 cursor-pointer animate-pulse"
+                          title="Sin vidas disponibles (0/3 ❤️). Haz clic para recargar o ver el temporizador"
+                        >
+                          <Heart className="w-4 h-4 fill-white text-white" />
+                          <span>Sin Vidas (0/3) • Recargar</span>
+                        </button>
+                      </>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <button
+                        onClick={() => onSelectCityPath(selectedCity.id)}
+                        className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                        title="Ver sendero completo"
+                      >
+                        Sendero 🛤️
+                      </button>
+                      <button
+                        onClick={() => onPlayLevel(selectedCity.id, activeLevel.id)}
+                        className="px-6 py-3 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-2 cursor-pointer"
+                      >
+                        <span>Play mission</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

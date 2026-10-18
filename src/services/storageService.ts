@@ -83,8 +83,8 @@ export const INITIAL_PROGRESS: PlayerProgress = {
     level: 1,
     streak: 1,
     lastActiveDate: new Date().toISOString().split('T')[0],
-    lives: 5,
-    maxLives: 5
+    lives: 3,
+    maxLives: 3
   },
   profile: DEFAULT_PROFILE,
   unlockedCityIds: ['madrid'],
@@ -119,8 +119,8 @@ export const storageService = {
             stats: {
               ...INITIAL_PROGRESS.stats,
               ...(parsed.stats || {}),
-              lives: parsed.stats?.lives ?? 5,
-              maxLives: parsed.stats?.maxLives ?? 5
+              lives: Math.min(parsed.stats?.lives ?? 3, 3),
+              maxLives: 3
             },
             profile: {
               ...DEFAULT_PROFILE,
@@ -145,8 +145,8 @@ export const storageService = {
         stats: {
           ...INITIAL_PROGRESS.stats,
           ...(parsed.stats || {}),
-          lives: parsed.stats?.lives ?? 5,
-          maxLives: parsed.stats?.maxLives ?? 5
+          lives: Math.min(parsed.stats?.lives ?? 3, 3),
+          maxLives: 3
         },
         profile: {
           ...DEFAULT_PROFILE,

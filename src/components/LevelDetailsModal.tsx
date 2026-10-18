@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   ChevronRight,
   Flame,
-  Award
+  Award,
+  Heart
 } from 'lucide-react';
 
 interface LevelDetailsModalProps {
@@ -138,17 +139,35 @@ export const LevelDetailsModal: React.FC<LevelDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Action Button: Green Start Level (Panel 7) */}
-          <button
-            onClick={() => {
-              onClose();
-              onStartLevel();
-            }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-xl transition-all flex items-center justify-center space-x-2 border-2 border-emerald-300 hover:scale-[1.02] active:scale-98"
-          >
-            <Play className="w-5 h-5 fill-current" />
-            <span>{record ? 'Repasar Nivel' : 'Start Level'}</span>
-          </button>
+          {/* Action Button: Start Level or Out of Lives */}
+          {(() => {
+            const hasLives = (progress.stats.lives ?? 3) > 0;
+            return (
+              <button
+                onClick={() => {
+                  onClose();
+                  onStartLevel();
+                }}
+                className={`w-full py-4 rounded-2xl font-black text-base shadow-xl transition-all flex items-center justify-center space-x-2 border-2 hover:scale-[1.02] active:scale-98 cursor-pointer ${
+                  !hasLives
+                    ? 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white border-rose-400 animate-pulse'
+                    : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white border-emerald-300'
+                }`}
+              >
+                {!hasLives ? (
+                  <>
+                    <Heart className="w-5 h-5 fill-current" />
+                    <span>Sin Vidas (0/3) • Recargar</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 fill-current" />
+                    <span>{record ? 'Repasar Nivel' : 'Start Level'}</span>
+                  </>
+                )}
+              </button>
+            );
+          })()}
         </div>
 
       </div>

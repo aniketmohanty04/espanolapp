@@ -61,6 +61,10 @@ interface GameContextType {
   resetAllProgress: () => void;
   exportSaveFile: () => void;
   importSaveFile: (file: File) => Promise<void>;
+  // Life System (3 max lives, 500 coins refill, 15m regen)
+  loseLife: () => number;
+  refillLivesWithCoins: () => { success: boolean; error?: string };
+  secondsUntilNextLife: number | null;
   // Database Auth & Progress
   loginUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
@@ -118,6 +122,96 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeBossCityId, setActiveBossCityId] = useState<string | null>(null);
   const [isFestivalOpen, setIsFestivalOpen] = useState<boolean>(false);
   const [soundMuted, setSoundMuted] = useState<boolean>(soundService.getIsMuted());
+
+  // Life Management Constants (3 max lives, 500 coins to refill, 15 minutes per free life)
+  const LIFE_REFILL_COIN_COST = 500;
+  const LIFE_REGEN_INTERVAL_SECONDS = 15 * 60; // 900 seconds
+  const [secondsUntilNextLife, setSecondsUntilNextLife] = useState<number | null>(null);
+
+  // Passive 15-Minute Life Regeneration Check & Countdown
+  useEffect(() => {
+    const checkAndRegen = () => {
+      const currentLives = typeof progress.stats.lives === 'number' ? Math.min(3, progress.stats.lives) : 3;
+      if (currentLives >= 3) {
+        setSecondsUntilNextLife(null);
+        return;
+      }
+
+      const now = Date.now();
+      const lostAtMs = progress.stats.lastLifeLostAt ? new Date(progress.stats.lastLifeLostAt).getTime() : now;
+      const safeLostAtMs = isNaN(lostAtMs) ? now : lostAtMs;
+      const elapsedSeconds = Math.max(0, Math.floor((now - safeLostAtMs) / 1000));
+      const earnedLives = Math.floor(elapsedSeconds / LIFE_REGEN_INTERVAL_SECONDS);
+
+      if (earnedLives > 0) {
+        const newLives = Math.min(3, currentLives + earnedLives);
+        const remainderSeconds = elapsedSeconds % LIFE_REGEN_INTERVAL_SECONDS;
+        const newLostAt = newLives >= 3 ? undefined : new Date(now - remainderSeconds * 1000).toISOString();
+
+        setProgress(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            lives: newLives,
+            maxLives: 3,
+            lastLifeLostAt: newLostAt
+          }
+        }));
+      } else {
+        const remainingSeconds = Math.max(0, LIFE_REGEN_INTERVAL_SECONDS - (elapsedSeconds % LIFE_REGEN_INTERVAL_SECONDS));
+        setSecondsUntilNextLife(remainingSeconds);
+      }
+    };
+
+    checkAndRegen();
+    const interval = setInterval(checkAndRegen, 1000);
+    return () => clearInterval(interval);
+  }, [progress.stats.lives, progress.stats.lastLifeLostAt]);
+
+  // Deduct 1 life when a question is answered incorrectly
+  const loseLife = useCallback((): number => {
+    let remaining = 0;
+    setProgress(prev => {
+      const current = typeof prev.stats.lives === 'number' ? Math.min(3, prev.stats.lives) : 3;
+      const updated = Math.max(0, current - 1);
+      remaining = updated;
+      const nowIso = new Date().toISOString();
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          lives: updated,
+          maxLives: 3,
+          lastLifeLostAt: prev.stats.lastLifeLostAt || nowIso
+        }
+      };
+    });
+    return remaining;
+  }, []);
+
+  // Spend 500 coins to restore 3 lives immediately
+  const refillLivesWithCoins = useCallback((): { success: boolean; error?: string } => {
+    if (progress.stats.coins < LIFE_REFILL_COIN_COST) {
+      return {
+        success: false,
+        error: `No tienes suficientes monedas (necesitas ${LIFE_REFILL_COIN_COST} 🪙, tienes ${progress.stats.coins} 🪙).`
+      };
+    }
+
+    setProgress(prev => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        coins: Math.max(0, prev.stats.coins - LIFE_REFILL_COIN_COST),
+        lives: 3,
+        maxLives: 3,
+        lastLifeLostAt: undefined
+      }
+    }));
+
+    soundService.playLevelComplete();
+    return { success: true };
+  }, [progress.stats.coins]);
 
   // Save progress whenever it updates (both to storageService and auth database if logged in)
   useEffect(() => {
@@ -309,6 +403,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
+      // Manage lives deduction on wrong answer
+      let currentLives = typeof prev.stats.lives === 'number' ? Math.min(3, prev.stats.lives) : 3;
+      let newLastLifeLostAt = prev.stats.lastLifeLostAt;
+
+      if (!isCorrect) {
+        currentLives = Math.max(0, currentLives - 1);
+        if (!newLastLifeLostAt) {
+          newLastLifeLostAt = new Date().toISOString();
+        }
+      }
+
       // Check level-up from XP
       const newLevel = Math.floor(newXp / 300) + 1;
 
@@ -318,7 +423,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...prev.stats,
           coins: newCoins,
           xp: newXp,
-          level: newLevel
+          level: newLevel,
+          lives: currentLives,
+          maxLives: 3,
+          lastLifeLostAt: currentLives < 3 ? newLastLifeLostAt : undefined
         },
         rewardedQuestionFirstTries: rewardedList,
         incorrectQuestions: incorrectMap
@@ -677,6 +785,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetAllProgress,
         exportSaveFile,
         importSaveFile,
+        loseLife,
+        refillLivesWithCoins,
+        secondsUntilNextLife,
         loginUser,
         registerUser,
         logoutUser,

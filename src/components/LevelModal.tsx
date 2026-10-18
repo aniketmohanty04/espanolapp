@@ -19,9 +19,11 @@ import {
   Pause,
   ArrowRight,
   HelpCircle,
-  MessageCircle
+  MessageCircle,
+  Clock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { formatLifeTimer } from './OutOfLivesModal';
 
 interface LevelModalProps {
   level: Level;
@@ -41,7 +43,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     recordQuestionResult, 
     recordDialogueCompleted, 
     purchaseTranslation, 
-    recordLevelCompleted 
+    recordLevelCompleted,
+    refillLivesWithCoins,
+    secondsUntilNextLife
   } = useGame();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -61,8 +65,8 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const [showTranslateModal, setShowTranslateModal] = useState<boolean>(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
 
-  // Lives / hearts (Panels 8 & 9)
-  const [lives, setLives] = useState<number>(3);
+  // Lives / hearts synchronized with game state (max 3)
+  const lives = typeof progress.stats.lives === 'number' ? progress.stats.lives : 3;
 
   // Level completion
   const [correctFirstTries, setCorrectFirstTries] = useState<number>(0);
@@ -157,7 +161,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
       }
     } else {
       setAttemptCount(prev => prev + 1);
-      setLives(prev => Math.max(0, prev - 1));
     }
   };
 
@@ -679,16 +682,44 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                     <span>Reintentar</span>
                   </button>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setLives(3);
-                      setHasSubmitted(false);
-                      setIsCorrect(false);
-                    }}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-[#E05615] to-[#F3B33D] hover:from-[#C2410C] text-white font-black text-base shadow-md active:scale-95 transition-all"
-                  >
-                    Recargar Vidas (❤️ x3)
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                    {/* Wait 15m Timer Pill */}
+                    <div className="px-3.5 py-2 rounded-2xl bg-sky-50 border border-sky-300 text-sky-900 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
+                      <Clock className="w-4 h-4 text-sky-600 animate-pulse" />
+                      <span>1 Vida gratis en:</span>
+                      <span className="font-mono font-black text-rose-600">{formatLifeTimer(secondsUntilNextLife)}</span>
+                    </div>
+
+                    {/* Spend 500 Coins for 3 Lives */}
+                    {progress.stats.coins >= 500 ? (
+                      <button
+                        onClick={() => {
+                          const res = refillLivesWithCoins();
+                          if (res.success) {
+                            setHasSubmitted(false);
+                            setIsCorrect(false);
+                          }
+                        }}
+                        className="px-5 py-3 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center space-x-1.5 cursor-pointer"
+                        title="Gastar 500 monedas para recargar 3 vidas"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Recargar 3 Vidas (500 🪙)</span>
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2.5 rounded-full bg-stone-100 border border-stone-300 text-stone-500 font-bold text-xs" title="Monedas insuficientes">
+                        <span>Faltan {500 - progress.stats.coins} 🪙 para vidas</span>
+                      </div>
+                    )}
+
+                    {/* Return to Map Button */}
+                    <button
+                      onClick={onClose}
+                      className="px-4 py-2.5 rounded-full bg-white hover:bg-[#F2ECE1] border border-[#E0D5C7] text-[#524136] font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Salir al Mapa
+                    </button>
+                  </div>
                 )}
               </div>
 
