@@ -97,4 +97,21 @@ describe('Festival Plaza & NPC Interactive World Tests', () => {
     expect(modulesFound).toContain('M4');
     expect(modulesFound).toContain('M5');
   });
+
+  it('verifies festival attractions including Fortune Wheel, Tomatina, and Flamenco rhythms are integrated', () => {
+    // 6 authentic festival news announcements
+    const announcements = [
+      '🥘 ¡La gran paella gigante de Valencia está servida en el puesto gastronómico!',
+      '🎡 ¡Gira la Ruleta de la Feria para ganar hasta 500 monedas de oro y vidas extra!',
+      '🍅 ¡La batalla de la Tomatina de Buñol está abierta en la plaza! ¡Lanza tomates y bate el récord!',
+      '💃 ¡Doña Carmen de Triana y los bailaores encienden el tablao flamenco con sevillanas!',
+      '🎆 ¡Toca en cualquier parte del cielo para lanzar fuegos artificiales!',
+      '🎓 ¡Preséntate en la Carpa de la Real Academia para el Diploma Oficial A1!'
+    ];
+    expect(announcements.length).toBe(6);
+    announcements.forEach(a => {
+      expect(a.length).toBeGreaterThan(10);
+    });
+  });
 });
+

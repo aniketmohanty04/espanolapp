@@ -65,6 +65,8 @@ interface GameContextType {
   loseLife: () => number;
   refillLivesWithCoins: () => { success: boolean; error?: string };
   secondsUntilNextLife: number | null;
+  awardCoins: (amount: number) => void;
+  awardLife: () => void;
   // Database Auth & Progress
   loginUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
@@ -672,6 +674,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     soundService.playCoinReward();
   }, []);
 
+  // Award custom coins (e.g. from festival games, fortune wheel, tomatina)
+  const awardCoins = useCallback((amount: number) => {
+    setProgress(prev => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        coins: Math.max(0, prev.stats.coins + amount)
+      }
+    }));
+  }, []);
+
+  // Award 1 life up to max 3
+  const awardLife = useCallback(() => {
+    setProgress(prev => {
+      const current = typeof prev.stats.lives === 'number' ? prev.stats.lives : 3;
+      const updated = Math.min(3, current + 1);
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          lives: updated,
+          maxLives: 3,
+          lastLifeLostAt: updated >= 3 ? undefined : prev.stats.lastLifeLostAt
+        }
+      };
+    });
+  }, []);
+
   // Record cumulative final assessment
   const recordFinalAssessment = useCallback((scorePercent: number): { passed: boolean; certificateId: string } => {
     const passed = scorePercent >= 70;
@@ -788,6 +818,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loseLife,
         refillLivesWithCoins,
         secondsUntilNextLife,
+        awardCoins,
+        awardLife,
         loginUser,
         registerUser,
         logoutUser,
