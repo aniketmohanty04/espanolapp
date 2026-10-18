@@ -427,6 +427,127 @@ export const authDatabaseService = {
   },
 
   /**
+   * Forgot password: reset password to a new one, reset all game values to zero, and restart adventure
+   */
+  async resetPasswordAndRestart(email: string, newPassword: string): Promise<AuthResult> {
+    const normEmail = email.trim().toLowerCase();
+    if (!normEmail) {
+      throw new Error('Por favor, introduce tu correo electrónico.');
+    }
+    if (!newPassword || newPassword.trim().length < 4) {
+      throw new Error('La nueva contraseña debe tener al menos 4 caracteres.');
+    }
+
+    await this.init();
+
+    // 1. Check if user exists in Supabase or local DB
+    let existingUser: DatabaseUser | null = null;
+    let existingDisplayName = normEmail.split('@')[0] || 'Aventurero';
+
+    if (supabaseService.getConfig().isConfigured) {
+      try {
+        const remote = await supabaseService.fetchRemoteUser(normEmail);
+        if (remote) {
+          existingUser = remote.user;
+          if (remote.user.displayName && remote.user.displayName !== 'Viajero' && remote.user.displayName !== 'years') {
+            existingDisplayName = remote.user.displayName;
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase fetchRemoteUser error in resetPassword:', err);
+      }
+    }
+
+    if (!existingUser) {
+      const users = getStoredUsers();
+      if (users[normEmail]) {
+        existingUser = users[normEmail];
+        if (existingUser.displayName && existingUser.displayName !== 'Viajero' && existingUser.displayName !== 'years') {
+          existingDisplayName = existingUser.displayName;
+        }
+      }
+    }
+
+    if (!existingUser) {
+      throw new Error('No se encontró ninguna cuenta registrada con este correo electrónico. Por favor, regístrate.');
+    }
+
+    const newPasswordHash = await hashPassword(newPassword);
+    const now = new Date().toISOString();
+    const today = now.split('T')[0];
+
+    // Reset game values to zero and start again
+    const resetProgress: PlayerProgress = {
+      ...INITIAL_PROGRESS,
+      stats: {
+        coins: 0,
+        xp: 0,
+        level: 1,
+        streak: 1,
+        lastActiveDate: today,
+        lives: 3,
+        maxLives: 3,
+        lastLifeLostAt: undefined
+      },
+      profile: {
+        ...DEFAULT_PROFILE,
+        id: existingUser.id,
+        email: normEmail,
+        displayName: existingDisplayName,
+        character: {
+          ...DEFAULT_CHARACTER,
+          name: existingDisplayName
+        },
+        isGuest: false,
+        onboardingStep: 5,
+        tutorialCompleted: true,
+        createdAt: existingUser.createdAt || now
+      },
+      unlockedCityIds: ['madrid'],
+      completedLevels: {},
+      completedBosses: {},
+      purchasedTranslations: [],
+      rewardedQuestionFirstTries: [],
+      rewardedDialogueIds: [],
+      rewardedCityCompletionIds: [],
+      incorrectQuestions: {},
+      festivalVisitedStalls: [],
+      achievements: {
+        first_steps: now
+      }
+    };
+
+    const updatedUser: DatabaseUser = {
+      ...existingUser,
+      passwordHash: newPasswordHash,
+      displayName: existingDisplayName,
+      lastLoginAt: now
+    };
+
+    // Update in memory and local storage
+    const users = getStoredUsers();
+    users[normEmail] = updatedUser;
+    saveStoredUsers(users);
+    saveStoredProgress(normEmail, resetProgress);
+    this.setCurrentSession(normEmail);
+
+    // Save directly to Supabase cloud
+    if (supabaseService.getConfig().isConfigured) {
+      try {
+        await supabaseService.saveRemoteUser(updatedUser, resetProgress);
+      } catch (err) {
+        console.warn('Failed to save reset user to Supabase:', err);
+      }
+    }
+
+    return { 
+      user: updatedUser, 
+      progress: resetProgress, 
+      source: supabaseService.getConfig().isConfigured ? 'cloud' : 'local' 
+    };
+  },
+
+  /**
    * Save user progress to database under their account email (syncs to both local and cloud)
    */
   saveUserProgress(email: string, progress: PlayerProgress): void {

@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, Sparkles, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Sparkles, AlertCircle, CheckCircle2, KeyRound, RotateCcw } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 
 interface AuthScreenProps {
-  mode: 'login' | 'register';
-  onSwitchMode: () => void;
+  mode: 'login' | 'register' | 'forgot-password';
+  onSwitchMode: (newMode: 'login' | 'register' | 'forgot-password') => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   mode,
   onSwitchMode
 }) => {
-  const { loginUser, registerUser } = useGame();
+  const { loginUser, registerUser, resetPasswordAndRestart } = useGame();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +36,29 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         } else {
           setSuccessMsg('¡Bienvenido de vuelta! Cargando tu progreso guardado...');
         }
-      } else {
+      } else if (mode === 'register') {
         const res = await registerUser(email, password, name);
         if (!res.success) {
           setError(res.error || 'No se pudo crear la cuenta.');
         } else {
           setSuccessMsg('¡Cuenta creada con éxito! Iniciando tu aventura...');
+        }
+      } else {
+        // Forgot password flow
+        if (password.trim().length < 4) {
+          setError('La nueva contraseña debe tener al menos 4 caracteres.');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Las contraseñas no coinciden. Por favor, asegúrate de que sean idénticas.');
+          return;
+        }
+
+        const res = await resetPasswordAndRestart(email, password);
+        if (!res.success) {
+          setError(res.error || 'No se pudo restablecer la contraseña.');
+        } else {
+          setSuccessMsg('¡Contraseña restablecida y valores del juego reiniciados a cero! Comenzando aventura...');
         }
       }
     } catch (err: unknown) {
@@ -74,17 +92,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           {/* Card Header & Brand Motif */}
           <div className="text-center mb-6">
             <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-[#E05615] to-[#F3B33D] flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
-              <KeyRound className="w-6 h-6" />
+              {mode === 'forgot-password' ? <RotateCcw className="w-6 h-6" /> : <KeyRound className="w-6 h-6" />}
             </div>
             
             <p className="text-xs font-black uppercase tracking-widest text-[#E05615] mb-1">¡Aventura Española!</p>
             <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#24140E] tracking-tight">
-              {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              {mode === 'login' 
+                ? 'Iniciar Sesión' 
+                : mode === 'register' 
+                ? 'Crear Cuenta' 
+                : 'Restablecer Contraseña'}
             </h1>
             <p className="text-xs sm:text-sm text-[#7D6B5E] mt-1.5 font-medium leading-relaxed">
               {mode === 'login' 
                 ? 'Introduce tu correo y contraseña para retomar tu aventura exactamente donde la dejaste.' 
-                : 'Crea tu cuenta para comenzar tu viaje por las ciudades de España.'}
+                : mode === 'register'
+                ? 'Crea tu cuenta para comenzar tu viaje por las ciudades de España.'
+                : 'Si olvidaste tu contraseña, escribe tu correo y una nueva contraseña. Los valores del juego se reiniciarán a cero para comenzar tu aventura de nuevo.'}
             </p>
           </div>
 
@@ -157,9 +181,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             {/* Password */}
             <div>
-              <label htmlFor="auth-password" className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
-                Contraseña
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="auth-password" className="block text-xs font-black text-[#524136] uppercase tracking-wider">
+                  {mode === 'forgot-password' ? 'Nueva Contraseña' : 'Contraseña'}
+                </label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setSuccessMsg(null);
+                      onSwitchMode('forgot-password');
+                    }}
+                    className="text-[11px] text-[#B45309] hover:text-[#E05615] font-bold underline transition-colors cursor-pointer"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7A6B]" />
                 <input
@@ -167,7 +206,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 4 caracteres"
@@ -183,13 +222,45 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </div>
             </div>
 
-            {/* Cloud Persistence Guarantee Info Pill */}
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/40 text-[11px] text-[#78350F] flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-              <p>
-                Tu progreso (niveles superados, estrellas, monedas y racha) se sincroniza directamente en la nube.
-              </p>
-            </div>
+            {/* Confirm Password (forgot-password only) */}
+            {mode === 'forgot-password' && (
+              <div>
+                <label htmlFor="auth-confirm-password" className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
+                  Confirmar Nueva Contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7A6B]" />
+                  <input
+                    id="auth-confirm-password"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repite tu nueva contraseña"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border-2 border-[#E0D5C7] text-[#24140E] placeholder-slate-400 focus:border-[#E05615] focus:outline-none transition-colors text-sm font-semibold shadow-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Mode-Specific Notice */}
+            {mode === 'forgot-password' ? (
+              <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-xs text-[#78350F] flex items-start space-x-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="font-semibold leading-relaxed">
+                  <strong>Reinicio a cero:</strong> Al restablecer tu contraseña, las monedas, niveles y racha volverán a cero para reiniciar la aventura.
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/40 text-[11px] text-[#78350F] flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <p>
+                  Tu progreso (niveles superados, estrellas, monedas y racha) se sincroniza directamente en la nube.
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -201,26 +272,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 <span>Comprobando datos...</span>
               ) : mode === 'login' ? (
                 <span>Iniciar Sesión y Cargar Progreso</span>
-              ) : (
+              ) : mode === 'register' ? (
                 <span>Crear Cuenta y Empezar</span>
+              ) : (
+                <span>Restablecer Contraseña y Reiniciar a Cero</span>
               )}
             </button>
           </form>
 
           {/* Mode Switcher */}
           <div className="mt-6 pt-5 border-t border-[#EADFCF] text-center text-xs font-semibold text-[#7D6B5E]">
-            {mode === 'login' ? '¿Aún no tienes cuenta? ' : '¿Ya tienes una cuenta registrada? '}
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setSuccessMsg(null);
-                onSwitchMode();
-              }}
-              className="text-[#E05615] hover:text-[#C2410C] font-black underline transition-colors cursor-pointer ml-1"
-            >
-              {mode === 'login' ? 'Regístrate Aquí' : 'Inicia Sesión'}
-            </button>
+            {mode === 'forgot-password' ? (
+              <div>
+                <span>¿Recordaste tu contraseña? </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setSuccessMsg(null);
+                    onSwitchMode('login');
+                  }}
+                  className="text-[#E05615] hover:text-[#C2410C] font-black underline transition-colors cursor-pointer ml-1"
+                >
+                  Volver a Iniciar Sesión
+                </button>
+              </div>
+            ) : (
+              <div>
+                {mode === 'login' ? '¿Aún no tienes cuenta? ' : '¿Ya tienes una cuenta registrada? '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setSuccessMsg(null);
+                    onSwitchMode(mode === 'login' ? 'register' : 'login');
+                  }}
+                  className="text-[#E05615] hover:text-[#C2410C] font-black underline transition-colors cursor-pointer ml-1"
+                >
+                  {mode === 'login' ? 'Regístrate Aquí' : 'Inicia Sesión'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

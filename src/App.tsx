@@ -55,22 +55,22 @@ const GameMain: React.FC = () => {
     nextCityId?: string;
   } | null>(null);
 
-  // Auth screen mode: login or register
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  // Auth screen mode: login, register, or forgot-password
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
 
   const activeCity = activeCityId ? getCityById(activeCityId) : null;
   const activeLevel = (activeCityId && activeLevelId) ? getLevelById(activeCityId, activeLevelId) : null;
   const activeBossCity = activeBossCityId ? getCityById(activeBossCityId) : null;
 
   /* ========================================================
-     SCREEN 1: AUTH SCREEN (LOGIN / REGISTER)
+     SCREEN 1: AUTH SCREEN (LOGIN / REGISTER / FORGOT PASSWORD)
      Enforces Login Page as 1st page if not logged in
      ======================================================== */
   if (currentScreen === 'auth' || !currentUserEmail) {
     return (
       <AuthScreen
         mode={authMode}
-        onSwitchMode={() => setAuthMode(prev => prev === 'login' ? 'register' : 'login')}
+        onSwitchMode={(newMode) => setAuthMode(newMode)}
       />
     );
   }

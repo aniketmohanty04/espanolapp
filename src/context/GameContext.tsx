@@ -70,6 +70,7 @@ interface GameContextType {
   // Database Auth & Progress
   loginUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  resetPasswordAndRestart: (email: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
   currentUserEmail: string | null;
 }
@@ -350,6 +351,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: err?.message || 'Error al registrar la cuenta.' };
     }
   }, [progress]);
+
+  // Database Auth: Reset password when forgotten, reset all game stats to zero, and restart adventure
+  const resetPasswordAndRestart = useCallback(async (email: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, progress: resetProgress } = await authDatabaseService.resetPasswordAndRestart(email, newPassword);
+      setIsRemoteSyncReady(true);
+      setCurrentUserEmail(user.email);
+      setProgress(resetProgress);
+      setCurrentScreen('world-map');
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Error al restablecer la contraseña.' };
+    }
+  }, []);
 
   // Database Auth: Log out user, save their current progress to Supabase, and return to 1st screen (Login page)
   const logoutUser = useCallback(() => {
@@ -843,6 +858,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         awardLife,
         loginUser,
         registerUser,
+        resetPasswordAndRestart,
         logoutUser,
         currentUserEmail
       }}

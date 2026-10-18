@@ -155,4 +155,62 @@ describe('Authentication & Database Progress Service', () => {
     expect(loginResult.progress.profile.displayName).toBe('Aniket');
     expect(loginResult.progress.profile.character.name).toBe('Aniket');
   });
+
+  it('resets game values to zero and starts again upon forgot password reset', async () => {
+    // 1. Register a player and advance their stats
+    const email = 'jugador_olvidadizo@aventura.es';
+    const oldPass = 'claveVieja123';
+    const reg = await authDatabaseService.register(email, oldPass, 'Carlos');
+    
+    // Player has accumulated 1500 coins, 600 xp, completed level, and unlocked 3 cities
+    const advancedProgress: PlayerProgress = {
+      ...reg.progress,
+      stats: {
+        ...reg.progress.stats,
+        coins: 1500,
+        xp: 600,
+        level: 3
+      },
+      unlockedCityIds: ['madrid', 'toledo', 'salamanca'],
+      completedLevels: {
+        'madrid-1': { stars: 3, scorePercent: 100, firstTryPerfect: true, completedAt: new Date().toISOString() }
+      }
+    };
+    authDatabaseService.saveUserProgress(email, advancedProgress);
+
+    // 2. Player forgot their password -> Call resetPasswordAndRestart with a new password
+    const newPass = 'nuevaClaveSegura2026';
+    const resetResult = await authDatabaseService.resetPasswordAndRestart(email, newPass);
+
+    // 3. Verify game values are reset to zero
+    expect(resetResult.progress.stats.coins).toBe(0);
+    expect(resetResult.progress.stats.xp).toBe(0);
+    expect(resetResult.progress.stats.level).toBe(1);
+    expect(resetResult.progress.unlockedCityIds).toEqual(['madrid']);
+    expect(Object.keys(resetResult.progress.completedLevels).length).toBe(0);
+
+    // 4. Verify player name is preserved
+    expect(resetResult.user.displayName).toBe('Carlos');
+    expect(resetResult.progress.profile.displayName).toBe('Carlos');
+
+    // 5. Verify the old password no longer works
+    await expect(authDatabaseService.login(email, oldPass)).rejects.toThrow('Contraseña incorrecta');
+
+    // 6. Verify login works with the new password and returns the reset progress
+    const newLogin = await authDatabaseService.login(email, newPass);
+    expect(newLogin.user.email).toBe(email);
+    expect(newLogin.progress.stats.coins).toBe(0);
+    expect(newLogin.progress.unlockedCityIds).toEqual(['madrid']);
+  });
+
+  it('rejects resetPasswordAndRestart for non-existent email or short password', async () => {
+    await expect(
+      authDatabaseService.resetPasswordAndRestart('noexiste@aventura.es', 'pass123')
+    ).rejects.toThrow('No se encontró ninguna cuenta');
+
+    await expect(
+      authDatabaseService.resetPasswordAndRestart('aniket@viajes.es', '12')
+    ).rejects.toThrow('La nueva contraseña debe tener al menos 4 caracteres');
+  });
 });
+
