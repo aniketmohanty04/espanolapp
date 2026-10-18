@@ -10,7 +10,7 @@ export const MODULE3_CITIES: City[] = [
     description: 'La legendaria capital del califato omeya. En el bosque de columnas bicolores aprenderás a decir la hora, los meses del año y a formular fechas históricas.',
     moduleIndex: 3,
     moduleName: 'Módulo 3: Expresar la Hora, Las Fechas y Meses del Año',
-    coordinates: { x: 41, y: 70 },
+    coordinates: { x: 41.5, y: 69.0 },
     accentColor: '#9333EA',
     levels: [
       {
@@ -461,7 +461,7 @@ export const MODULE3_CITIES: City[] = [
     description: 'La capital de la Costa del Sol, bañada por el mar Mediterráneo. Aquí dominarás las expresiones del clima, el uso meteorológico del verbo HACER y fenómenos atmosféricos.',
     moduleIndex: 3,
     moduleName: 'Módulo 3: El Tiempo Atmosférico y el Verbo HACER',
-    coordinates: { x: 44, y: 82 },
+    coordinates: { x: 43.0, y: 86.5 },
     accentColor: '#0EA5E9',
     levels: [
       {
@@ -902,7 +902,7 @@ export const MODULE3_CITIES: City[] = [
     description: 'La ciudad trimilenaria conocida como "La Tacita de Plata". Aquí culminarás el Módulo 3 dominando el verbo GUSTAR, los adjetivos posesivos, el uso de HAY y la diferencia vital entre MUY y MUCHO.',
     moduleIndex: 3,
     moduleName: 'Módulo 3: Gustos (GUSTAR), Posesivos, HAY y MUY vs MUCHO',
-    coordinates: { x: 32, y: 80 },
+    coordinates: { x: 30.0, y: 87.0 },
     accentColor: '#D97706',
     levels: [
       {

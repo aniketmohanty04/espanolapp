@@ -7,6 +7,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Puesto de Tapas Tradicionales',
     vendorName: 'Chef Iñaki & Maite',
     side: 'left',
+    canopyColor: '#C60B1E',
+    icon: '🍲',
     description: 'Saborea la mejor tortilla de patatas, jamón ibérico, gazpacho andaluz y pulpo a la gallega.',
     specialty: 'Platos Típicos y Bebidas de las 15 Ciudades',
     miniQuiz: {
@@ -31,6 +33,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Pabellón del Compás y la Danza',
     vendorName: 'Doña Carmen de Triana',
     side: 'left',
+    canopyColor: '#E07A5F',
+    icon: '💃',
     description: 'Siente el tañido de la guitarra española y el zapateado de los bailaores sevillanos.',
     specialty: 'Cultura, Días Festivos y Ritmos Populares',
     miniQuiz: {
@@ -55,6 +59,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Pabellón de la Lengua y las Letras',
     vendorName: 'Catedrática Lucía de Salamanca',
     side: 'left',
+    canopyColor: '#1D3557',
+    icon: '📚',
     description: 'Manuscritos, poemas de Federico García Lorca y la sabiduría de las 15 ciudades.',
     specialty: 'Artículos, Abecedario y Diferencia SER vs ESTAR',
     miniQuiz: {
@@ -79,6 +85,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Puesto del Tiempo y el Clima',
     vendorName: 'Astrónomo Rafael de Córdoba',
     side: 'right',
+    canopyColor: '#2A9D8F',
+    icon: '⏳',
     description: 'Relojes de sol, astrolabios andalusíes y predicciones meteorológicas para toda España.',
     specialty: 'Las Horas, Meses del Año, Fechas y el Verbo HACER',
     miniQuiz: {
@@ -103,6 +111,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Pabellón del Metro y Rutinas',
     vendorName: 'Marc & Pau',
     side: 'right',
+    canopyColor: '#F59E0B',
+    icon: '🚆',
     description: 'Mapas de metro de Barcelona y Valencia, horarios universitarios y guías de transporte.',
     specialty: 'Rutinas Cotidianas, Verbos Reflexivos y Movilidad',
     miniQuiz: {
@@ -127,6 +137,8 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     spanishTitle: 'Pabellón de la Brisa y los Deseos',
     vendorName: 'Capitán Manuel & Xoán',
     side: 'right',
+    canopyColor: '#0284C7',
+    icon: '⛵',
     description: 'Faros, banderas náuticas, brújulas y la bienvenida oficial a los peregrinos del Camino.',
     specialty: 'Verbos Modales PODER y QUERER, Clima y Orientación',
     miniQuiz: {
@@ -159,9 +171,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Madrid',
     role: 'Estudiante de Filosofía y Guía Madrileña',
     avatar: '👩‍🎓',
+    avatarColor: '#C60B1E',
+    xPercent: 24,
+    yPercent: 44,
     dialogue: '¡Qué emoción verte aquí en La Gran Fiesta! Recuerdo cuando aterrizaste en Barajas y apenas sabías decir "¿Cómo estás?". ¡Ahora hablas con una soltura impresionante!',
     englishDialogue: 'What a thrill to see you here at La Gran Fiesta! I remember when you landed at Barajas airport and could barely say "How are you?". Now you speak with impressive fluency!',
-    trivia: 'Madrid alberga el restaurante más antiguo del mundo en funcionamiento continuo: Sobrino de Botín, fundado en 1725.'
+    trivia: 'Madrid alberga el restaurante más antiguo del mundo en funcionamiento continuo: Sobrino de Botín, fundado en 1725.',
+    interactiveQuestion: {
+      prompt: 'Elena te pregunta con una sonrisa: "Para brindar por tu aventura en Madrid, ¿qué solemos exclamar en España al chocar los vasos?"',
+      options: ['¡Salud!', '¡Por favor!', '¡Buen provecho!'],
+      correctAnswer: '¡Salud!',
+      reactionCorrect: '¡Exacto! ¡Salud y viva tu aventura en España!',
+      reactionIncorrect: 'Casi, decimos "¡Salud!" al brindar.',
+      explanation: '"¡Salud!" es la expresión universal para brindar en los países hispanohablantes.'
+    }
   },
   {
     id: 'char-alonso',
@@ -169,9 +192,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Toledo',
     role: 'Maestro Artesano Espadero',
     avatar: '👨‍🏭',
+    avatarColor: '#D97706',
+    xPercent: 18,
+    yPercent: 62,
     dialogue: 'Has templado tu conocimiento del español con la misma paciencia y nobleza con que forjamos el acero toledano. ¡Eres un auténtico maestro!',
     englishDialogue: 'You tempered your knowledge of Spanish with the same patience and nobility we forge Toledan steel. You are a true master!',
-    trivia: 'Toledo fue capital de España y es célebre por la convivencia de las tres culturas: judía, cristiana y musulmana.'
+    trivia: 'Toledo fue capital de España y es célebre por la convivencia de las tres culturas: judía, cristiana y musulmana.',
+    interactiveQuestion: {
+      prompt: 'Don Alonso te pone a prueba: "¿Qué verbo usamos para las profesiones permanentes: SER o ESTAR?"',
+      options: ['SER (Soy artesano)', 'ESTAR (Estoy artesano)', 'TENER (Tengo artesano)'],
+      correctAnswer: 'SER (Soy artesano)',
+      reactionCorrect: '¡Bien dicho! Como un buen acero toledano, la profesión se expresa con el verbo SER.',
+      reactionIncorrect: 'Recuerda: las profesiones se expresan con el verbo SER.',
+      explanation: 'Las profesiones y oficios se expresan siempre con SER: "Soy profesor", "Es artesano".'
+    }
   },
   {
     id: 'char-lucia',
@@ -179,9 +213,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Salamanca',
     role: 'Decana de Filología Hispánica',
     avatar: '👩‍🏫',
+    avatarColor: '#4338CA',
+    xPercent: 32,
+    yPercent: 72,
     dialogue: 'Tu dominio de los pronombres, la concordancia y los tiempos verbales honra a la Universidad de Salamanca. ¡La rana de oro está orgullosa de ti!',
     englishDialogue: 'Your mastery of pronouns, agreement and verb tenses honors the University of Salamanca. The golden frog is proud of you!',
-    trivia: 'La fachada de la Universidad de Salamanca esconde una célebre ranita sobre una calavera; encontrarla augura éxito en los exámenes.'
+    trivia: 'La fachada de la Universidad de Salamanca esconde una célebre ranita sobre una calavera; encontrarla augura éxito en los exámenes.',
+    interactiveQuestion: {
+      prompt: 'La decana Lucía te consulta: "¿Cómo concuerda el adjetivo femenino plural para las universidades históricas?"',
+      options: ['Las universidades históricas', 'Las universidades históricos', 'La universidad históricas'],
+      correctAnswer: 'Las universidades históricas',
+      reactionCorrect: '¡Magnífica concordancia de género y número!',
+      reactionIncorrect: 'Atención: "universidades" es femenino plural, por tanto "históricas".',
+      explanation: 'El sustantivo femenino plural (las universidades) exige el adjetivo en femenino plural (históricas).'
+    }
   },
   {
     id: 'char-carmen',
@@ -189,9 +234,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Sevilla',
     role: 'Matriarca Flamenca de Triana',
     avatar: '💃',
+    avatarColor: '#E11D48',
+    xPercent: 20,
+    yPercent: 82,
     dialogue: '¡Ay mi alma! Has aprendido a hablar de la familia y de las emociones con todo el duende y la gracia de Andalucía. ¡Brindemos por tu triunfo!',
     englishDialogue: 'Bless your soul! You learned to speak of family and emotions with all the soul and grace of Andalusia. Let us toast to your triumph!',
-    trivia: 'La Giralda de Sevilla fue durante siglos la torre más alta del mundo cristiano y musulmán con sus 104 metros.'
+    trivia: 'La Giralda de Sevilla fue durante siglos la torre más alta del mundo cristiano y musulmán con sus 104 metros.',
+    interactiveQuestion: {
+      prompt: 'Doña Carmen te sonríe con palmas: "Dime, mi corazón, ¿cómo se dice en español \'I am 20 years old\'?"',
+      options: ['Tengo 20 años', 'Soy 20 años', 'Estoy 20 años'],
+      correctAnswer: 'Tengo 20 años',
+      reactionCorrect: '¡Olé! ¡En español los años se tienen, con el verbo TENER!',
+      reactionIncorrect: '¡Cuidado! En español la edad no se es ni se está, se tiene (Tengo 20 años).',
+      explanation: 'En español la edad se expresa obligatoriamente con el verbo TENER.'
+    }
   },
   {
     id: 'char-tariq',
@@ -199,9 +255,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Granada',
     role: 'Guardián del Generalife',
     avatar: '👳‍♂️',
+    avatarColor: '#059669',
+    xPercent: 42,
+    yPercent: 40,
     dialogue: 'Desentrañaste los laberintos de la Alhambra y aprendiste a orientarte por las colinas andaluzas con admirable precisión geográfica.',
     englishDialogue: 'You unraveled the Alhambra labyrinths and learned to navigate Andalusian hills with admirable geographic precision.',
-    trivia: 'El nombre de la Alhambra proviene del árabe "al-Qal\'a al-Hamra", que significa la fortaleza roja.'
+    trivia: 'El nombre de la Alhambra proviene del árabe "al-Qal\'a al-Hamra", que significa la fortaleza roja.',
+    interactiveQuestion: {
+      prompt: 'Tariq te indica un mapa: "Para ubicar la Alhambra en la colina, ¿qué preposición indica \'cerca de\'?"',
+      options: ['Cerca de la colina', 'Lejos de la colina', 'Debajo de la colina'],
+      correctAnswer: 'Cerca de la colina',
+      reactionCorrect: '¡Exacto! La preposición de lugar indica proximidad.',
+      reactionIncorrect: '"Cerca de" es la locución preposicional que indica proximidad.',
+      explanation: '"Cerca de" indica poca distancia a un punto de referencia.'
+    }
   },
   {
     id: 'char-rafael',
@@ -209,9 +276,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Córdoba',
     role: 'Cronista Mayor del Califato',
     avatar: '🧔',
+    avatarColor: '#0D9488',
+    xPercent: 78,
+    yPercent: 42,
     dialogue: 'El tiempo y las horas ya no tienen secretos para ti. Las campanas de la Mezquita tocan hoy en tu honor.',
     englishDialogue: 'Time and hours no longer have secrets for you. The Mezquita bells toll in your honor today.',
-    trivia: 'La Mezquita-Catedral de Córdoba alberga más de 850 columnas de jaspe, granito y mármol bicolor.'
+    trivia: 'La Mezquita-Catedral de Córdoba alberga más de 850 columnas de jaspe, granito y mármol bicolor.',
+    interactiveQuestion: {
+      prompt: 'Rafael consulta su astrolabio: "Si son las 15:30, ¿cómo se expresa en lenguaje natural?"',
+      options: ['Son las tres y media', 'Es las tres y media', 'Son las tres y treinta horas'],
+      correctAnswer: 'Son las tres y media',
+      reactionCorrect: '¡Muy bien calculado! El tiempo en español se canta con naturalidad.',
+      reactionIncorrect: 'Se dice "Son las tres y media" (plural "son" para las horas distintas de la una).',
+      explanation: 'Para todas las horas excepto la una se usa el plural "Son las...".'
+    }
   },
   {
     id: 'char-manuel',
@@ -219,9 +297,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Málaga',
     role: 'Patrón de Barco del Mediterráneo',
     avatar: '⛵',
+    avatarColor: '#0284C7',
+    xPercent: 82,
+    yPercent: 62,
     dialogue: 'Navegaste con viento de proa y aprendiste a describir el sol, las olas y las tempestades como el más experto marinero de la Costa del Sol.',
     englishDialogue: 'You sailed through headwind and learned to describe sun, waves and storms like the most expert sailor of Costa del Sol.',
-    trivia: 'Málaga disfruta de más de 300 días de sol al año y vio nacer al universal pintor Pablo Picasso.'
+    trivia: 'Málaga disfruta de más de 300 días de sol al año y vio nacer al universal pintor Pablo Picasso.',
+    interactiveQuestion: {
+      prompt: 'El capitán Manuel otea el horizonte: "¿Cómo decimos que hace buen clima con el verbo HACER?"',
+      options: ['Hace buen tiempo', 'Está buen tiempo', 'Es buen tiempo'],
+      correctAnswer: 'Hace buen tiempo',
+      reactionCorrect: '¡Buen viento y buena mar! Usamos HACER para los fenómenos atmosféricos.',
+      reactionIncorrect: 'Los fenómenos meteorológicos usan el verbo HACER ("Hace sol", "Hace frío", "Hace buen tiempo").',
+      explanation: 'El clima y temperatura se construyen con HACER impersonal: "Hace frío / calor / sol / viento".'
+    }
   },
   {
     id: 'char-lola',
@@ -229,9 +318,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Cádiz',
     role: 'Directora de Chirigotas Gaditanas',
     avatar: '🎭',
+    avatarColor: '#F43F5E',
+    xPercent: 72,
+    yPercent: 80,
     dialogue: '¡Con el arte que tienes, te vienes conmigo a cantar al concurso del Carnaval el año que viene! ¡Vivan los gustos y la alegría!',
     englishDialogue: 'With your talent, you\'re coming with me to sing at the Carnival competition next year! Long live joy and tastes!',
-    trivia: 'Cádiz fue fundada hacia el 1104 a.C. por navegantes fenicios, siendo considerada la ciudad más antigua de Occidente.'
+    trivia: 'Cádiz fue fundada hacia el 1104 a.C. por navegantes fenicios, siendo considerada la ciudad más antigua de Occidente.',
+    interactiveQuestion: {
+      prompt: 'Lola toca el pito de carnaval: "Si a ti te entusiasma la música de Cádiz, ¿cómo dices \'I like music very much\'?"',
+      options: ['Me gusta mucho la música', 'Me gusta muy la música', 'Me gustan mucho la música'],
+      correctAnswer: 'Me gusta mucho la música',
+      reactionCorrect: '¡Olé tu gracia gaditana! MUCHO acompaña al verbo, no MUY.',
+      reactionIncorrect: 'Recuerda: MUCHO modifica verbos ("Me gusta mucho"), mientras que MUY modifica adjetivos.',
+      explanation: 'MUCHO funciona como adverbio de cantidad con verbos ("gusta mucho"). MUY solo acompaña adjetivos o adverbios ("muy alegre").'
+    }
   },
   {
     id: 'char-pau',
@@ -239,9 +339,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Valencia',
     role: 'Atleta y Biotecnólogo',
     avatar: '🏃‍♂️',
+    avatarColor: '#EA580C',
+    xPercent: 38,
+    yPercent: 84,
     dialogue: 'Dominaste los verbos reflexivos y las rutinas diarias con la disciplina de un verdadero corredor de fondo. ¡Felicidades, campeón!',
     englishDialogue: 'You mastered reflexive verbs and daily routines with the discipline of a true long-distance runner. Congratulations, champion!',
-    trivia: 'El parque del Turia en Valencia es uno de los mayores parques urbanos de España, con 9 kilómetros en un antiguo cauce fluvial.'
+    trivia: 'El parque del Turia en Valencia es uno de los mayores parques urbanos de España, con 9 kilómetros en un antiguo cauce fluvial.',
+    interactiveQuestion: {
+      prompt: 'Pau estira los gemelos: "¿Cuál es el pronombre reflexivo correcto para la primera persona: \'Yo ____ levanto temprano\'?"',
+      options: ['me', 'se', 'te'],
+      correctAnswer: 'me',
+      reactionCorrect: '¡Ritmo perfecto de carrera! "Yo me levanto" es el pronombre reflexivo de primera persona.',
+      reactionIncorrect: 'El pronombre reflexivo de "yo" es "me" (Yo me levanto).',
+      explanation: 'Los pronombres reflexivos son: me, te, se, nos, os, se.'
+    }
   },
   {
     id: 'char-marc',
@@ -249,9 +360,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Barcelona',
     role: 'Arquitecto y Universitario',
     avatar: '📐',
+    avatarColor: '#7C3AED',
+    xPercent: 58,
+    yPercent: 42,
     dialogue: 'Construiste tus frases con la misma audacia con que Gaudí diseñó la Sagrada Família y el Parc Güell. ¡Impresionante trabajo!',
     englishDialogue: 'You built your sentences with the same audacity Gaudí designed the Sagrada Família and Park Güell. Impressive work!',
-    trivia: 'La Sagrada Família de Barcelona es el monumento más visitado de España, en construcción continua desde 1882.'
+    trivia: 'La Sagrada Família de Barcelona es el monumento más visitado de España, en construcción continua desde 1882.',
+    interactiveQuestion: {
+      prompt: 'Marc revisa sus planos arquitectónicos: "Para preguntar por el horario del metro en la universidad, ¿cuál es la fórmula más correcta?"',
+      options: ['¿A qué hora pasa el metro?', '¿Dónde es el metro de hora?', '¿Cuánto metro pasa la hora?'],
+      correctAnswer: '¿A qué hora pasa el metro?',
+      reactionCorrect: '¡Excelente estructura arquitectónica de la pregunta!',
+      reactionIncorrect: 'Se pregunta "¿A qué hora...?" para indagar sobre horarios específicos.',
+      explanation: '"¿A qué hora...?" es la interrogativa estándar para solicitar un momento exacto en el horario.'
+    }
   },
   {
     id: 'char-pilar',
@@ -259,9 +381,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Zaragoza',
     role: 'Custodia del Arte Aragonés',
     avatar: '🕊️',
+    avatarColor: '#CA8A04',
+    xPercent: 62,
+    yPercent: 70,
     dialogue: 'Retrataste la amistad, las virtudes humanas y las habilidades con una nobleza aragonesa intachable. ¡Tienes un corazón de oro!',
     englishDialogue: 'You portrayed friendship, human virtues and skills with irreproachable Aragonese nobility. You have a heart of gold!',
-    trivia: 'La Basílica de Nuestra Señora del Pilar en Zaragoza es el primer templo mariano de la cristiandad.'
+    trivia: 'La Basílica de Nuestra Señora del Pilar en Zaragoza es el primer templo mariano de la cristiandad.',
+    interactiveQuestion: {
+      prompt: 'Pilar te sonríe afectuosamente: "Para describir a un buen amigo como sincero y generoso, ¿qué verbo usamos?"',
+      options: ['SER (Es sincero y generoso)', 'ESTAR (Está sincero y generoso)', 'HACER (Hace sincero y generoso)'],
+      correctAnswer: 'SER (Es sincero y generoso)',
+      reactionCorrect: '¡Muy bien! Las cualidades de la personalidad se describen con el verbo SER.',
+      reactionIncorrect: 'Las cualidades de carácter y personalidad permanentes requieren el verbo SER.',
+      explanation: 'Las características intrínsecas de las personas (cualidades morales) se expresan con SER.'
+    }
   },
   {
     id: 'char-inaki',
@@ -269,9 +402,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Bilbao',
     role: 'Maestro Tabernero del Nervión',
     avatar: '👨‍🍳',
+    avatarColor: '#B91C1C',
+    xPercent: 12,
+    yPercent: 48,
     dialogue: '¡Aupa viajero! En mis fogones se celebra tu victoria con un banquete de pintxos insuperable. ¡Te has ganado el título de gastrónomo honorífico!',
     englishDialogue: 'Well done traveler! In my kitchen your victory is celebrated with an unbeatable feast of pintxos. You earned the title of honorary gourmet!',
-    trivia: 'El Museo Guggenheim de Bilbao, diseñado por Frank Gehry, está recubierto por más de 33.000 planchas de titanio.'
+    trivia: 'El Museo Guggenheim de Bilbao, diseñado por Frank Gehry, está recubierto por más de 33.000 planchas de titanio.',
+    interactiveQuestion: {
+      prompt: 'Iñaki te ofrece una bandeja humeante: "En la taberna vasca, ¿cómo dices que vas hacia el mercado?"',
+      options: ['Voy al mercado', 'Voy a el mercado', 'Voy en el mercado'],
+      correctAnswer: 'Voy al mercado',
+      reactionCorrect: '¡Perfecto! La contracción A + EL = AL es obligatoria en español.',
+      reactionIncorrect: 'Recuerda: la preposición "a" más el artículo "el" siempre se contrae en "al".',
+      explanation: 'En español se contrae obligatoriamente: a + el = al (Voy al mercado).'
+    }
   },
   {
     id: 'char-maite',
@@ -279,9 +423,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'San Sebastián',
     role: 'Chef Estrella Michelin de La Concha',
     avatar: '⭐',
+    avatarColor: '#047857',
+    xPercent: 88,
+    yPercent: 52,
     dialogue: 'Tu cortesía en el restaurante y tu precisión al valorar cada plato demuestran una educación y sensibilidad lingüística excepcional.',
     englishDialogue: 'Your dining etiquette and precision in evaluating each dish demonstrate exceptional linguistic sensitivity and manners.',
-    trivia: 'San Sebastián cuenta con una de las mayores densidades de estrellas Michelin por metro cuadrado del planeta.'
+    trivia: 'San Sebastián cuenta con una de las mayores densidades de estrellas Michelin por metro cuadrado del planeta.',
+    interactiveQuestion: {
+      prompt: 'Maite te muestra la carta del restaurante: "Si quieres reservar una mesa para dos personas, ¿qué verbo modal de deseo utilizas?"',
+      options: ['Quiero reservar una mesa', 'Puedo reservo una mesa', 'Tengo reservar una mesa'],
+      correctAnswer: 'Quiero reservar una mesa',
+      reactionCorrect: '¡Mesa reservada con el verbo QUERER + Infinitivo!',
+      reactionIncorrect: 'El deseo se expresa con QUERER + Infinitivo ("Quiero reservar").',
+      explanation: 'El verbo modal QUERER seguido de infinitivo expresa intenciones y peticiones corteses.'
+    }
   },
   {
     id: 'char-xoan',
@@ -289,9 +444,20 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     originCity: 'Santiago de Compostela',
     role: 'Guardián del Obradoiro',
     avatar: '🐚',
+    avatarColor: '#1E40AF',
+    xPercent: 50,
+    yPercent: 82,
     dialogue: '¡El Camino ha terminado y tu dominio del español Level I ha comenzado para toda la vida! Eres bienvenido siempre en Galicia y en España.',
     englishDialogue: 'The Camino has concluded and your lifelong Spanish Level I mastery has begun! You are always welcome in Galicia and in Spain.',
-    trivia: 'El Botafumeiro de la Catedral de Santiago pesa más de 50 kilos y alcanza velocidades de casi 70 km/h al oscilar.'
+    trivia: 'El Botafumeiro de la Catedral de Santiago pesa más de 50 kilos y alcanza velocidades de casi 70 km/h al oscilar.',
+    interactiveQuestion: {
+      prompt: 'Xoán sella tu credencial de peregrino: "Para expresar que eres capaz de comunicarte en español, ¿qué verbo de habilidad usas?"',
+      options: ['Puedo comunicarme en español', 'Pongo comunicarme en español', 'Voy comunicarme en español'],
+      correctAnswer: 'Puedo comunicarme en español',
+      reactionCorrect: '¡Enhorabuena, peregrino! Con PODER demuestras tu capacidad y competencia lingüística.',
+      reactionIncorrect: 'El verbo modal PODER expresa capacidad o posibilidad ("Puedo comunicarme").',
+      explanation: 'El verbo modal PODER + Infinitivo se utiliza para expresar habilidad, permiso y posibilidad.'
+    }
   }
 ];
 

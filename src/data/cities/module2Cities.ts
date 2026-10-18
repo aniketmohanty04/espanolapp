@@ -10,7 +10,7 @@ export const MODULE2_CITIES: City[] = [
     description: 'La ciudad del impresionante acueducto bimilenario. Aquí dominarás el vocabulario de la casa, los colores, el verbo ESTAR y la distinción entre SER y ESTAR.',
     moduleIndex: 2,
     moduleName: 'Módulo 2: Mi Habitación, Colores, ESTAR y SER vs ESTAR',
-    coordinates: { x: 47, y: 45 },
+    coordinates: { x: 48.5, y: 39.0 },
     accentColor: '#0284C7',
     levels: [
       {
@@ -482,7 +482,7 @@ export const MODULE2_CITIES: City[] = [
     description: 'La capital andaluza rebosante de luz, azahar y compás flamenco. Aquí aprenderás a hablar de la familia, la edad y posesión con TENER y los verbos regulares en -AR.',
     moduleIndex: 2,
     moduleName: 'Módulo 2: Mi Familia, Verbo TENER, Edad y Verbos Regulares -AR',
-    coordinates: { x: 35, y: 76 },
+    coordinates: { x: 34.0, y: 77.0 },
     accentColor: '#EA580C',
     levels: [
       {
@@ -941,7 +941,7 @@ export const MODULE2_CITIES: City[] = [
     description: 'La joya nazarí a los pies de Sierra Nevada. Aquí culminarás el Módulo 2 dominando las direcciones, preposiciones de lugar, verbos en -IR y la navegación urbana.',
     moduleIndex: 2,
     moduleName: 'Módulo 2: Direcciones, Preposiciones de Lugar y Verbos en -IR',
-    coordinates: { x: 42, y: 78 },
+    coordinates: { x: 49.0, y: 76.5 },
     accentColor: '#059669',
     levels: [
       {

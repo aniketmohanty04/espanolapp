@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { CUMULATIVE_FINAL_ASSESSMENT } from '../data/festivalData';
 import { Question } from '../types';
-import { soundService } from '../services/soundService';
 import { 
   X, 
   GraduationCap, 
@@ -11,7 +10,6 @@ import {
   ArrowRight, 
   ArrowLeft, 
   Trophy, 
-  Volume2, 
   Award, 
   Download, 
   Printer,
@@ -130,22 +128,22 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#141724] border-2 border-amber-400 rounded-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#FAF7F2] border-2 border-[#EADFCF] rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-[#24140E]">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-fiesta-border flex items-center justify-between bg-gradient-to-r from-[#2B1B2A] to-[#1C1F33] shrink-0">
+        <div className="px-6 py-4 border-b border-[#EADFCF] flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 text-xl">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-[#B45309] flex items-center justify-center border border-amber-300 text-xl">
               🎓
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-bold text-white">Examen Oficial Acumulativo BAESP101</h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                <h2 className="text-lg font-black text-[#24140E] font-serif">Examen Oficial Acumulativo BAESP101</h2>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-[#B45309] font-black border border-amber-300">
                   30 Preguntas • Módulos 1 a 5
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-[#7A6B60] font-medium">
                 Certificación oficial de competencia lingüística en español A1.
               </p>
             </div>
@@ -153,7 +151,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-[#FAF7F2] text-[#6B584D] hover:text-[#24140E] hover:bg-[#F2ECE1] border border-[#EADFCF] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -162,7 +160,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
         {!isSubmitted ? (
           <>
             {/* Question Quick Grid Navigator */}
-            <div className="px-5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-1.5 overflow-x-auto shrink-0">
+            <div className="px-6 py-2.5 bg-[#F5EDE2] border-b border-[#EADFCF] flex items-center gap-1.5 overflow-x-auto shrink-0">
               {CUMULATIVE_FINAL_ASSESSMENT.map((q, idx) => {
                 const isAnswered = Boolean(answers[q.id]);
                 const isCurrent = idx === currentIndex;
@@ -170,12 +168,12 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                   <button
                     key={q.id}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 transition-all ${
+                    className={`w-7 h-7 rounded-lg text-xs font-black shrink-0 transition-all ${
                       isCurrent
-                        ? 'bg-amber-500 text-slate-950 ring-2 ring-white scale-110'
+                        ? 'bg-[#E05615] text-white ring-2 ring-amber-400 scale-110 shadow'
                         : isAnswered
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                        : 'bg-white text-[#7A6B60] border border-[#E0D5C7] hover:border-amber-400 hover:text-[#24140E]'
                     }`}
                   >
                     {idx + 1}
@@ -185,27 +183,18 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
             </div>
 
             {/* Exam Content Body */}
-            <div className="p-6 overflow-y-auto space-y-5 grow text-left">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-400">
+            <div className="p-6 sm:p-7 overflow-y-auto space-y-5 grow text-left">
+              <div className="flex items-center justify-between text-xs font-black text-[#B45309]">
                 <span>PREGUNTA {currentIndex + 1} DE {totalQuestions}</span>
-                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#EADFCF] text-[#7A6B60] font-mono text-[11px]">
                   Módulo {Math.floor(currentIndex / 6) + 1}
                 </span>
               </div>
 
               <div className="flex items-start justify-between gap-3">
-                <p className="text-base sm:text-lg font-semibold text-white leading-relaxed">
+                <p className="text-base sm:text-lg font-black text-[#24140E] font-serif leading-relaxed">
                   {currentQ.prompt}
                 </p>
-                {currentQ.audioText && (
-                  <button
-                    onClick={() => soundService.speakSpanish(currentQ.audioText!)}
-                    className="p-2.5 rounded-full bg-slate-800 text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-colors shrink-0"
-                    title="Escuchar audio"
-                  >
-                    <Volume2 className="w-5 h-5" />
-                  </button>
-                )}
               </div>
 
               {/* Multiple Choice */}
@@ -215,14 +204,18 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                     <button
                       key={i}
                       onClick={() => handleSelectOption(opt)}
-                      className={`w-full p-4 rounded-xl border text-left text-sm font-medium transition-all ${
+                      className={`w-full p-4 rounded-2xl border-2 text-left text-sm font-semibold transition-all ${
                         answers[currentQ.id] === opt
-                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
-                          : 'bg-[#181B2B] hover:bg-slate-700/60 border-slate-700 text-slate-200'
+                          ? 'bg-amber-50/80 border-[#E05615] text-[#24140E] shadow-sm font-bold'
+                          : 'bg-white hover:bg-[#FFFDF9] border-[#E8DFD5] hover:border-amber-400 text-[#24140E]'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="w-6 h-6 rounded-full bg-slate-800 text-xs font-bold flex items-center justify-center text-slate-400">
+                        <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center ${
+                          answers[currentQ.id] === opt
+                            ? 'bg-[#E05615] text-white'
+                            : 'bg-[#FAF7F2] text-[#B45309] border border-[#E0D5C7]'
+                        }`}>
                           {String.fromCharCode(65 + i)}
                         </span>
                         <span>{opt}</span>
@@ -240,7 +233,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                     value={answers[currentQ.id] || ''}
                     onChange={e => handleSelectOption(e.target.value)}
                     placeholder="Escribe tu respuesta aquí..."
-                    className="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white text-base focus:outline-none focus:border-amber-400"
+                    className="w-full p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] text-[#24140E] text-base focus:outline-none focus:border-[#E05615] font-semibold"
                   />
                   <div className="flex flex-wrap items-center gap-1.5">
                     {['á', 'é', 'í', 'ó', 'ú', 'ñ', '¿', '¡'].map(char => (
@@ -248,7 +241,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                         key={char}
                         type="button"
                         onClick={() => handleSelectOption((answers[currentQ.id] || '') + char)}
-                        className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 font-bold text-sm border border-slate-700 transition-colors"
+                        className="w-8 h-8 rounded-xl bg-white hover:bg-amber-100 text-[#24140E] font-black text-sm border border-[#E0D5C7] transition-colors"
                       >
                         {char}
                       </button>
@@ -260,9 +253,9 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
               {/* Word Order */}
               {currentQ.type === 'word-order' && (
                 <div className="space-y-4">
-                  <div className="min-h-[64px] p-3 rounded-xl bg-slate-900/90 border-2 border-dashed border-slate-700 flex flex-wrap items-center gap-2">
+                  <div className="min-h-[64px] p-3 rounded-2xl bg-white border-2 border-dashed border-[#E0D5C7] flex flex-wrap items-center gap-2">
                     {constructedWords.length === 0 ? (
-                      <span className="text-xs text-slate-500 italic">
+                      <span className="text-xs text-[#8C7A6B] italic font-medium">
                         Pulsa las palabras para ordenar la frase...
                       </span>
                     ) : (
@@ -270,7 +263,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                         <button
                           key={`fc-${idx}`}
                           onClick={() => removeWord(word, idx)}
-                          className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-sm shadow hover:bg-amber-400"
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#E05615] to-[#F3B33D] text-white font-black text-sm shadow hover:opacity-95"
                         >
                           {word} ✕
                         </button>
@@ -283,7 +276,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
                       <button
                         key={`fa-${idx}`}
                         onClick={() => addWord(word, idx)}
-                        className="px-3.5 py-2 rounded-lg bg-fiesta-card hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 shadow-sm"
+                        className="px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-[#24140E] font-bold text-sm border-2 border-[#E8DFD5] shadow-xs"
                       >
                         {word}
                       </button>
@@ -294,24 +287,24 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
             </div>
 
             {/* Navigator Footer */}
-            <div className="px-6 py-4 bg-[#1A1D2E] border-t border-fiesta-border flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-white border-t border-[#EADFCF] flex items-center justify-between shrink-0">
               <button
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex(prev => prev - 1)}
-                className="flex items-center space-x-1 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold text-xs"
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-[#FAF7F2] hover:bg-[#F2ECE1] border border-[#EADFCF] disabled:opacity-40 text-[#6B584D] font-black text-xs transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Anterior</span>
               </button>
 
-              <div className="text-xs text-slate-400">
-                Respondidas: <strong>{Object.keys(answers).length}</strong> de {totalQuestions}
+              <div className="text-xs text-[#7A6B60] font-bold">
+                Respondidas: <strong className="text-[#E05615]">{Object.keys(answers).length}</strong> de {totalQuestions}
               </div>
 
               {currentIndex + 1 < totalQuestions ? (
                 <button
                   onClick={() => setCurrentIndex(prev => prev + 1)}
-                  className="flex items-center space-x-1 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs"
+                  className="flex items-center space-x-1.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white font-black text-xs shadow-md transition-all"
                 >
                   <span>Siguiente</span>
                   <ArrowRight className="w-4 h-4" />
@@ -319,7 +312,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
               ) : (
                 <button
                   onClick={handleFinishExam}
-                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg"
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg transition-all"
                 >
                   Entregar Examen Oficial
                 </button>
@@ -329,15 +322,15 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
         ) : (
           /* Official Exam Result & Certificate Generator */
           <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-center grow">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-4xl shadow-2xl border-2 border-amber-300 bg-amber-500/20">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-4xl shadow-xl border-2 border-amber-300 bg-amber-100 text-[#B45309]">
               {finalScore?.passed ? '🏆' : '📚'}
             </div>
 
             <div>
-              <h3 className="text-2xl sm:text-3xl font-black text-white font-serif">
+              <h3 className="text-2xl sm:text-3xl font-black text-[#24140E] font-serif">
                 {finalScore?.passed ? '¡ENHORABUENA! EXAMEN OFICIAL SUPERADO' : 'EXAMEN NO SUPERADO'}
               </h3>
-              <p className="text-slate-300 text-sm mt-1 max-w-lg mx-auto">
+              <p className="text-[#6B584D] text-sm mt-1 max-w-lg mx-auto font-medium">
                 {finalScore?.passed
                   ? `Has obtenido un ${finalScore.scorePercent}% (${finalScore.correctCount}/${totalQuestions} aciertos). Has acreditado oficialmente el dominio del curso Spanish Level I (BAESP101).`
                   : `Has obtenido un ${finalScore?.scorePercent}% (${finalScore?.correctCount}/${totalQuestions}). Se requiere un 70% para aprobar. Puedes repasar y volver a intentarlo.`}
@@ -346,11 +339,11 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
 
             {/* Module Breakdown Grid */}
             {finalScore && (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-w-2xl mx-auto text-left">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 max-w-2xl mx-auto text-left">
                 {[1, 2, 3, 4, 5].map(m => (
-                  <div key={m} className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                    <span className="text-[10px] text-amber-400 font-bold block">Módulo {m}</span>
-                    <span className="text-sm font-extrabold text-white">
+                  <div key={m} className="p-3.5 rounded-2xl bg-white border-2 border-[#E8DFD5] shadow-xs">
+                    <span className="text-[10px] text-[#B45309] font-black uppercase tracking-wider block">Módulo {m}</span>
+                    <span className="text-base font-black text-[#24140E]">
                       {finalScore.moduleBreakdown[m].correct} / {finalScore.moduleBreakdown[m].total}
                     </span>
                   </div>
@@ -411,7 +404,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
               {finalScore?.passed && (
                 <button
                   onClick={handlePrint}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center space-x-2 border border-slate-700"
+                  className="px-6 py-2.5 rounded-full bg-white hover:bg-[#FAF7F2] text-[#24140E] font-black text-xs flex items-center space-x-2 border-2 border-[#EADFCF] shadow-sm transition-all"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Imprimir Diploma</span>
@@ -419,7 +412,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
               )}
               <button
                 onClick={onClose}
-                className="px-8 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg"
+                className="px-8 py-2.5 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white font-black text-xs shadow-lg transition-all"
               >
                 Volver a La Fiesta
               </button>

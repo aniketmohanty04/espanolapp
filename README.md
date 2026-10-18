@@ -1,16 +1,34 @@
 # ¡Aventura Española! — Spanish Level I Learning Adventure
 
-**¡Aventura Española!** is a comprehensive, story-driven educational Spanish learning game designed for English-speaking travelers exploring Spain from A1 beginner to certified Level I mastery.
+**¡Aventura Española!** is a comprehensive, story-driven educational Spanish learning adventure game designed for English-speaking travelers exploring Spain from A1 beginner to certified Level I mastery.
 
 The course curriculum is strictly aligned with the official academic **BAESP101 Spanish Level I** university syllabus (15 Lecture Hours) and supported by the communicative framework of **Nuevo Español sin Fronteras (ESF 1)** and **Aula Internacional 1**.
 
 ---
 
-## 🇪🇸 Game Overview
+## 🎨 Visual Design & The 13 Gameplay Screens
 
-The player begins their journey arriving in **Madrid**, navigating 15 iconic Spanish cities across the Iberian Peninsula, culminating in the golden celebratory world of **La Gran Fiesta**:
+The game UI is designed in a colorful Mediterranean 2D/2.5D cartoon adventure style with rounded panels, game-style 3D pressed buttons, animated transitions, particle effects, and warm terracotta, sunflower yellow, and Iberian blue aesthetics:
 
-| City # | City | Autonomous Region | Syllabus Module & Focus |
+1. **Screen 1 — Welcome Screen**: Grand title with golden text shadows, animated traveler character with backpack, drifting clouds over a Spanish skyline silhouette, and options to Start Journey, Login, Sign Up, or Continue as Guest.
+2. **Screen 2 — Login & Sign Up (`AuthScreen`)**: Local profile management, display name configuration, password toggle, and clear local storage indicators.
+3. **Screen 3 — Character Creator (`CharacterCreator`)**: Full traveler customization with live layered SVG preview, customizable skin tones, hair styles & colors, Spanish outfits (traveler, casual, flamenco, sporty, elegant), accessories (glasses, hat, scarf, backpack, camera), and character name.
+4. **Screen 4 — Sofia Interactive Tutorial (`TutorialScreen`)**: 6-step guided walkthrough with Sofia, introducing coin rewards, star ratings, city unlocks, question modalities, translation hints, and boss battles.
+5. **Screen 5 — Illustrated World Map (`WorldMap`)**: Continental Iberian peninsula with interconnected travel trails, 15 city pins with level progress counters, and the central golden portal to *La Gran Fiesta*.
+6. **Screen 6 — City Hub & Winding Path (`CityScreen`)**: Authentic Spanish plaza banner with architectural silhouettes, 10 circular level nodes along an interactive winding cobblestone road with star ratings, boss mission gate, and view toggle between *Winding Road* and *Curriculum Matrix*.
+7. **Screen 7 — Level Details (`LevelDetailsModal`)**: Pre-mission briefing modal displaying tier badge (Easy, Medium, Tough, Hard, Hot), syllabus learning objectives, coin & XP rewards, and "Start Level" action.
+8. **Screen 8 — NPC Conversation & MCQ (`LevelModal`)**: Waiter and host character portraits with speech bubbles, 3 lives/hearts counter, coins display, and immediate communicative feedback.
+9. **Screen 9 — Fill-in-the-Blank with Accents (`LevelModal`)**: Virtual Spanish accent keyboard (`á`, `é`, `í`, `ó`, `ú`, `ñ`, `¿`, `¡`) and word chip constructor.
+10. **Screen 10 — Hint & Translation Modal (`LevelModal`)**: Dedicated "Need Help?" modal offering full English translation and grammatical breakdown for 1,000 coins.
+11. **Screen 11 — Level Complete Celebration (`LevelModal`)**: Fireworks particle animations, 3 golden stars, earned coins & XP summary, and level advancement.
+12. **Screen 12 — City Boss Challenge (`BossMissionModal`)**: Narrative briefing with illustrated Hidalgo/Matador portrait, scenario lore, victory conditions, and combat questions enforcing a strict **80% mastery threshold**.
+13. **Screen 13 — Unlock Next City (`CityUnlockModal`)**: Full celebration ribbon, next city preview card with landmarks, 500 bonus coins award, and direct journey continuation.
+
+---
+
+## 🇪🇸 15 City Worlds & Syllabus Coverage
+
+| City # | City | Region | Syllabus Module & Focus |
 |:---:|:---|:---|:---|
 | **1** | **Madrid** | Comunidad de Madrid | Módulo 1: Saludos, Abecedario, Datos Personales y Verbo SER |
 | **2** | **Toledo** | Castilla-La Mancha | Módulo 1: Profesiones, Días de la Semana, Números 1-100 y SER |
@@ -27,73 +45,80 @@ The player begins their journey arriving in **Madrid**, navigating 15 iconic Spa
 | **13** | **Bilbao** | País Vasco | Módulo 5: Alimentos, Tapas, Bebidas, Verbo IR y Contracción AL |
 | **14** | **San Sebastián** | País Vasco | Módulo 5: En el Restaurante, Menú del Día, Opiniones y Verbo QUERER |
 | **15** | **Santiago de Compostela** | Galicia | Módulo 5: Ubicar Sitios en la Ciudad y Verbo Modal PODER |
-| **★** | **La Gran Fiesta** | Destino Central | **Pabellones Interactivos, 14 Personajes y Examen Oficial BAESP101** |
+| **★** | **La Gran Fiesta** | Destino Central | **6 Pabellones Interactivos, 14 Personajes y Examen Oficial BAESP101** |
 
 ---
 
-## 🎮 Level Architecture & Progression
+## 💰 Economy & Anti-Duplication Safeguards
 
-- **10 Regular Levels per City**:
-  - **Easy Tier**: Levels 1 & 2
-  - **Medium Tier**: Levels 3 & 4
-  - **Tough Tier**: Levels 5 & 6
-  - **Hard Tier**: Levels 7 & 8
-  - **Hot Tier**: Levels 9 & 10
-- **1 Boss Mission per City**:
-  - Narrative scenario featuring native historical characters (Don Rodrigo, Don Alonso, Catedrática Lucía, Doña Carmen, Tariq, Rafael, Manuel, Lola, Pau, Marc, Pilar, Iñaki, Maite, Xoán).
-  - Enforces a **strict 80% mastery threshold** before unlocking the subsequent city.
-- **4 Interactive Question Modalities**:
-  1. *Multiple-Choice*: Options with instant feedback and key shortcuts.
-  2. *Fill-in-the-Blank*: Input box with on-screen virtual Spanish accent keys (`á`, `é`, `í`, `ó`, `ú`, `ñ`, `¿`, `¡`).
-  3. *Word-Ordering Sentence Constructor*: Tap-to-build chips that assemble grammatically correct sentences.
-  4. *Selectable Branching Multi-Turn NPC Dialogue*: Interactive conversations testing communicative competence with reactive NPC responses.
-- **Pronunciation & Native Audio**:
-  - Integrated Spanish text-to-speech audio on every question, word, and character speech bubble via native Web Speech API (`es-ES`).
+- **First-Attempt Correct Answer**: `+100 coins` (tracked in set; replay cannot duplicate coins).
+- **Completed NPC Dialogue**: `+250 coins` (anti-farming protection).
+- **City Completion Bonus**: `+500 bonus coins` (granted once per city boss victory).
+- **English Translation Purchase**: `1,000 coins` (safeguard prevents negative balances and duplicate deductions).
+- **Review Mastery**: `+25 XP` when mastering a mistake from the Spaced Review Notebook.
 
 ---
 
-## 💰 Rewards Economy & Anti-Duplication Safeguards
+## 📚 Study Tools & Official Assessment
 
-Configured economic reward values:
-- **First-Attempt Correct Answer**: `+100 coins`
-- **Completed NPC Dialogue**: `+250 coins`
-- **City Completion Bonus**: `+500 bonus coins`
-- **English Translation Purchase**: `-1,000 coins`
-  - Unlocked upon repeated attempts with explanation and correct Spanish construction.
-  - Safeguard prevents negative balances (displays friendly message if insufficient funds).
-  - Safeguard prevents duplicate deductions once purchased.
-  - Safeguard prevents duplicate first-attempt coin rewards upon replay.
-  - Safeguard prevents duplicate repeated submissions.
-
----
-
-## 📚 Spaced Review Notebook & 35-Day Curriculum
-
-- **Cuaderno de Repaso (Mistakes Review)**: Automatically logs any incorrect answer with fail counts and grammar notes. Includes a dedicated *Modo Práctica* where players re-test mistaken questions to mark them as *Dominadas* (+25 XP).
-- **Plan de Estudio 35 Días**: Structured day-by-day study roadmap covering all 5 modules, daily goals, and milestone assessments with completion rewards.
-- **Matriz de Cobertura del Sílabo BAESP101**: Dedicated modal displaying 100% verified coverage of every syllabus topic across the 15 cities with zero uncovered gaps.
-- **Examen Oficial Acumulativo BAESP101**: 30 comprehensive questions spanning all 5 modules that evaluates competency and renders an official printable/downloadable **Diploma de Nivel I (A1)**.
+- **Cuaderno de Repaso (Mistakes Review)**: Automatically logs incorrect answers with failure counts and grammar notes. Includes interactive practice mode.
+- **Plan de Estudio 35 Días**: Structured day-by-day roadmap covering all 5 modules with daily goals and milestone checks.
+- **Matriz de Cobertura del Sílabo BAESP101**: Traceable matrix displaying 100% verified coverage across all 37 syllabus topics.
+- **Examen Oficial Acumulativo BAESP101**: 30 comprehensive questions spanning all 5 modules that evaluates competency and renders an official printable **Diploma de Nivel I (A1)**.
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Framework**: React 19 + TypeScript + Vite
-- **Styling**: Tailwind CSS with custom Spanish palette (`fiesta-red`, `fiesta-yellow`, `andalusian-blue`, `terracotta`)
+- **Styling**: Tailwind CSS v4 with `@tailwindcss/vite` and custom Mediterranean palette
 - **Icons**: Lucide React
 - **Celebrations**: Canvas Confetti
-- **Audio**: Web Speech API (`speechSynthesis`) + Web Audio API synthesizer for melodic chimes and fanfares (zero external sound file dependencies)
-- **Persistence**: Safe `localStorage` with JSON schema validation, error recovery, export save file, and import save file
-- **Testing**: Vitest for unit, integration, and curriculum integrity tests
+- **Audio**: Web Speech API (`speechSynthesis`, `es-ES`) + Web Audio API synthesizer for melodic chimes and fanfares
+## ☁️ Remote Cloud Database & Multi-User Sync (Supabase)
+
+¡Aventura Española! features a hybrid persistence architecture:
+1. **Remote Cloud PostgreSQL (Supabase)**: Real-time cross-device sync. Log in on your phone, tablet, or another computer and pick up right where you left off.
+2. **Local Offline Fallback**: Browser `localStorage` + client cache ensures the game runs smoothly even without an internet connection.
+3. **Cryptographic Hashing**: User passwords are encrypted with SHA-256 + salt before transmission/storage.
+
+### Connecting Your Supabase Project (2 Easy Methods)
+
+#### Method A: Direct In-App Setup (No restarts needed!)
+1. Click the **"Nube"** pill in the top navigation bar or go to **Menú → Nube Supabase**.
+2. Paste your **Project URL** (e.g., `https://xyz.supabase.co`) and **Anon Public Key**.
+3. Click **"Guardar y Conectar"** and test latency with **"Probar Ping"**.
+4. Click **"Sincronizar Ya"** to upload any existing local progress to the cloud.
+
+#### Method B: Environment Variables (`.env`)
+Add your credentials directly to `.env`:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+### Database Schema Setup (1-Click SQL)
+Run the provided SQL migration in `supabase/schema.sql` (or copy directly from the in-app Cloud Modal) inside your **Supabase Dashboard → SQL Editor**:
+```sql
+create table if not exists public.player_progress (
+  id text primary key,
+  email text unique not null,
+  display_name text not null default 'Viajero',
+  password_hash text not null,
+  progress jsonb not null default '{}'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
 
 ---
 
-## 🚀 Setup & Development
+## 🚀 Setup & Local Execution
 
 ### Prerequisites
-- Node.js version 18+ (verified on Node v24.20.0 and npm 11.19.0)
+- Node.js 18+
 
-### Installation
+### Installation & Run
 ```bash
 # Clone or navigate to the repository
 cd spanish
@@ -101,20 +126,18 @@ cd spanish
 # Install dependencies
 npm install
 
-# Start local development server
+# Start local interactive development server
 npm run dev
 ```
 
-The application will be accessible at `http://localhost:5173`.
+Open `http://localhost:5173` in your browser.
 
 ---
 
 ## 🧪 Testing
 
-Run the Vitest test suite to verify all curriculum mappings, reward rules, answer keys, and economic safeguards:
-
 ```bash
-# Run unit and integration tests once
+# Run unit and integration tests
 npm test
 
 # Run tests in watch mode
@@ -123,31 +146,20 @@ npx vitest
 
 ---
 
-## 📦 Production Build & Deployment
-
-To build the optimized static production bundle:
+## 📦 Production Build
 
 ```bash
 npm run build
 ```
 
-The production assets are generated in the `/dist` directory. You can deploy `/dist` directly to:
-- **Vercel**: `vercel deploy`
-- **Netlify**: drag and drop `/dist` or link repository
-- **GitHub Pages**: deploy `/dist` branch or GitHub Actions
-- **Cloudflare Pages / Firebase Hosting / S3**
+The production assets are generated in the `/dist` directory.
 
-To preview the built production site locally:
-```bash
-npm run preview
-```
+## Illustrated game environments
 
----
+The frontend includes locally hosted art in `public/game-art/`:
+- `spain-sunset.png` — welcome and travel intro environment
+- `spain-map.png` — illustrated Spain map behind interactive city markers
+- `madrid-plaza.png` — city and festival plaza environment
+- `spanish-cafe.png` — café mission environment
 
-## 📜 Course Accreditation
-
-This educational software implements the course outcomes for **BAESP101 (Spanish Level I)**:
-1. Introduce oneself and conduct basic communicative dialogue.
-2. Communicate using basic grammar and vocabulary at the A1 level.
-3. Comprehend and translate simple written and spoken sentences.
-4. Appreciate Spanish society, art, geography, and culture through 15 historic cities.
+These assets are local files and do not require an external image service at runtime.

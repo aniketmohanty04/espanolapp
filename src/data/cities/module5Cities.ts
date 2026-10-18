@@ -10,7 +10,7 @@ export const MODULE5_CITIES: City[] = [
     description: 'La capital vizcaína de titanio y gastronomía de pintxos. Aquí dominarás los nombres de los alimentos, las bebidas tradicionales, el verbo irregular IR y las estructuras de desplazamiento hacia lugares de la ciudad.',
     moduleIndex: 5,
     moduleName: 'Módulo 5: Gastronomía, Alimentos, Bebidas y el Verbo IR',
-    coordinates: { x: 52, y: 20 },
+    coordinates: { x: 51.5, y: 19.0 },
     accentColor: '#14B8A6',
     levels: [
       {
@@ -466,7 +466,7 @@ export const MODULE5_CITIES: City[] = [
     description: 'La capital gastronómica mundial frente al mar Cantábrico. Aquí dominarás las conversaciones formales de restaurante, la estructura del menú del día, las opiniones culinarias y el verbo con cambio vocálico QUERER.',
     moduleIndex: 5,
     moduleName: 'Módulo 5: En el Restaurante, Menú del Día, Opiniones y el Verbo QUERER',
-    coordinates: { x: 58, y: 19 },
+    coordinates: { x: 59.5, y: 18.0 },
     accentColor: '#F59E0B',
     levels: [
       {
@@ -935,7 +935,7 @@ export const MODULE5_CITIES: City[] = [
     description: 'La meta milenaria del Camino de Santiago. En el corazón de la piedra gallega culminarás las 15 ciudades dominando la orientación urbana, los servicios cívicos y el verbo modal PODER para pedir favores y permisos.',
     moduleIndex: 5,
     moduleName: 'Módulo 5: Ubicar Sitios en la Ciudad y el Verbo PODER',
-    coordinates: { x: 22, y: 22 },
+    coordinates: { x: 24.5, y: 21.0 },
     accentColor: '#6366F1',
     levels: [
       {

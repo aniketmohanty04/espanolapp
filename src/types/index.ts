@@ -2,6 +2,47 @@ export type DifficultyTier = 'easy' | 'medium' | 'tough' | 'hard' | 'hot';
 
 export type QuestionType = 'multiple-choice' | 'fill-blank' | 'word-order' | 'dialogue';
 
+export type GameScreen = 
+  | 'welcome' 
+  | 'auth' 
+  | 'profile' 
+  | 'character-creator' 
+  | 'tutorial' 
+  | 'world-map' 
+  | 'city' 
+  | 'level' 
+  | 'boss' 
+  | 'festival'
+  | 'city-unlock';
+
+export type AvatarStyle = 'adventurer' | 'explorer' | 'scholar' | 'artist';
+export type SkinTone = 'light' | 'medium-light' | 'medium' | 'medium-dark' | 'dark';
+export type HairStyle = 'short' | 'medium' | 'long' | 'curly' | 'ponytail' | 'bun';
+export type HairColor = 'black' | 'brown' | 'blonde' | 'red' | 'gray';
+export type OutfitStyle = 'casual' | 'traveler' | 'flamenco' | 'sporty' | 'elegant';
+export type AccessoryType = 'none' | 'glasses' | 'hat' | 'scarf' | 'backpack' | 'camera';
+
+export interface PlayerCharacter {
+  name: string;
+  avatarStyle: AvatarStyle;
+  skinTone: SkinTone;
+  hairStyle: HairStyle;
+  hairColor: HairColor;
+  outfit: OutfitStyle;
+  accessory: AccessoryType;
+}
+
+export interface PlayerProfile {
+  id: string;
+  email?: string;
+  displayName: string;
+  character: PlayerCharacter;
+  createdAt: string;
+  isGuest: boolean;
+  tutorialCompleted: boolean;
+  onboardingStep: number; // 0=welcome, 1=auth, 2=profile, 3=character, 4=tutorial, 5=done
+}
+
 export interface DialogueChoice {
   id: string;
   text: string;
@@ -97,6 +138,8 @@ export interface FestivalStall {
   miniQuiz: Question;
   rewardCoins: number;
   rewardBadge: string;
+  canopyColor?: string;
+  icon?: string;
 }
 
 export interface FestivalCharacter {
@@ -108,6 +151,17 @@ export interface FestivalCharacter {
   dialogue: string;
   englishDialogue: string;
   trivia: string;
+  avatarColor?: string;
+  xPercent?: number; // 0-100 in plaza
+  yPercent?: number; // 0-100 in plaza
+  interactiveQuestion?: {
+    prompt: string;
+    options: string[];
+    correctAnswer: string;
+    reactionCorrect: string;
+    reactionIncorrect: string;
+    explanation: string;
+  };
 }
 
 export interface SyllabusTopicItem {
@@ -133,6 +187,8 @@ export interface PlayerStats {
   level: number;
   streak: number;
   lastActiveDate: string;
+  lives: number;
+  maxLives: number;
 }
 
 export interface CompletedLevelRecord {
@@ -181,6 +237,7 @@ export interface DailyScheduleDay {
 
 export interface PlayerProgress {
   stats: PlayerStats;
+  profile: PlayerProfile;
   unlockedCityIds: string[];
   completedLevels: Record<string, CompletedLevelRecord>;
   completedBosses: Record<string, CompletedBossRecord>;
@@ -192,6 +249,7 @@ export interface PlayerProgress {
   achievements: Record<string, string>; // achievementId -> unlockedAt
   completedStudyDays: number[];
   festivalVisitedStalls: string[];
+  unlockedCosmetics: string[];
   finalAssessmentCompleted?: {
     scorePercent: number;
     passed: boolean;
@@ -199,3 +257,7 @@ export interface PlayerProgress {
     certificateId: string;
   };
 }
+
+
+
+

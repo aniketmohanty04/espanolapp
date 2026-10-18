@@ -1,36 +1,55 @@
 import React, { useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { soundService } from '../services/soundService';
 import { 
   X, 
   Settings, 
   Download, 
   Upload, 
   RotateCcw, 
-  Volume2, 
-  VolumeX, 
-  ShieldCheck, 
-  Check, 
-  AlertTriangle 
+  User,
+  BookOpen,
+  HelpCircle,
+  AlertTriangle,
+  Bot,
+  Sparkles,
+  Key,
+  Check,
+  LogOut,
+  UserCheck,
+  Cloud
 } from 'lucide-react';
+import { getMaskedApiKey, getGeminiApiKey, setGeminiApiKey, DEFAULT_GEMINI_API_KEY } from '../services/geminiService';
+import { supabaseService } from '../services/supabaseClient';
 
 interface SettingsModalProps {
   onClose: () => void;
+  onOpenCharacterCreator?: () => void;
+  onReplayTutorial?: () => void;
+  onOpenCloudModal?: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ 
+  onClose,
+  onOpenCharacterCreator,
+  onReplayTutorial,
+  onOpenCloudModal 
+}) => {
   const { 
     progress, 
-    soundMuted, 
-    toggleSound, 
     exportSaveFile, 
     importSaveFile, 
-    resetAllProgress 
+    resetAllProgress,
+    logoutUser,
+    currentUserEmail,
+    setCurrentScreen 
   } = useGame();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resetConfirm, setResetConfirm] = useState<boolean>(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isEditingKey, setIsEditingKey] = useState<boolean>(false);
+  const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [keySavedMessage, setKeySavedMessage] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,19 +64,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-[#141724] border border-fiesta-border rounded-2xl shadow-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-[#FAF7F2] border-2 border-[#EADFCF] rounded-3xl shadow-2xl overflow-hidden my-auto text-[#24140E]">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-fiesta-border flex items-center justify-between bg-[#1A1D2E]">
+        <div className="px-6 py-4 border-b border-[#EADFCF] flex items-center justify-between bg-white">
           <div className="flex items-center space-x-2.5">
-            <Settings className="w-5 h-5 text-amber-400" />
-            <h2 className="text-base sm:text-lg font-bold text-white">
-              Ajustes y Copia de Seguridad
+            <Settings className="w-5 h-5 text-[#E05615]" />
+            <h2 className="text-base sm:text-lg font-black text-[#24140E] font-serif">
+              Ajustes y Personalización
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-[#FAF7F2] text-[#6B584D] hover:text-[#24140E] hover:bg-[#F2ECE1] border border-[#EADFCF] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -65,46 +84,247 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
         {/* Body */}
         <div className="p-6 space-y-5 text-left text-sm">
-          {/* Sound settings */}
-          <div className="p-4 rounded-xl bg-[#1C2033] border border-slate-700 flex items-center justify-between">
-            <div>
-              <p className="font-bold text-white">Efectos de Sonido y Pronunciación</p>
-              <p className="text-xs text-slate-400">Activa o silencia el audio nativo y chimes del juego</p>
+          {/* Account & Database Sync Card */}
+          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  currentUserEmail ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-amber-100 text-amber-700 border border-amber-300'
+                }`}>
+                  {currentUserEmail ? <UserCheck className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <p className="font-black text-[#24140E]">
+                      {currentUserEmail ? 'Cuenta Registrada' : 'Modo Invitado'}
+                    </p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                      currentUserEmail ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}>
+                      {currentUserEmail ? 'Base de Datos Conectada' : 'Progreso Local'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#7A6B60]">
+                    {currentUserEmail 
+                      ? `Sincronizado con ${currentUserEmail}` 
+                      : 'Tu progreso solo está en este navegador'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={toggleSound}
-              className={`p-2.5 rounded-xl border font-bold text-xs flex items-center space-x-1.5 transition-colors ${
-                soundMuted
-                  ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              }`}
-            >
-              {soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-              <span>{soundMuted ? 'Silenciado' : 'Activo'}</span>
-            </button>
+
+            {currentUserEmail ? (
+              <button
+                onClick={() => {
+                  onClose();
+                  logoutUser();
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black border border-rose-300 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Cerrar Sesión ({currentUserEmail})</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onClose();
+                  setCurrentScreen('auth');
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#E05615] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white text-xs font-black flex items-center justify-center space-x-1.5 transition-all shadow-sm cursor-pointer"
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>Crear Cuenta o Iniciar Sesión para Guardar en la Nube</span>
+              </button>
+            )}
+          </div>
+
+          {/* Cloud Database Sync Card */}
+          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  supabaseService.getConfig().isConfigured 
+                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
+                    : 'bg-amber-100 text-amber-700 border border-amber-300'
+                }`}>
+                  <Cloud className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <p className="font-black text-[#24140E]">Base de Datos en la Nube</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                      supabaseService.getConfig().isConfigured 
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}>
+                      {supabaseService.getConfig().isConfigured ? 'Supabase Activo' : 'Modo Local'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#7A6B60]">
+                    {supabaseService.getConfig().isConfigured 
+                      ? 'Tus partidas se respaldan y sincronizan en Supabase.' 
+                      : 'Conecta Supabase para acceder a tu progreso desde cualquier dispositivo.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {onOpenCloudModal && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenCloudModal();
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-[#24140E] text-xs font-black border border-stone-300 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+              >
+                <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {supabaseService.getConfig().isConfigured 
+                    ? 'Gestionar Conexión Supabase / Sincronizar' 
+                    : 'Configurar Base de Datos Supabase'}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* Traveler & Tutorial Quick Actions */}
+          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
+            <div>
+              <p className="font-black text-[#24140E]">Viajero y Guía</p>
+              <p className="text-xs text-[#7A6B60]">Modifica el aspecto de tu personaje o vuelve a ver la guía de juego</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {onOpenCharacterCreator && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenCharacterCreator();
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#E05615] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white text-xs font-black flex items-center justify-center space-x-1.5 transition-all shadow-sm"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Personalizar Aspecto</span>
+                </button>
+              )}
+              {onReplayTutorial && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onReplayTutorial();
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] flex items-center justify-center space-x-1.5 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4 text-sky-600" />
+                  <span>Repetir Tutorial</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Gemini AI Companion (Camino) Configuration */}
+          <div className="p-4 rounded-2xl bg-white border-2 border-emerald-300/80 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-center text-base">
+                  🤖
+                </div>
+                <div>
+                  <div className="flex items-center space-x-1.5">
+                    <p className="font-black text-[#24140E] text-xs sm:text-sm">Camino AI (Guía Inteligente)</p>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
+                      Gemini 3.8 Flash
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#7A6B60]">Motor de conversación y aprendizaje de español activo</p>
+                </div>
+              </div>
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EADFCF] flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-[#7A6B60] text-[11px] font-bold">Clave API:</span>
+                <span className="font-mono text-emerald-700 text-xs font-bold">{getMaskedApiKey()}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsEditingKey(!isEditingKey);
+                  setApiKeyInput(getGeminiApiKey());
+                }}
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 text-[#24140E] text-[11px] font-bold border border-[#E0D5C7] transition-colors"
+              >
+                {isEditingKey ? 'Cerrar' : 'Modificar'}
+              </button>
+            </div>
+
+            {isEditingKey && (
+              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EADFCF] space-y-2">
+                <p className="text-[11px] text-[#524136] font-medium">
+                  Introduce tu clave de API de Google Gemini:
+                </p>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="Introduce tu clave API de Gemini..."
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-[#E0D5C7] text-[#24140E] font-mono text-xs focus:outline-none focus:border-[#E05615]"
+                  />
+                  <button
+                    onClick={() => {
+                      setGeminiApiKey(apiKeyInput);
+                      setIsEditingKey(false);
+                      setKeySavedMessage('¡Clave guardada con éxito!');
+                      setTimeout(() => setKeySavedMessage(null), 3000);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center space-x-1 shadow-xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Guardar</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setGeminiApiKey(null);
+                    setApiKeyInput(DEFAULT_GEMINI_API_KEY);
+                    setIsEditingKey(false);
+                    setKeySavedMessage('¡Clave predeterminada restaurada!');
+                    setTimeout(() => setKeySavedMessage(null), 3000);
+                  }}
+                  className="text-[10px] text-[#7A6B60] hover:text-[#E05615] underline font-bold"
+                >
+                  Restaurar clave predeterminada
+                </button>
+              </div>
+            )}
+
+            {keySavedMessage && (
+              <p className="text-[11px] text-emerald-700 font-bold">{keySavedMessage}</p>
+            )}
           </div>
 
           {/* Backup: Export / Import */}
-          <div className="p-4 rounded-xl bg-[#1C2033] border border-slate-700 space-y-3">
+          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
             <div>
-              <p className="font-bold text-white">Persistencia y Copia de Seguridad</p>
-              <p className="text-xs text-slate-400">Exporta tu progreso para no perder tus monedas ni niveles</p>
+              <p className="font-black text-[#24140E]">Persistencia y Copia de Seguridad</p>
+              <p className="text-xs text-[#7A6B60]">Exporta tu progreso para no perder tus monedas ni niveles</p>
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={exportSaveFile}
-                className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-600 flex items-center justify-center space-x-1.5 transition-colors"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] flex items-center justify-center space-x-1.5 transition-colors"
               >
-                <Download className="w-4 h-4 text-amber-400" />
+                <Download className="w-4 h-4 text-amber-500" />
                 <span>Exportar Guardado</span>
               </button>
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-600 flex items-center justify-center space-x-1.5 transition-colors"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] flex items-center justify-center space-x-1.5 transition-colors"
               >
-                <Upload className="w-4 h-4 text-sky-400" />
+                <Upload className="w-4 h-4 text-sky-600" />
                 <span>Importar Guardado</span>
               </button>
 
@@ -112,27 +332,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 ref={fileInputRef}
                 type="file"
                 accept=".json"
-                onChange={handleFileChange}
                 className="hidden"
+                onChange={handleFileChange}
               />
             </div>
 
             {importStatus && (
-              <p className="text-xs text-amber-300 font-semibold">{importStatus}</p>
+              <p className="text-xs text-amber-700 font-bold">{importStatus}</p>
             )}
           </div>
 
           {/* Reset progress */}
-          <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-900/50 space-y-3">
+          <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-200 space-y-3">
             <div>
-              <p className="font-bold text-rose-300">Reiniciar Aventura</p>
-              <p className="text-xs text-slate-400">Restablece todas las monedas, ciudades y niveles a su estado inicial</p>
+              <p className="font-black text-rose-950">Reiniciar Aventura</p>
+              <p className="text-xs text-rose-700">Restablece todas las monedas, ciudades y niveles a su estado inicial</p>
             </div>
 
             {!resetConfirm ? (
               <button
                 onClick={() => setResetConfirm(true)}
-                className="py-2 px-4 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 text-xs font-semibold border border-rose-700 flex items-center space-x-1.5 transition-colors"
+                className="py-2 px-4 rounded-xl bg-white hover:bg-rose-100 text-rose-700 text-xs font-black border border-rose-300 flex items-center space-x-1.5 transition-colors shadow-xs"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Reiniciar Progreso</span>
@@ -145,13 +365,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                     setResetConfirm(false);
                     onClose();
                   }}
-                  className="py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow"
+                  className="py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow"
                 >
                   Sí, borrar todo
                 </button>
                 <button
                   onClick={() => setResetConfirm(false)}
-                  className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+                  className="py-1.5 px-3 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#6B584D] border border-[#E0D5C7] text-xs font-bold"
                 >
                   Cancelar
                 </button>
@@ -160,7 +380,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </div>
 
           {/* Academic Info */}
-          <div className="text-[11px] text-slate-500 text-center space-y-0.5">
+          <div className="text-[11px] text-[#7A6B60] text-center space-y-0.5 font-medium">
             <p>¡Aventura Española! Versión 1.0.0 Oficial</p>
             <p>Acreditado según el sílabo BAESP101 Spanish Level I</p>
           </div>

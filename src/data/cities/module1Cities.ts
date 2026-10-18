@@ -10,7 +10,7 @@ export const MODULE1_CITIES: City[] = [
     description: 'La vibrante capital de España. Aquí inicias tu aventura aprendiendo el abecedario, los saludos y a presentarte.',
     moduleIndex: 1,
     moduleName: 'Módulo 1: Saludos, Abecedario, Pronombres y SER',
-    coordinates: { x: 50, y: 48 },
+    coordinates: { x: 50.5, y: 49.0 },
     accentColor: '#C60B1E',
     levels: [
       {
@@ -552,7 +552,7 @@ export const MODULE1_CITIES: City[] = [
     description: 'La legendaria Ciudad Imperial. Aquí aprenderás los números hasta 100, las profesiones artesanales, los días de la semana y el uso de SER.',
     moduleIndex: 1,
     moduleName: 'Módulo 1: Profesiones, Días, Números hasta 100 y SER',
-    coordinates: { x: 48, y: 54 },
+    coordinates: { x: 47.5, y: 58.5 },
     accentColor: '#D97706',
     levels: [
       {
@@ -1027,7 +1027,7 @@ export const MODULE1_CITIES: City[] = [
     description: 'La cuna del saber y de la primera gramática española de Nebrija. Aquí culminarás el Módulo 1 dominando los números hasta 100.000, los artículos y la concordancia.',
     moduleIndex: 1,
     moduleName: 'Módulo 1: Gran Síntesis, Números hasta 100.000 y Gramática A1',
-    coordinates: { x: 38, y: 44 },
+    coordinates: { x: 37.0, y: 40.0 },
     accentColor: '#B45309',
     levels: [
       {

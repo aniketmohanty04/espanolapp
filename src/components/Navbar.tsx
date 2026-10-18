@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PlayerAvatar } from './PlayerAvatar';
 import { 
   Coins, 
-  Sparkles, 
   Flame, 
+  Star, 
+  Sparkles,
   Map as MapIcon, 
   BookOpen, 
   Calendar, 
   Award, 
   Trophy, 
   PartyPopper, 
-  Volume2, 
-  VolumeX, 
   Settings, 
-  RotateCcw
+  User,
+  Menu,
+  X,
+  ChevronRight,
+  UserCog,
+  Compass,
+  Home,
+  LogOut,
+  Cloud
 } from 'lucide-react';
+import { supabaseService } from '../services/supabaseClient';
 
 interface NavbarProps {
+  onOpenHub?: () => void;
   onOpenMap: () => void;
   onOpenNotebook: () => void;
   onOpenStudyPlan: () => void;
@@ -24,162 +34,499 @@ interface NavbarProps {
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
   onOpenFestival: () => void;
+  onOpenCharacterCreator?: () => void;
+  onOpenCloudModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  onOpenHub,
   onOpenMap,
   onOpenNotebook,
   onOpenStudyPlan,
   onOpenSyllabus,
   onOpenAchievements,
   onOpenSettings,
-  onOpenFestival
+  onOpenFestival,
+  onOpenCharacterCreator,
+  onOpenCloudModal
 }) => {
-  const { progress, soundMuted, toggleSound } = useGame();
+  const { progress, logoutUser, currentUserEmail } = useGame();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const mistakeCount = Object.values(progress.incorrectQuestions).filter(q => !q.mastered).length;
-  const allCitiesCompleted = progress.unlockedCityIds.length >= 15 && Object.keys(progress.completedBosses).length >= 15;
+  const totalStars = Object.values(progress.completedLevels).reduce((acc, lvl) => acc + (lvl.stars || 0), 0);
+  const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero')
+    ? progress.profile.displayName
+    : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex')
+    ? progress.profile.character.name
+    : progress.profile?.displayName || progress.profile?.character?.name || 'Viajero';
+  const xpInCurrentLevel = progress.stats.xp % 300;
+
+  const handleNavClick = (callback: () => void) => {
+    callback();
+    setDrawerOpen(false);
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#121420]/95 backdrop-blur-md border-b border-fiesta-border shadow-xl px-4 py-3">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        {/* Brand logo & title */}
-        <button
-          onClick={onOpenMap}
-          className="flex items-center space-x-2 text-left group focus:outline-none"
-        >
-          <span className="text-3xl filter drop-shadow">🇪🇸</span>
-          <div>
-            <div className="flex items-center space-x-1.5">
-              <span className="font-extrabold text-xl tracking-tight text-white group-hover:text-fiesta-yellow transition-colors font-serif">
-                ¡Aventura Española!
-              </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-fiesta-red/30 text-amber-300 border border-fiesta-red/50 font-semibold">
-                Nivel I (A1)
-              </span>
+    <>
+      {/* Top Game HUD in Warm Editorial Cream Palette */}
+      <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#EADFCF] shadow-xs px-3 sm:px-6 py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          
+          {/* Left: Brand Logo & Compass */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button
+              onClick={onOpenHub || onOpenMap}
+              className="flex items-center space-x-2.5 text-left group focus:outline-none"
+              title="Ir a Inicio"
+            >
+              {/* Compass Icon Badge */}
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-[#E05615] to-[#EA580C] flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div className="hidden xs:block">
+                <div className="flex items-center space-x-1.5">
+                  <span className="font-black text-base sm:text-lg tracking-tight text-[#24140E] group-hover:text-[#E05615] transition-colors font-serif leading-none">
+                    ¡Aventura Española!
+                  </span>
+                </div>
+                <span className="text-[9px] tracking-[0.2em] font-extrabold text-[#8C7A6B] uppercase block mt-0.5">
+                  LEARN BY GOING
+                </span>
+              </div>
+            </button>
+
+            {/* Quick Navigation Buttons */}
+            <div className="hidden md:flex items-center space-x-1.5 pl-2">
+              {onOpenHub && (
+                <>
+                  <button
+                    onClick={onOpenHub}
+                    className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] transition-all shadow-xs"
+                    title="Página Principal / Journey Hub"
+                  >
+                    <Home className="w-3.5 h-3.5 text-[#E05615]" />
+                    <span>Inicio</span>
+                  </button>
+
+                  <button
+                    onClick={onOpenHub}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all shadow-xs"
+                    title="Preguntar a Camino AI (Google Gemini 3.8 Flash)"
+                  >
+                    <span className="text-xs">🤖</span>
+                    <span>Camino AI</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={onOpenMap}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] transition-all shadow-xs"
+                title="Mapa de España"
+              >
+                <MapIcon className="w-3.5 h-3.5 text-[#E05615]" />
+                <span>Mapa</span>
+              </button>
+
+              <button
+                onClick={onOpenFestival}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#E05615] to-[#EA580C] text-white text-xs font-black shadow-xs hover:scale-105 transition-transform"
+                title="La Gran Fiesta y Examen Oficial"
+              >
+                <PartyPopper className="w-3.5 h-3.5 text-amber-200" />
+                <span>La Fiesta</span>
+              </button>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">Aprende español viajando por España</p>
-          </div>
-        </button>
-
-        {/* Player stats indicators */}
-        <div className="flex items-center space-x-2 sm:space-x-4 bg-[#1C1F30] px-3.5 py-1.5 rounded-full border border-fiesta-border/70 text-sm">
-          {/* Coins */}
-          <div className="flex items-center space-x-1.5 text-amber-300 font-bold" title="Monedas de oro">
-            <Coins className="w-4 h-4 text-amber-400 fill-amber-400/20" />
-            <span>{progress.stats.coins.toLocaleString()}</span>
           </div>
 
-          <div className="h-4 w-px bg-slate-700" />
-
-          {/* XP & Level */}
-          <div className="flex items-center space-x-1.5 text-sky-300 font-semibold" title={`Nivel ${progress.stats.level} (${progress.stats.xp} XP)`}>
-            <Sparkles className="w-4 h-4 text-sky-400" />
-            <span>Nv. {progress.stats.level}</span>
-            <div className="w-12 h-2 bg-slate-700 rounded-full overflow-hidden hidden md:block">
-              <div 
-                className="h-full bg-sky-400 transition-all duration-500 rounded-full"
-                style={{ width: `${(progress.stats.xp % 300) / 3}%` }}
-              />
+          {/* Right: Stats and User Profile */}
+          <div className="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm font-black">
+            
+            {/* Coins Badge */}
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#24140E]" title="Monedas de oro">
+              <span className="text-base">🪙</span>
+              <span>{progress.stats.coins.toLocaleString()}</span>
             </div>
-          </div>
 
-          <div className="h-4 w-px bg-slate-700" />
+            {/* XP Badge */}
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#2563EB]" title="Puntos de experiencia">
+              <Sparkles className="w-4 h-4 text-[#38BDF8] fill-[#38BDF8]" />
+              <span>{progress.stats.xp.toLocaleString()} XP</span>
+            </div>
 
-          {/* Daily streak */}
-          <div className="flex items-center space-x-1 text-orange-400 font-bold" title="Racha de días de estudio">
-            <Flame className="w-4 h-4 fill-orange-400 text-orange-400 animate-pulse" />
-            <span>{progress.stats.streak}d</span>
-          </div>
-        </div>
-
-        {/* Action navigation buttons */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
-          {/* World map */}
-          <button
-            onClick={onOpenMap}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-fiesta-card hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-medium border border-fiesta-border transition-all"
-            title="Mapa de España"
-          >
-            <MapIcon className="w-4 h-4 text-fiesta-yellow" />
-            <span className="hidden md:inline">Mapa</span>
-          </button>
-
-          {/* Review Notebook (Cuaderno de Repaso) */}
-          <button
-            onClick={onOpenNotebook}
-            className="relative flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-fiesta-card hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-medium border border-fiesta-border transition-all"
-            title="Cuaderno de Repaso de Errores"
-          >
-            <BookOpen className="w-4 h-4 text-rose-400" />
-            <span className="hidden md:inline">Repaso</span>
-            {mistakeCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-bold rounded-full animate-bounce shadow">
-                {mistakeCount}
-              </span>
+            {/* Cloud Database Pill */}
+            {onOpenCloudModal && (
+              <button
+                onClick={onOpenCloudModal}
+                className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer ${
+                  supabaseService.getConfig().isConfigured
+                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                }`}
+                title={supabaseService.getConfig().isConfigured ? 'Base de datos en la nube (Supabase) conectada' : 'Conectar base de datos en la nube (Supabase)'}
+              >
+                <Cloud className={`w-3.5 h-3.5 ${supabaseService.getConfig().isConfigured ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <span className="hidden sm:inline">
+                  {supabaseService.getConfig().isConfigured ? 'Nube Activa' : 'Nube'}
+                </span>
+              </button>
             )}
-          </button>
 
-          {/* 35-day study plan */}
-          <button
-            onClick={onOpenStudyPlan}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-fiesta-card hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-medium border border-fiesta-border transition-all"
-            title="Plan de Estudio 35 Días"
-          >
-            <Calendar className="w-4 h-4 text-emerald-400" />
-            <span className="hidden md:inline">Plan</span>
-          </button>
+            {/* Traveler Avatar */}
+            <button
+              onClick={onOpenCharacterCreator}
+              className="flex items-center space-x-1.5 hover:opacity-85 transition-opacity focus:outline-none group"
+              title="Personalizar tu viajero"
+            >
+              <PlayerAvatar character={progress.profile?.character} size={28} />
+              <span className="font-bold text-[#24140E] text-xs hidden lg:inline group-hover:text-[#E05615] transition-colors max-w-[90px] truncate">
+                {playerName}
+              </span>
+            </button>
 
-          {/* Syllabus BAESP101 matrix */}
-          <button
-            onClick={onOpenSyllabus}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-fiesta-card hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-medium border border-fiesta-border transition-all"
-            title="Matriz de Cobertura del Sílabo BAESP101"
-          >
-            <Award className="w-4 h-4 text-amber-400" />
-            <span className="hidden lg:inline">Sílabo</span>
-          </button>
-
-          {/* Achievements */}
-          <button
-            onClick={onOpenAchievements}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-fiesta-card hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-medium border border-fiesta-border transition-all"
-            title="Logros y Trofeos"
-          >
-            <Trophy className="w-4 h-4 text-yellow-400" />
-            <span className="hidden lg:inline">Logros</span>
-          </button>
-
-          {/* La Gran Fiesta button */}
-          <button
-            onClick={onOpenFestival}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-amber-500/20 transition-all border border-amber-300/40 glow-gold"
-            title="La Gran Fiesta y Examen Oficial"
-          >
-            <PartyPopper className="w-4 h-4 text-amber-200" />
-            <span>La Fiesta</span>
-          </button>
-
-          {/* Sound mute toggle */}
-          <button
-            onClick={toggleSound}
-            className="p-2 rounded-lg bg-fiesta-card hover:bg-slate-700 text-slate-300 border border-fiesta-border transition-colors"
-            title={soundMuted ? 'Activar sonido' : 'Silenciar sonido'}
-            aria-label="Toggle sound"
-          >
-            {soundMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={onOpenSettings}
-            className="p-2 rounded-lg bg-fiesta-card hover:bg-slate-700 text-slate-300 border border-fiesta-border transition-colors"
-            title="Ajustes y copia de seguridad"
-            aria-label="Settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            {/* Menu / Drawer Toggle */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="relative flex items-center space-x-1.5 px-3 py-2 rounded-full bg-[#24140E] hover:bg-[#3D251A] text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              title="Abrir menú de herramientas y opciones"
+            >
+              <Menu className="w-4 h-4" />
+              <span className="hidden sm:inline">Menú</span>
+              {mistakeCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-[#E05615] text-white text-[10px] font-black rounded-full animate-bounce shadow">
+                  {mistakeCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Slide-out Game Drawer / Pause Menu */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+          />
+
+          {/* Drawer Panel */}
+          <div className="absolute top-0 right-0 bottom-0 w-84 max-w-[88vw] bg-[#FAF7F2] border-l-2 border-[#EADFCF] shadow-2xl flex flex-col justify-between overflow-y-auto animate-slideInRight text-[#24140E]">
+            
+            {/* Drawer Header & Profile Card */}
+            <div className="p-5 border-b border-[#EADFCF] space-y-4 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black tracking-wider uppercase text-[#E05615] flex items-center space-x-1.5 font-serif">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Cuaderno de Viaje</span>
+                </span>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="p-1.5 rounded-xl bg-[#FAF7F2] text-[#6B584D] hover:text-[#24140E] hover:bg-[#F2ECE1] border border-[#EADFCF] transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Traveler Card */}
+              <div className="flex items-center space-x-3.5 p-3.5 rounded-2xl bg-[#FFF8EE] border-2 border-amber-300 shadow-xs">
+                <PlayerAvatar character={progress.profile?.character} size={46} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="text-sm font-black text-[#24140E] truncate font-serif">{playerName}</h3>
+                    {currentUserEmail ? (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black border border-emerald-300 shrink-0">
+                        Cuenta Activa
+                      </span>
+                    ) : (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300 shrink-0">
+                        Invitado
+                      </span>
+                    )}
+                  </div>
+                  {currentUserEmail && (
+                    <p className="text-[10px] text-[#7A6B60] truncate font-mono mt-0.5">{currentUserEmail}</p>
+                  )}
+                  <div className="flex items-center space-x-2 text-[11px] text-[#B45309] font-bold mt-0.5">
+                    <span>Nivel {progress.stats.level}</span>
+                    <span>•</span>
+                    <span className="text-[#8C7A6B]">{progress.stats.xp} XP total</span>
+                  </div>
+                  {/* Small XP bar */}
+                  <div className="w-full bg-[#EADFCF] rounded-full h-1.5 mt-1.5 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-[#E05615] to-[#F3B33D] h-full rounded-full transition-all"
+                      style={{ width: `${Math.min(100, (xpInCurrentLevel / 300) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Options List */}
+            <div className="p-4 space-y-2 flex-1">
+              
+              {/* Camino AI Chatbot */}
+              {onOpenHub && (
+                <button
+                  onClick={() => handleNavClick(onOpenHub)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100/80 border-2 border-emerald-300 hover:border-emerald-400 transition-all group text-left shadow-xs"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-xl bg-white border border-emerald-300 text-emerald-700 flex items-center justify-center font-bold text-base shadow-xs">
+                      🤖
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-950 transition-colors font-serif">
+                          Camino AI Guide
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase">
+                          Gemini 3.8
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-emerald-800 font-medium">Pregunta dudas de español en vivo</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-emerald-600" />
+                </button>
+              )}
+
+              {/* Mapa de España */}
+              <button
+                onClick={() => handleNavClick(onOpenMap)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-amber-400 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-bold">
+                    <MapIcon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
+                      Mapa de España
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60]">15 ciudades y 150 niveles</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-amber-500 transition-colors" />
+              </button>
+
+              {/* La Gran Fiesta */}
+              <button
+                onClick={() => handleNavClick(onOpenFestival)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-[#FFF8EE] to-[#FFF1EB] hover:from-[#FFF3E2] hover:to-[#FFE9DE] border-2 border-amber-300 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                    <PartyPopper className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
+                      La Gran Fiesta
+                    </span>
+                    <span className="text-[11px] text-[#B45309] font-medium">Plaza, personajes y Examen A1</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#E05615]" />
+              </button>
+
+              {/* Cuaderno de Repaso */}
+              <button
+                onClick={() => handleNavClick(onOpenNotebook)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-rose-400 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-black text-[#24140E] group-hover:text-rose-700 transition-colors font-serif">
+                        Cuaderno de Repaso
+                      </span>
+                      {mistakeCount > 0 && (
+                        <span className="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-black rounded-full">
+                          {mistakeCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-[#7A6B60]">Repaso espaciado de errores</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-rose-500 transition-colors" />
+              </button>
+
+              {/* Plan de Estudio (35 Días) */}
+              <button
+                onClick={() => handleNavClick(onOpenStudyPlan)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-emerald-400 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-700 transition-colors block font-serif">
+                      Plan de Estudio 35 Días
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60]">Ruta guiada por el sílabo</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-emerald-500 transition-colors" />
+              </button>
+
+              {/* Matriz del Sílabo BAESP101 */}
+              <button
+                onClick={() => handleNavClick(onOpenSyllabus)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-amber-400 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-bold">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
+                      Matriz del Sílabo
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60]">Cobertura de 5 módulos A1</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-amber-500 transition-colors" />
+              </button>
+
+              {/* Logros */}
+              <button
+                onClick={() => handleNavClick(onOpenAchievements)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-yellow-500 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-yellow-50 text-yellow-700 border border-yellow-200 flex items-center justify-center font-bold">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-yellow-800 transition-colors block font-serif">
+                      Logros y Trofeos
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60]">Desafíos y medallas de España</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-yellow-600 transition-colors" />
+              </button>
+
+              {/* Personalizar Personaje */}
+              {onOpenCharacterCreator && (
+                <button
+                  onClick={() => handleNavClick(onOpenCharacterCreator)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-sky-400 transition-all group text-left shadow-xs"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 flex items-center justify-center font-bold">
+                      <UserCog className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-black text-[#24140E] group-hover:text-sky-700 transition-colors block font-serif">
+                        Personalizar Viajero
+                      </span>
+                      <span className="text-[11px] text-[#7A6B60]">Cambiar aspecto y ropa</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-sky-500 transition-colors" />
+                </button>
+              )}
+
+              {/* Base de Datos en la Nube */}
+              {onOpenCloudModal && (
+                <button
+                  onClick={() => handleNavClick(onOpenCloudModal)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-emerald-400 transition-all group text-left shadow-xs cursor-pointer"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                      supabaseService.getConfig().isConfigured 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      <Cloud className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-700 transition-colors block font-serif">
+                          Nube Supabase
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                          supabaseService.getConfig().isConfigured
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {supabaseService.getConfig().isConfigured ? 'Conectado' : 'Local'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#7A6B60]">
+                        {supabaseService.getConfig().isConfigured ? 'Partidas sincronizadas' : 'Conectar base de datos remota'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-emerald-500 transition-colors" />
+                </button>
+              )}
+
+              {/* Ajustes */}
+              <button
+                onClick={() => handleNavClick(onOpenSettings)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-amber-400 transition-all group text-left shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#FAF7F2] text-[#6B584D] border border-[#E0D5C7] flex items-center justify-center font-bold">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
+                      Ajustes y Datos
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60]">Guardado y tutorial</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-[#24140E] transition-colors" />
+              </button>
+
+              {/* Cerrar Sesión / Cambiar Cuenta */}
+              <button
+                onClick={() => {
+                  setDrawerOpen(false);
+                  logoutUser();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-50/50 hover:bg-rose-100/60 border-2 border-rose-200/80 hover:border-rose-300 transition-all group text-left shadow-xs cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-white text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                    <LogOut className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-rose-900 group-hover:text-rose-950 transition-colors block font-serif">
+                      {currentUserEmail ? 'Cerrar Sesión' : 'Salir al Menú Principal'}
+                    </span>
+                    <span className="text-[11px] text-rose-700 font-medium">
+                      {currentUserEmail ? 'Guarda tu progreso y cambia de cuenta' : 'Volver a la pantalla de bienvenida'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-rose-400 group-hover:text-rose-600 transition-colors" />
+              </button>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-4 border-t border-[#EADFCF] bg-white space-y-2 text-center">
+              <p className="text-[10px] text-[#7A6B60] leading-tight font-medium">
+                ¡Aventura Española! • Basado en el sílabo oficial <strong>BAESP101 Spanish Level I</strong> y <strong>Nuevo Español sin Fronteras</strong>.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </>
   );
 };

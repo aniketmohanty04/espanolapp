@@ -476,7 +476,7 @@ export const MODULE4_CITIES: City[] = [
     description: 'La metrópoli modernista de Gaudí. En las aulas de la Universidad de Barcelona y sus barrios emblemáticos dominarás los horarios de estudio, la vida de campus y la descripción urbana.',
     moduleIndex: 4,
     moduleName: 'Módulo 4: Horarios, Universidad, Vida Urbana y Ciudad',
-    coordinates: { x: 80, y: 38 },
+    coordinates: { x: 82.0, y: 36.0 },
     accentColor: '#3B82F6',
     levels: [
       {
@@ -919,7 +919,7 @@ export const MODULE4_CITIES: City[] = [
     description: 'La histórica capital del Ebro con su gloriosa basílica del Pilar. Aquí culminarás el Módulo 4 aprendiendo a retratar personas, rasgos físicos y de carácter, y expresar habilidades y aptitudes con SABER + infinitivo.',
     moduleIndex: 4,
     moduleName: 'Módulo 4: Describir Personas, Cualidades y SABER + Infinitivo',
-    coordinates: { x: 63, y: 39 },
+    coordinates: { x: 65.0, y: 35.0 },
     accentColor: '#EF4444',
     levels: [
       {

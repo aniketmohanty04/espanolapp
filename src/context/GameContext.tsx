@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { PlayerProgress, Question, City, Level } from '../types';
-import { storageService, INITIAL_PROGRESS } from '../services/storageService';
+import { PlayerProgress, PlayerCharacter, PlayerProfile, GameScreen, Question, City, Level } from '../types';
+import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from '../services/storageService';
+import { authDatabaseService } from '../services/authDatabaseService';
 import { soundService } from '../services/soundService';
 import { ALL_CITIES, getNextCity } from '../data/citiesData';
 import confetti from 'canvas-confetti';
@@ -15,16 +16,24 @@ export const REWARD_CONFIG = {
 
 interface GameContextType {
   progress: PlayerProgress;
+  currentScreen: GameScreen;
   activeCityId: string | null;
   activeLevelId: string | null;
   activeBossCityId: string | null;
   isFestivalOpen: boolean;
   soundMuted: boolean;
+  setCurrentScreen: (screen: GameScreen) => void;
   setActiveCityId: (id: string | null) => void;
   setActiveLevelId: (id: string | null) => void;
   setActiveBossCityId: (id: string | null) => void;
   setIsFestivalOpen: (open: boolean) => void;
   toggleSound: () => void;
+  // Profile & onboarding
+  updateProfile: (profile: Partial<PlayerProfile>) => void;
+  updateCharacter: (character: PlayerCharacter) => void;
+  completeOnboarding: () => void;
+  startAsGuest: (name: string) => void;
+  // Gameplay
   recordQuestionResult: (
     question: Question,
     cityId: string,
@@ -51,22 +60,56 @@ interface GameContextType {
   resetAllProgress: () => void;
   exportSaveFile: () => void;
   importSaveFile: (file: File) => Promise<void>;
+  // Database Auth & Progress
+  loginUser: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  logoutUser: () => void;
+  currentUserEmail: string | null;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [progress, setProgress] = useState<PlayerProgress>(() => storageService.loadProgress());
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(() => {
+    return authDatabaseService.getCurrentSessionEmail();
+  });
+
+  const [progress, setProgress] = useState<PlayerProgress>(() => {
+    const sessionEmail = authDatabaseService.getCurrentSessionEmail();
+    if (sessionEmail) {
+      const userProg = authDatabaseService.loadUserProgress(sessionEmail);
+      if (userProg) return userProg;
+    }
+    return storageService.loadProgress();
+  });
+  
+  // Seed demo account and init DB on start
+  useEffect(() => {
+    authDatabaseService.init().catch(err => console.warn('Auth DB init error:', err));
+  }, []);
+
+  // Determine initial screen based on onboarding state
+  const getInitialScreen = (): GameScreen => {
+    if (progress.profile.onboardingStep >= 5) return 'world-map';
+    if (storageService.hasExistingProfile()) return 'world-map';
+    return 'welcome';
+  };
+  
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>(getInitialScreen);
   const [activeCityId, setActiveCityId] = useState<string | null>(null);
   const [activeLevelId, setActiveLevelId] = useState<string | null>(null);
   const [activeBossCityId, setActiveBossCityId] = useState<string | null>(null);
   const [isFestivalOpen, setIsFestivalOpen] = useState<boolean>(false);
   const [soundMuted, setSoundMuted] = useState<boolean>(soundService.getIsMuted());
 
-  // Save progress whenever it updates
+  // Save progress whenever it updates (both to storageService and auth database if logged in)
   useEffect(() => {
     storageService.saveProgress(progress);
-  }, [progress]);
+    const emailToSave = currentUserEmail || progress.profile?.email;
+    if (emailToSave) {
+      authDatabaseService.saveUserProgress(emailToSave, progress);
+    }
+  }, [progress, currentUserEmail]);
 
   // Update streak if a new day has arrived
   useEffect(() => {
@@ -96,6 +139,112 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return next;
     });
   }, []);
+
+  // Profile & Onboarding
+  const updateProfile = useCallback((updates: Partial<PlayerProfile>) => {
+    setProgress(prev => ({
+      ...prev,
+      profile: { ...prev.profile, ...updates }
+    }));
+  }, []);
+
+  const updateCharacter = useCallback((character: PlayerCharacter) => {
+    setProgress(prev => ({
+      ...prev,
+      profile: { ...prev.profile, character }
+    }));
+  }, []);
+
+  const completeOnboarding = useCallback(() => {
+    setProgress(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        onboardingStep: 5,
+        tutorialCompleted: true
+      }
+    }));
+    setCurrentScreen('world-map');
+  }, []);
+
+  const startAsGuest = useCallback((name: string) => {
+    const guestId = `guest_${Date.now().toString(36)}`;
+    setProgress(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        id: guestId,
+        displayName: name || 'Viajero',
+        isGuest: true,
+        createdAt: new Date().toISOString(),
+        onboardingStep: 2 // Moves to character creator
+      }
+    }));
+  }, []);
+
+  // Database Auth: Login existing user and restore their exact saved progress
+  const loginUser = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, progress: loadedProgress } = await authDatabaseService.login(email, password);
+      setCurrentUserEmail(user.email);
+      setProgress(loadedProgress);
+      storageService.saveProgress(loadedProgress);
+      
+      // Route user to where they left off
+      if (loadedProgress.profile?.onboardingStep >= 5) {
+        setCurrentScreen('world-map');
+      } else if (loadedProgress.profile?.onboardingStep >= 2) {
+        setCurrentScreen('character-creator');
+      } else {
+        setCurrentScreen('world-map');
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Error al iniciar sesión.' };
+    }
+  }, []);
+
+  // Database Auth: Register new user account and persist their initial progress
+  const registerUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, progress: registeredProgress } = await authDatabaseService.register(
+        email, 
+        password, 
+        name,
+        progress.profile.isGuest ? progress : undefined
+      );
+      setCurrentUserEmail(user.email);
+      setProgress(registeredProgress);
+      storageService.saveProgress(registeredProgress);
+      setCurrentScreen('character-creator');
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Error al registrar la cuenta.' };
+    }
+  }, [progress]);
+
+  // Database Auth: Log out user, save their current progress, and return to Welcome screen
+  const logoutUser = useCallback(() => {
+    if (currentUserEmail) {
+      authDatabaseService.saveUserProgress(currentUserEmail, progress);
+    }
+    authDatabaseService.logout();
+    setCurrentUserEmail(null);
+    const guestProgress: PlayerProgress = {
+      ...INITIAL_PROGRESS,
+      profile: {
+        ...DEFAULT_PROFILE,
+        id: `guest_${Date.now().toString(36)}`,
+        displayName: 'Invitado',
+        isGuest: true,
+        createdAt: new Date().toISOString(),
+        onboardingStep: 0
+      }
+    };
+    setProgress(guestProgress);
+    storageService.saveProgress(guestProgress);
+    setCurrentScreen('welcome');
+  }, [currentUserEmail, progress]);
 
   // Record single question attempt with anti-duplication safeguards
   const recordQuestionResult = useCallback((
@@ -220,7 +369,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Sufficient balance?
       if (prev.stats.coins < REWARD_CONFIG.ENGLISH_TRANSLATION_COST_COINS) {
-        reason = `Monedas insuficientes. Necesitas ${REWARD_CONFIG.ENGLISH_TRANSLATION_COST_COINS} monedas, pero tienes ${prev.stats.coins}.`;
+        reason = `Not enough coins. You need ${REWARD_CONFIG.ENGLISH_TRANSLATION_COST_COINS} coins, but you have ${prev.stats.coins}.`;
         return prev;
       }
 
@@ -466,6 +615,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetAllProgress = useCallback(() => {
     const fresh = storageService.resetProgress();
     setProgress(fresh);
+    setCurrentScreen('welcome');
     setActiveCityId(null);
     setActiveLevelId(null);
     setActiveBossCityId(null);
@@ -487,16 +637,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <GameContext.Provider
       value={{
         progress,
+        currentScreen,
         activeCityId,
         activeLevelId,
         activeBossCityId,
         isFestivalOpen,
         soundMuted,
+        setCurrentScreen,
         setActiveCityId,
         setActiveLevelId,
         setActiveBossCityId,
         setIsFestivalOpen,
         toggleSound,
+        updateProfile,
+        updateCharacter,
+        completeOnboarding,
+        startAsGuest,
         recordQuestionResult,
         recordDialogueCompleted,
         purchaseTranslation,
@@ -508,7 +664,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completeStudyDay,
         resetAllProgress,
         exportSaveFile,
-        importSaveFile
+        importSaveFile,
+        loginUser,
+        registerUser,
+        logoutUser,
+        currentUserEmail
       }}
     >
       {children}

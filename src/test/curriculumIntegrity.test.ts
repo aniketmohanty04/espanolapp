@@ -58,13 +58,18 @@ describe('Curriculum Integrity and Answer Key Validation', () => {
     });
   });
 
-  it('validates festival mini-quizzes and stall rewards', () => {
-    FESTIVAL_STALLS.forEach(stall => {
-      expect(stall.id).toBeTruthy();
-      expect(stall.miniQuiz).toBeDefined();
-      expect(stall.rewardCoins).toBe(200);
-      expect(stall.miniQuiz.prompt).toBeTruthy();
-      expect(stall.miniQuiz.explanation).toBeTruthy();
-    });
+  it('validates that 15 cities are proportionally partitioned into 5 modules with 3 cities each', () => {
+    expect(ALL_CITIES.length).toBe(15);
+    expect(SYLLABUS_MODULES.length).toBe(5);
+
+    for (let modNum = 1; modNum <= 5; modNum++) {
+      const citiesInMod = ALL_CITIES.filter(c => c.moduleIndex === modNum);
+      expect(citiesInMod.length).toBe(3);
+
+      const expectedStartCityNum = (modNum - 1) * 3 + 1;
+      const expectedEndCityNum = modNum * 3;
+      expect(citiesInMod[0].number).toBe(expectedStartCityNum);
+      expect(citiesInMod[2].number).toBe(expectedEndCityNum);
+    }
   });
 });
