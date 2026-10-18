@@ -90,6 +90,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return storageService.loadProgress();
   });
   
+  // Track whether remote authoritative progress has finished loading from Supabase cloud
+  const [isRemoteSyncReady, setIsRemoteSyncReady] = useState<boolean>(() => {
+    const sessionEmail = authDatabaseService.getCurrentSessionEmail();
+    if (!sessionEmail || !supabaseService.getConfig().isConfigured) return true;
+    return false;
+  });
+
   // Seed demo account and load authoritative progress from Supabase cloud on start
   useEffect(() => {
     authDatabaseService.init().catch(err => console.warn('Auth DB init error:', err));
@@ -105,9 +112,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProgress(remoteProg);
           setCurrentScreen('world-map');
         }
-      }).catch(err => console.warn('Failed to load initial Supabase progress:', err));
-    } else if (!sessionEmail) {
-      setCurrentScreen('auth');
+        setIsRemoteSyncReady(true);
+      }).catch(err => {
+        console.warn('Failed to load initial Supabase progress:', err);
+        setIsRemoteSyncReady(true);
+      });
+    } else {
+      setIsRemoteSyncReady(true);
+      if (!sessionEmail) {
+        setCurrentScreen('auth');
+      }
     }
   }, []);
 
@@ -217,12 +231,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Save progress whenever it updates (both to storageService and auth database if logged in)
   useEffect(() => {
+    // CRITICAL: Do NOT write uninitialized local progress to database while remote load is still in flight!
+    if (!isRemoteSyncReady) {
+      return;
+    }
+
     storageService.saveProgress(progress);
     const emailToSave = currentUserEmail || progress.profile?.email;
     if (emailToSave) {
       authDatabaseService.saveUserProgress(emailToSave, progress);
     }
-  }, [progress, currentUserEmail]);
+  }, [progress, currentUserEmail, isRemoteSyncReady]);
 
   // Update streak if a new day has arrived
   useEffect(() => {
@@ -299,6 +318,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginUser = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { user, progress: loadedProgress } = await authDatabaseService.login(email, password);
+      setIsRemoteSyncReady(true);
       setCurrentUserEmail(user.email);
       setProgress(loadedProgress);
       
@@ -320,6 +340,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name,
         progress.profile.isGuest ? progress : undefined
       );
+      setIsRemoteSyncReady(true);
       setCurrentUserEmail(user.email);
       setProgress(registeredProgress);
       // Direct registered player straight to their adventure where they start off

@@ -112,14 +112,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             {/* Display Name (register only) */}
             {mode === 'register' && (
               <div>
-                <label className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
+                <label htmlFor="auth-register-name" className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
                   Nombre del Aventurero
                 </label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7A6B]" />
                   <input
+                    id="auth-register-name"
+                    name="name"
                     type="text"
                     required
+                    autoComplete="name"
+                    autoCorrect="off"
+                    spellCheck="false"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ej. Mateo o Sofía"
@@ -131,14 +136,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
+              <label htmlFor="auth-email" className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
                 Correo Electrónico (Email)
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7A6B]" />
                 <input
+                  id="auth-email"
+                  name="email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="ejemplo@aventura.es"
@@ -149,14 +157,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
+              <label htmlFor="auth-password" className="block text-xs font-black text-[#524136] uppercase tracking-wider mb-1.5">
                 Contraseña
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7A6B]" />
                 <input
+                  id="auth-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 4 caracteres"

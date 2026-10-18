@@ -55,11 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const mistakeCount = Object.values(progress.incorrectQuestions).filter(q => !q.mastered).length;
   const totalStars = Object.values(progress.completedLevels).reduce((acc, lvl) => acc + (lvl.stars || 0), 0);
-  const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero')
+  const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
     ? progress.profile.displayName
-    : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex')
+    : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex' && progress.profile.character.name !== 'Viajero' && progress.profile.character.name !== 'years')
     ? progress.profile.character.name
-    : progress.profile?.displayName || progress.profile?.character?.name || 'Viajero';
+    : currentUserEmail
+    ? currentUserEmail.split('@')[0]
+    : progress.profile?.displayName || 'Aventurero';
   const xpInCurrentLevel = progress.stats.xp % 300;
 
   const handleNavClick = (callback: () => void) => {

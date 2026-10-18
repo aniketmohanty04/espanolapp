@@ -92,4 +92,42 @@ describe('Supabase Remote Cloud Database Integration', () => {
     storageService.purgeLocalProgress();
     expect(globalThis.localStorage.getItem('aventura_espanola_progress_v2')).toBeNull();
   });
+
+  it('safeguards user displayName and prevents corruption to "years" or "Viajero"', async () => {
+    // 1. If someone registers with name "years", it is sanitized and defaults to email username
+    const res1 = await authDatabaseService.register('aniket@viajes.es', 'claveSegura1', 'years');
+    expect(res1.user.displayName).toBe('aniket');
+    expect(res1.progress.profile.displayName).toBe('aniket');
+    expect(res1.progress.profile.character.name).toBe('aniket');
+
+    // 2. If someone registers with a genuine name like "Mateo", it is preserved exactly
+    const res2 = await authDatabaseService.register('mateo@viajes.es', 'claveSegura2', 'Mateo');
+    expect(res2.user.displayName).toBe('Mateo');
+    expect(res2.progress.profile.displayName).toBe('Mateo');
+    expect(res2.progress.profile.character.name).toBe('Mateo');
+
+    // 3. Login preserves the genuine name
+    const loginRes = await authDatabaseService.login('mateo@viajes.es', 'claveSegura2');
+    expect(loginRes.user.displayName).toBe('Mateo');
+    expect(loginRes.progress.profile.displayName).toBe('Mateo');
+  });
+
+  it('ensures passwordHash is never overwritten or deleted during progress updates', async () => {
+    const reg = await authDatabaseService.register('protegido@aventura.es', 'miContrasenaSecreta', 'Explorador');
+    const originalHash = reg.user.passwordHash;
+    expect(originalHash).toBeTruthy();
+    expect(originalHash.length).toBeGreaterThan(10);
+
+    // Update progress with 500 coins and check that passwordHash remains unchanged
+    const updatedProgress: PlayerProgress = {
+      ...reg.progress,
+      stats: { ...reg.progress.stats, coins: 500 }
+    };
+    authDatabaseService.saveUserProgress('protegido@aventura.es', updatedProgress);
+
+    // Verify user password is still valid for login
+    const loginCheck = await authDatabaseService.login('protegido@aventura.es', 'miContrasenaSecreta');
+    expect(loginCheck.user.passwordHash).toBe(originalHash);
+    expect(loginCheck.progress.stats.coins).toBe(500);
+  });
 });

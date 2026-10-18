@@ -313,7 +313,9 @@ export const supabaseService = {
   },
 
   /**
-   * Save or update a user and their progress in Supabase
+   * Save or update a user and their progress in Supabase.
+   * CRITICAL SAFEGUARD: Never overwrites password_hash if passwordHash is empty!
+   * Never overwrites a valid display_name with 'Viajero', 'years', or empty string!
    */
   async saveRemoteUser(user: DatabaseUser, progress: PlayerProgress): Promise<{ success: boolean; error?: string }> {
     const client = this.getClient();
@@ -322,13 +324,23 @@ export const supabaseService = {
     }
 
     try {
-      const record: RemotePlayerRecord = {
+      const normEmail = user.email.toLowerCase().trim();
+      const record: Record<string, any> = {
         id: user.id,
-        email: user.email.toLowerCase().trim(),
-        display_name: user.displayName,
-        password_hash: user.passwordHash,
-        progress
+        email: normEmail,
+        progress,
+        updated_at: new Date().toISOString()
       };
+
+      // Only include password_hash if non-empty, preventing accidental wipe/deletion
+      if (user.passwordHash && user.passwordHash.trim().length > 0) {
+        record.password_hash = user.passwordHash.trim();
+      }
+
+      // Only update display_name if a valid, personalized name is provided
+      if (user.displayName && user.displayName.trim().length > 0 && user.displayName !== 'Viajero' && user.displayName !== 'years') {
+        record.display_name = user.displayName.trim();
+      }
 
       const { error } = await client
         .from('player_progress')
@@ -342,6 +354,44 @@ export const supabaseService = {
       return { success: true };
     } catch (err: any) {
       console.warn('Supabase saveRemoteUser exception:', err);
+      return { success: false, error: err?.message || 'Error de conexión' };
+    }
+  },
+
+  /**
+   * Dedicated progress updater: Updates ONLY player progress (and display name if valid).
+   * GUARANTEES that password_hash is NEVER touched, altered, or deleted during gameplay!
+   */
+  async saveRemoteProgress(email: string, progress: PlayerProgress, displayName?: string): Promise<{ success: boolean; error?: string }> {
+    const client = this.getClient();
+    if (!client || !email) {
+      return { success: false, error: 'Supabase no está configurado.' };
+    }
+
+    try {
+      const normEmail = email.toLowerCase().trim();
+      const updateData: Record<string, any> = {
+        progress,
+        updated_at: new Date().toISOString()
+      };
+
+      if (displayName && displayName.trim().length > 0 && displayName !== 'Viajero' && displayName !== 'years') {
+        updateData.display_name = displayName.trim();
+      }
+
+      const { error } = await client
+        .from('player_progress')
+        .update(updateData)
+        .ilike('email', normEmail);
+
+      if (error) {
+        console.warn('Supabase saveRemoteProgress error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Supabase saveRemoteProgress exception:', err);
       return { success: false, error: err?.message || 'Error de conexión' };
     }
   },

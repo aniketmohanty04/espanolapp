@@ -179,11 +179,11 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
         cityId: selectedCity.id,
         levelNumber: activeLevel.levelNumber,
         streak: progress.stats.streak || 1,
-        playerName: (progress.profile?.displayName && progress.profile.displayName !== 'Viajero')
+        playerName: (progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
           ? progress.profile.displayName
-          : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex')
+          : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex' && progress.profile.character.name !== 'Viajero' && progress.profile.character.name !== 'years')
           ? progress.profile.character.name
-          : progress.profile?.displayName || progress.profile?.character?.name || 'Viajero'
+          : progress.profile?.displayName || 'Aventurero'
       });
 
       const caminoMsg: ChatMessage = {
@@ -314,11 +314,11 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border-2 border-[#E8DFD5] p-2 shadow-2xl z-50 animate-scaleUp text-xs font-bold text-[#382318]">
                   <div className="px-3 py-2 border-b border-[#F0E8DD]">
                     <p className="font-extrabold text-sm text-[#24140E]">
-                      {(progress.profile?.displayName && progress.profile.displayName !== 'Viajero')
+                      {(progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
                         ? progress.profile.displayName
-                        : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex')
+                        : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex' && progress.profile.character.name !== 'Viajero' && progress.profile.character.name !== 'years')
                         ? progress.profile.character.name
-                        : progress.profile?.displayName || progress.profile?.character?.name || 'Viajero'}
+                        : progress.profile?.displayName || 'Aventurero'}
                     </p>
                     <p className="text-[10px] text-[#8C7A6B]">Nivel {progress.stats.level} • {selectedCity.name}</p>
                   </div>

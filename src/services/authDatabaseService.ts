@@ -233,7 +233,8 @@ export const authDatabaseService = {
     const passwordHash = await hashPassword(password);
     const now = new Date().toISOString();
     const userId = `usr_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
-    const finalName = displayName.trim() || normEmail.split('@')[0] || 'Viajero';
+    const sanitizedName = displayName.trim().replace(/^years$/i, '').replace(/^viajero$/i, '');
+    const finalName = sanitizedName || normEmail.split('@')[0] || 'Aventurero';
 
     const newUser: DatabaseUser = {
       id: userId,
@@ -327,21 +328,25 @@ export const authDatabaseService = {
           let resolvedProgress = remoteData.progress;
 
           // Ensure player's registered displayName is preserved on profile and character
-          if (remoteData.user.displayName) {
-            resolvedProgress = {
-              ...resolvedProgress,
-              profile: {
-                ...resolvedProgress.profile,
-                displayName: remoteData.user.displayName,
-                character: {
-                  ...(resolvedProgress.profile?.character || DEFAULT_CHARACTER),
-                  name: (!resolvedProgress.profile?.character?.name || resolvedProgress.profile.character.name === 'Alex' || resolvedProgress.profile.character.name === 'Viajero')
-                    ? remoteData.user.displayName
-                    : resolvedProgress.profile.character.name
-                }
+          const effectiveName = (remoteData.user.displayName && remoteData.user.displayName !== 'Viajero' && remoteData.user.displayName !== 'years')
+            ? remoteData.user.displayName
+            : (resolvedProgress.profile?.displayName && resolvedProgress.profile.displayName !== 'Viajero' && resolvedProgress.profile.displayName !== 'years')
+            ? resolvedProgress.profile.displayName
+            : remoteData.user.displayName || normEmail.split('@')[0] || 'Aventurero';
+
+          resolvedProgress = {
+            ...resolvedProgress,
+            profile: {
+              ...resolvedProgress.profile,
+              displayName: effectiveName,
+              character: {
+                ...(resolvedProgress.profile?.character || DEFAULT_CHARACTER),
+                name: (!resolvedProgress.profile?.character?.name || resolvedProgress.profile.character.name === 'Alex' || resolvedProgress.profile.character.name === 'Viajero' || resolvedProgress.profile.character.name === 'years')
+                  ? effectiveName
+                  : resolvedProgress.profile.character.name
               }
-            };
-          }
+            }
+          };
 
           saveStoredProgress(normEmail, resolvedProgress);
           this.setCurrentSession(normEmail);
@@ -432,16 +437,24 @@ export const authDatabaseService = {
     // Asynchronously push to Supabase cloud if connected
     if (supabaseService.getConfig().isConfigured) {
       const users = getStoredUsers();
-      const user = users[normEmail] || {
-        id: progress.profile?.id || `usr_${normEmail}`,
-        email: normEmail,
-        displayName: progress.profile?.displayName || 'Viajero',
-        passwordHash: '',
-        createdAt: progress.profile?.createdAt || new Date().toISOString(),
-        lastLoginAt: new Date().toISOString()
-      };
+      const user = users[normEmail];
+      const validDisplayName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
+        ? progress.profile.displayName
+        : (user?.displayName && user.displayName !== 'Viajero' && user.displayName !== 'years')
+        ? user.displayName
+        : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex' && progress.profile.character.name !== 'years')
+        ? progress.profile.character.name
+        : undefined;
 
-      supabaseService.saveRemoteUser(user, progress).catch(err => {
+      // CRITICAL: saveRemoteProgress updates ONLY progress and displayName. It NEVER touches password_hash!
+      supabaseService.saveRemoteProgress(normEmail, progress, validDisplayName).then(res => {
+        // Fallback: If record does not exist yet (e.g. initial offline sync), only upsert if we have a valid user
+        if (!res.success && user && user.passwordHash) {
+          supabaseService.saveRemoteUser(user, progress).catch(err => {
+            console.warn('Fallback saveRemoteUser error:', err);
+          });
+        }
+      }).catch(err => {
         console.warn('Async cloud save error:', err);
       });
     }
@@ -464,9 +477,36 @@ export const authDatabaseService = {
     if (supabaseService.getConfig().isConfigured) {
       try {
         const remote = await supabaseService.fetchRemoteUser(normEmail);
-        if (remote?.progress) {
-          memoryProgress[normEmail] = remote.progress;
-          return remote.progress;
+        if (remote) {
+          // CRITICAL: Cache remote user (including passwordHash & registered displayName) in memory
+          const users = getStoredUsers();
+          users[normEmail] = remote.user;
+          saveStoredUsers(users);
+
+          let resolvedProg = remote.progress;
+          // Ensure player's registered displayName is preserved on profile and character
+          const effectiveName = (remote.user.displayName && remote.user.displayName !== 'Viajero' && remote.user.displayName !== 'years')
+            ? remote.user.displayName
+            : (resolvedProg.profile?.displayName && resolvedProg.profile.displayName !== 'Viajero' && resolvedProg.profile.displayName !== 'years')
+            ? resolvedProg.profile.displayName
+            : remote.user.displayName || normEmail.split('@')[0] || 'Aventurero';
+
+          resolvedProg = {
+            ...resolvedProg,
+            profile: {
+              ...resolvedProg.profile,
+              displayName: effectiveName,
+              character: {
+                ...(resolvedProg.profile?.character || DEFAULT_CHARACTER),
+                name: (!resolvedProg.profile?.character?.name || resolvedProg.profile.character.name === 'Alex' || resolvedProg.profile.character.name === 'Viajero' || resolvedProg.profile.character.name === 'years')
+                  ? effectiveName
+                  : resolvedProg.profile.character.name
+              }
+            }
+          };
+
+          memoryProgress[normEmail] = resolvedProg;
+          return resolvedProg;
         }
       } catch (err) {
         console.warn('Failed to load user progress from Supabase:', err);

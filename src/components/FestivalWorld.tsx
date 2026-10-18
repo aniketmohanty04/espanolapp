@@ -301,11 +301,11 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
     onInteract: () => onStartFinalAssessment()
   };
 
-  const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero')
+  const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
     ? progress.profile.displayName
-    : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex')
+    : (progress.profile?.character?.name && progress.profile.character.name !== 'Alex' && progress.profile.character.name !== 'Viajero' && progress.profile.character.name !== 'years')
     ? progress.profile.character.name
-    : progress.profile?.displayName || progress.profile?.character?.name || 'Viajero';
+    : progress.profile?.displayName || 'Aventurero';
   const leftStalls = FESTIVAL_STALLS.filter(s => s.side === 'left');
   const rightStalls = FESTIVAL_STALLS.filter(s => s.side === 'right');
   const visitedStallsCount = progress.festivalVisitedStalls.length;
