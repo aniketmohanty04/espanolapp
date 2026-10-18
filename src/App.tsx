@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
-import { WelcomeScreen } from './components/WelcomeScreen';
 import { AuthScreen } from './components/AuthScreen';
-import { CharacterCreator } from './components/CharacterCreator';
 import { TutorialScreen } from './components/TutorialScreen';
 import { Navbar } from './components/Navbar';
 import { WorldMap } from './components/WorldMap';
@@ -16,17 +14,16 @@ import { StudyPlanModal } from './components/StudyPlanModal';
 import { SyllabusCoverageModal } from './components/SyllabusCoverageModal';
 import { AchievementsModal } from './components/AchievementsModal';
 import { SettingsModal } from './components/SettingsModal';
-import { CloudDatabaseModal } from './components/CloudDatabaseModal';
 import { FinalAssessmentModal } from './components/FinalAssessmentModal';
 import { JourneyHub } from './components/JourneyHub';
 import { getCityById, getLevelById, ALL_CITIES } from './data/citiesData';
-import { PlayerCharacter } from './types';
 
 const GameMain: React.FC = () => {
   const { 
     progress, 
     currentScreen,
     setCurrentScreen,
+    currentUserEmail,
     activeCityId, 
     setActiveCityId,
     activeLevelId,
@@ -35,10 +32,7 @@ const GameMain: React.FC = () => {
     setActiveBossCityId,
     isFestivalOpen,
     setIsFestivalOpen,
-    updateProfile,
-    updateCharacter,
-    completeOnboarding,
-    startAsGuest
+    completeOnboarding
   } = useGame();
 
   // Modals state
@@ -48,9 +42,7 @@ const GameMain: React.FC = () => {
   const [showAchievements, setShowAchievements] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showFinalAssessment, setShowFinalAssessment] = useState<boolean>(false);
-  const [showCharacterCreatorModal, setShowCharacterCreatorModal] = useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
-  const [showCloudModal, setShowCloudModal] = useState<boolean>(false);
 
   // Home view mode: editorial Journey Hub or Spain World Map
   const [homeViewMode, setHomeViewMode] = useState<'journey-hub' | 'world-map'>('journey-hub');
@@ -61,7 +53,7 @@ const GameMain: React.FC = () => {
     nextCityId?: string;
   } | null>(null);
 
-  // Auth screen mode
+  // Auth screen mode: login or register
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   const activeCity = activeCityId ? getCityById(activeCityId) : null;
@@ -69,84 +61,29 @@ const GameMain: React.FC = () => {
   const activeBossCity = activeBossCityId ? getCityById(activeBossCityId) : null;
 
   /* ========================================================
-     SCREEN 1: WELCOME SCREEN
+     SCREEN 1: AUTH SCREEN (LOGIN / REGISTER)
+     Enforces Login Page as 1st page if not logged in
      ======================================================== */
-  if (currentScreen === 'welcome') {
-    return (
-      <WelcomeScreen
-        onStartJourney={() => {
-          if (progress.profile?.onboardingStep >= 5) {
-            setCurrentScreen('world-map');
-          } else {
-            setCurrentScreen('character-creator');
-          }
-        }}
-        onLogin={() => {
-          setAuthMode('login');
-          setCurrentScreen('auth');
-        }}
-        onCreateAccount={() => {
-          setAuthMode('register');
-          setCurrentScreen('auth');
-        }}
-        onContinueAsGuest={() => {
-          startAsGuest('Viajero');
-          setCurrentScreen('character-creator');
-        }}
-      />
-    );
-  }
-
-  /* ========================================================
-     SCREEN 2: AUTH SCREEN (LOGIN / REGISTER)
-     ======================================================== */
-  if (currentScreen === 'auth') {
+  if (currentScreen === 'auth' || !currentUserEmail) {
     return (
       <AuthScreen
         mode={authMode}
-        onContinueAsGuest={() => {
-          startAsGuest('Viajero');
-          setCurrentScreen('character-creator');
-        }}
-        onBack={() => setCurrentScreen('welcome')}
         onSwitchMode={() => setAuthMode(prev => prev === 'login' ? 'register' : 'login')}
-        onOpenCloudModal={() => setShowCloudModal(true)}
       />
     );
   }
 
   /* ========================================================
-     SCREEN 3: CHARACTER CREATOR (FULL SCREEN ONBOARDING)
+     SCREEN 2: WELCOME & CHARACTER CREATOR REDIRECT
+     Bypasses personalization so players go straight to progress
      ======================================================== */
-  if (currentScreen === 'character-creator') {
-    return (
-      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4">
-        <CharacterCreator
-          initialCharacter={progress.profile?.character}
-          initialName={progress.profile?.displayName}
-          onComplete={(char: PlayerCharacter) => {
-            updateCharacter(char);
-            updateProfile({ displayName: char.name });
-            if (progress.profile?.tutorialCompleted) {
-              setCurrentScreen('world-map');
-            } else {
-              setCurrentScreen('tutorial');
-            }
-          }}
-          onBack={() => {
-            if (progress.profile?.onboardingStep >= 5) {
-              setCurrentScreen('world-map');
-            } else {
-              setCurrentScreen('welcome');
-            }
-          }}
-        />
-      </div>
-    );
+  if (currentScreen === 'welcome' || currentScreen === 'character-creator') {
+    setCurrentScreen('world-map');
+    return null;
   }
 
   /* ========================================================
-     SCREEN 4: INTERACTIVE TUTORIAL SCREEN
+     SCREEN 3: INTERACTIVE TUTORIAL SCREEN
      ======================================================== */
   if (currentScreen === 'tutorial') {
     return (
@@ -165,6 +102,7 @@ const GameMain: React.FC = () => {
 
   /* ========================================================
      MAIN ADVENTURE APP SHELL (WORLD MAP / CITY / FESTIVAL)
+     Where logged in clients resume their progress
      ======================================================== */
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#24140E] flex flex-col font-sans selection:bg-[#E05615] selection:text-white">
@@ -185,8 +123,6 @@ const GameMain: React.FC = () => {
         onOpenSyllabus={() => setShowSyllabus(true)}
         onOpenAchievements={() => setShowAchievements(true)}
         onOpenSettings={() => setShowSettings(true)}
-        onOpenCharacterCreator={() => setShowCharacterCreatorModal(true)}
-        onOpenCloudModal={() => setShowCloudModal(true)}
         onOpenFestival={() => {
           setIsFestivalOpen(true);
           setActiveCityId(null);
@@ -212,7 +148,7 @@ const GameMain: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-4 pb-2 w-full flex items-center justify-between">
               <button
                 onClick={() => setHomeViewMode('journey-hub')}
-                className="px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE1] border border-[#E0D5C7] text-[#24140E] font-bold text-xs sm:text-sm shadow-xs flex items-center space-x-1.5 transition-all hover:scale-105"
+                className="px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE1] border border-[#E0D5C7] text-[#24140E] font-bold text-xs sm:text-sm shadow-xs flex items-center space-x-1.5 transition-all hover:scale-105 cursor-pointer"
               >
                 <span>← Volver a Inicio (Journey Hub)</span>
               </button>
@@ -251,7 +187,6 @@ const GameMain: React.FC = () => {
             onOpenSyllabus={() => setShowSyllabus(true)}
             onOpenAchievements={() => setShowAchievements(true)}
             onOpenSettings={() => setShowSettings(true)}
-            onOpenCharacterCreator={() => setShowCharacterCreatorModal(true)}
           />
         )}
       </main>
@@ -284,7 +219,7 @@ const GameMain: React.FC = () => {
         />
       )}
 
-      {/* City Unlock Celebration Modal (Screen 13) */}
+      {/* City Unlock Celebration Modal */}
       {unlockedCityInfo && (
         <CityUnlockModal
           completedCityName={unlockedCityInfo.completedCityName}
@@ -299,24 +234,6 @@ const GameMain: React.FC = () => {
             }
           }}
         />
-      )}
-
-      {/* Character Customization Modal (from Navbar / Settings) */}
-      {showCharacterCreatorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-          <div className="my-auto w-full max-w-4xl">
-            <CharacterCreator
-              initialCharacter={progress.profile?.character}
-              initialName={progress.profile?.displayName}
-              onComplete={(char: PlayerCharacter) => {
-                updateCharacter(char);
-                updateProfile({ displayName: char.name });
-                setShowCharacterCreatorModal(false);
-              }}
-              onBack={() => setShowCharacterCreatorModal(false)}
-            />
-          </div>
-        </div>
       )}
 
       {/* Replayable Tutorial Modal (from Settings) */}
@@ -367,17 +284,9 @@ const GameMain: React.FC = () => {
       {showSettings && (
         <SettingsModal 
           onClose={() => setShowSettings(false)}
-          onOpenCharacterCreator={() => setShowCharacterCreatorModal(true)}
           onReplayTutorial={() => setShowTutorialModal(true)}
-          onOpenCloudModal={() => setShowCloudModal(true)}
         />
       )}
-
-      {/* Cloud Remote Database Modal */}
-      <CloudDatabaseModal
-        isOpen={showCloudModal}
-        onClose={() => setShowCloudModal(false)}
-      />
 
       {/* Cumulative Final Assessment Modal */}
       {showFinalAssessment && (

@@ -1,24 +1,15 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, Sparkles, AlertCircle, CheckCircle2, KeyRound, Cloud } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Sparkles, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { supabaseService } from '../services/supabaseClient';
 
 interface AuthScreenProps {
   mode: 'login' | 'register';
-  onLogin?: (email: string, password: string) => Promise<{ success: boolean; error?: string }> | void;
-  onRegister?: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }> | void;
-  onContinueAsGuest: () => void;
-  onBack: () => void;
   onSwitchMode: () => void;
-  onOpenCloudModal?: () => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   mode,
-  onContinueAsGuest,
-  onBack,
-  onSwitchMode,
-  onOpenCloudModal
+  onSwitchMode
 }) => {
   const { loginUser, registerUser } = useGame();
 
@@ -60,12 +51,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     }
   };
 
-  const handleFillDemo = () => {
-    setEmail('viajero@aventura.es');
-    setPassword('espana123');
-    setError(null);
-  };
-
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 selection:bg-[#E05615] selection:text-white"
@@ -84,15 +69,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-amber-200/80 hover:text-white mb-5 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 text-amber-400" />
-          <span>Volver al Inicio</span>
-        </button>
-
         {/* Auth Card */}
         <div className="bg-[#FAF7F2] rounded-3xl border-4 border-[#EADFCF] shadow-2xl p-6 sm:p-8 text-[#24140E]">
           {/* Card Header & Brand Motif */}
@@ -101,37 +77,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <KeyRound className="w-6 h-6" />
             </div>
             
+            <p className="text-xs font-black uppercase tracking-widest text-[#E05615] mb-1">¡Aventura Española!</p>
             <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#24140E] tracking-tight">
               {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
             </h1>
-            <p className="text-xs sm:text-sm text-[#7D6B5E] mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-[#7D6B5E] mt-1.5 font-medium leading-relaxed">
               {mode === 'login' 
                 ? 'Introduce tu correo y contraseña para retomar tu aventura exactamente donde la dejaste.' 
-                : 'Guarda tu progreso en la base de datos y explora toda España.'}
+                : 'Crea tu cuenta para comenzar tu viaje por las ciudades de España.'}
             </p>
-
-            {/* Cloud Database Connection Status */}
-            {onOpenCloudModal && (
-              <div className="mt-3 flex justify-center">
-                <button
-                  type="button"
-                  onClick={onOpenCloudModal}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border shadow-xs transition-colors cursor-pointer ${
-                    supabaseService.getConfig().isConfigured
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                      : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                  }`}
-                  title="Configurar conexión con base de datos en la nube (Supabase)"
-                >
-                  <Cloud className={`w-3.5 h-3.5 ${supabaseService.getConfig().isConfigured ? 'text-emerald-600' : 'text-amber-600'}`} />
-                  <span>
-                    {supabaseService.getConfig().isConfigured 
-                      ? 'Nube: Supabase Conectado' 
-                      : 'Modo Local (Haz clic para conectar Supabase)'}
-                  </span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Error Notice */}
@@ -218,11 +172,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </div>
             </div>
 
-            {/* Database Persistence Info Pill */}
+            {/* Cloud Persistence Guarantee Info Pill */}
             <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/40 text-[11px] text-[#78350F] flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
               <p>
-                Tu progreso (niveles superados, estrellas, monedas y racha) se guarda automáticamente en la base de datos de tu cuenta.
+                Tu progreso (niveles superados, estrellas, monedas y racha) se sincroniza directamente en la nube.
               </p>
             </div>
 
@@ -242,41 +196,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </button>
           </form>
 
-          {/* Quick Demo Fill Helper Card */}
-          {mode === 'login' && (
-            <div className="mt-4 p-3 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-[#24140E] block text-[11px]">Cuenta Demo de Prueba:</span>
-                <span className="text-[#6B584D] text-[10px] font-mono">viajero@aventura.es / espana123</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-[#B45309] font-black text-[11px] border border-amber-300 shadow-xs transition-colors cursor-pointer"
-              >
-                Rellenar Demo
-              </button>
-            </div>
-          )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-[#EADFCF]" />
-            <span className="text-[10px] font-black text-[#8C7A6B] uppercase tracking-wider">O TAMBIÉN</span>
-            <div className="flex-1 h-px bg-[#EADFCF]" />
-          </div>
-
-          {/* Continue as Guest Button */}
-          <button
-            type="button"
-            onClick={onContinueAsGuest}
-            className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-[#F2ECE1] text-[#524136] font-bold text-xs sm:text-sm border-2 border-[#E0D5C7] transition-colors mb-3 cursor-pointer shadow-xs"
-          >
-            Continuar como Invitado (Sin Cuenta)
-          </button>
-
           {/* Mode Switcher */}
-          <p className="text-center text-xs font-semibold text-[#7D6B5E]">
+          <div className="mt-6 pt-5 border-t border-[#EADFCF] text-center text-xs font-semibold text-[#7D6B5E]">
             {mode === 'login' ? '¿Aún no tienes cuenta? ' : '¿Ya tienes una cuenta registrada? '}
             <button
               type="button"
@@ -289,7 +210,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             >
               {mode === 'login' ? 'Regístrate Aquí' : 'Inicia Sesión'}
             </button>
-          </p>
+          </div>
         </div>
       </div>
     </div>

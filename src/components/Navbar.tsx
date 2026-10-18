@@ -34,8 +34,6 @@ interface NavbarProps {
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
   onOpenFestival: () => void;
-  onOpenCharacterCreator?: () => void;
-  onOpenCloudModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -46,9 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSyllabus,
   onOpenAchievements,
   onOpenSettings,
-  onOpenFestival,
-  onOpenCharacterCreator,
-  onOpenCloudModal
+  onOpenFestival
 }) => {
   const { progress, logoutUser, currentUserEmail } = useGame();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -156,35 +152,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{progress.stats.xp.toLocaleString()} XP</span>
             </div>
 
-            {/* Cloud Database Pill */}
-            {onOpenCloudModal && (
-              <button
-                onClick={onOpenCloudModal}
-                className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer ${
-                  supabaseService.getConfig().isConfigured
-                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
-                }`}
-                title={supabaseService.getConfig().isConfigured ? 'Base de datos en la nube (Supabase) conectada' : 'Conectar base de datos en la nube (Supabase)'}
-              >
-                <Cloud className={`w-3.5 h-3.5 ${supabaseService.getConfig().isConfigured ? 'text-emerald-600' : 'text-amber-600'}`} />
-                <span className="hidden sm:inline">
-                  {supabaseService.getConfig().isConfigured ? 'Nube Activa' : 'Nube'}
-                </span>
-              </button>
-            )}
-
-            {/* Traveler Avatar */}
-            <button
-              onClick={onOpenCharacterCreator}
-              className="flex items-center space-x-1.5 hover:opacity-85 transition-opacity focus:outline-none group"
-              title="Personalizar tu viajero"
+            {/* Traveler Avatar Badge */}
+            <div
+              className="flex items-center space-x-1.5 focus:outline-none"
+              title={`Aventurero: ${playerName}`}
             >
               <PlayerAvatar character={progress.profile?.character} size={28} />
-              <span className="font-bold text-[#24140E] text-xs hidden lg:inline group-hover:text-[#E05615] transition-colors max-w-[90px] truncate">
+              <span className="font-bold text-[#24140E] text-xs hidden lg:inline max-w-[90px] truncate">
                 {playerName}
               </span>
-            </button>
+            </div>
 
             {/* Menu / Drawer Toggle */}
             <button
@@ -416,62 +393,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-yellow-600 transition-colors" />
               </button>
 
-              {/* Personalizar Personaje */}
-              {onOpenCharacterCreator && (
-                <button
-                  onClick={() => handleNavClick(onOpenCharacterCreator)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-sky-400 transition-all group text-left shadow-xs"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 flex items-center justify-center font-bold">
-                      <UserCog className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-black text-[#24140E] group-hover:text-sky-700 transition-colors block font-serif">
-                        Personalizar Viajero
-                      </span>
-                      <span className="text-[11px] text-[#7A6B60]">Cambiar aspecto y ropa</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-sky-500 transition-colors" />
-                </button>
-              )}
-
-              {/* Base de Datos en la Nube */}
-              {onOpenCloudModal && (
-                <button
-                  onClick={() => handleNavClick(onOpenCloudModal)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-[#FFFDF9] border-2 border-[#E8DFD5] hover:border-emerald-400 transition-all group text-left shadow-xs cursor-pointer"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                      supabaseService.getConfig().isConfigured 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      <Cloud className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-700 transition-colors block font-serif">
-                          Nube Supabase
-                        </span>
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
-                          supabaseService.getConfig().isConfigured
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {supabaseService.getConfig().isConfigured ? 'Conectado' : 'Local'}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-[#7A6B60]">
-                        {supabaseService.getConfig().isConfigured ? 'Partidas sincronizadas' : 'Conectar base de datos remota'}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-emerald-500 transition-colors" />
-                </button>
-              )}
 
               {/* Ajustes */}
               <button

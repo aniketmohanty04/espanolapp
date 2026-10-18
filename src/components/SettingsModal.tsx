@@ -23,16 +23,12 @@ import { supabaseService } from '../services/supabaseClient';
 
 interface SettingsModalProps {
   onClose: () => void;
-  onOpenCharacterCreator?: () => void;
   onReplayTutorial?: () => void;
-  onOpenCloudModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
   onClose,
-  onOpenCharacterCreator,
-  onReplayTutorial,
-  onOpenCloudModal 
+  onReplayTutorial 
 }) => {
   const { 
     progress, 
@@ -138,88 +134,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Cloud Database Sync Card */}
-          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  supabaseService.getConfig().isConfigured 
-                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
-                    : 'bg-amber-100 text-amber-700 border border-amber-300'
-                }`}>
-                  <Cloud className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <p className="font-black text-[#24140E]">Base de Datos en la Nube</p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                      supabaseService.getConfig().isConfigured 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
-                        : 'bg-amber-50 text-amber-800 border-amber-300'
-                    }`}>
-                      {supabaseService.getConfig().isConfigured ? 'Supabase Activo' : 'Modo Local'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#7A6B60]">
-                    {supabaseService.getConfig().isConfigured 
-                      ? 'Tus partidas se respaldan y sincronizan en Supabase.' 
-                      : 'Conecta Supabase para acceder a tu progreso desde cualquier dispositivo.'}
-                  </p>
-                </div>
+          {/* Tutorial Quick Action */}
+          {onReplayTutorial && (
+            <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
+              <div>
+                <p className="font-black text-[#24140E]">Guía del Viajero</p>
+                <p className="text-xs text-[#7A6B60]">Vuelve a ver la guía de juego con Sofía</p>
               </div>
-            </div>
-
-            {onOpenCloudModal && (
               <button
                 onClick={() => {
                   onClose();
-                  onOpenCloudModal();
+                  onReplayTutorial();
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-[#24140E] text-xs font-black border border-stone-300 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
               >
-                <Cloud className="w-3.5 h-3.5 text-emerald-600" />
-                <span>
-                  {supabaseService.getConfig().isConfigured 
-                    ? 'Gestionar Conexión Supabase / Sincronizar' 
-                    : 'Configurar Base de Datos Supabase'}
-                </span>
+                <HelpCircle className="w-4 h-4 text-sky-600" />
+                <span>Repetir Tutorial de Juego</span>
               </button>
-            )}
-          </div>
-
-          {/* Traveler & Tutorial Quick Actions */}
-          <div className="p-4 rounded-2xl bg-white border-2 border-[#E8DFD5] space-y-3 shadow-xs">
-            <div>
-              <p className="font-black text-[#24140E]">Viajero y Guía</p>
-              <p className="text-xs text-[#7A6B60]">Modifica el aspecto de tu personaje o vuelve a ver la guía de juego</p>
             </div>
-            <div className="flex items-center gap-2">
-              {onOpenCharacterCreator && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenCharacterCreator();
-                  }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#E05615] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white text-xs font-black flex items-center justify-center space-x-1.5 transition-all shadow-sm"
-                >
-                  <User className="w-4 h-4" />
-                  <span>Personalizar Aspecto</span>
-                </button>
-              )}
-              {onReplayTutorial && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onReplayTutorial();
-                  }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] flex items-center justify-center space-x-1.5 transition-colors"
-                >
-                  <HelpCircle className="w-4 h-4 text-sky-600" />
-                  <span>Repetir Tutorial</span>
-                </button>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Gemini AI Companion (Camino) Configuration */}
           <div className="p-4 rounded-2xl bg-white border-2 border-emerald-300/80 space-y-3 shadow-xs">

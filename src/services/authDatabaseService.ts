@@ -244,7 +244,7 @@ export const authDatabaseService = {
       lastLoginAt: now
     };
 
-    // Build initial progress: attach user's profile to their progress
+    // Build initial progress: attach user's profile to their progress (standard game character, ready to play)
     const userProgress: PlayerProgress = currentGuestProgress
       ? {
           ...currentGuestProgress,
@@ -258,7 +258,8 @@ export const authDatabaseService = {
               name: finalName
             },
             isGuest: false,
-            onboardingStep: Math.max(currentGuestProgress.profile.onboardingStep, 2)
+            onboardingStep: 5,
+            tutorialCompleted: true
           }
         }
       : {
@@ -270,7 +271,8 @@ export const authDatabaseService = {
             displayName: finalName,
             character: { ...DEFAULT_CHARACTER, name: finalName },
             isGuest: false,
-            onboardingStep: 2,
+            onboardingStep: 5,
+            tutorialCompleted: true,
             createdAt: now
           }
         };

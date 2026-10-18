@@ -97,21 +97,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authDatabaseService.loadUserProgressAsync(sessionEmail).then(remoteProg => {
         if (remoteProg) {
           setProgress(remoteProg);
-          if (remoteProg.profile?.onboardingStep >= 5) {
-            setCurrentScreen('world-map');
-          } else if (remoteProg.profile?.onboardingStep >= 2) {
-            setCurrentScreen('character-creator');
-          }
+          setCurrentScreen('world-map');
         }
       }).catch(err => console.warn('Failed to load initial Supabase progress:', err));
+    } else if (!sessionEmail) {
+      setCurrentScreen('auth');
     }
   }, []);
 
-  // Determine initial screen based on onboarding state
+  // Determine initial screen: if client is not logged in, the 1st screen is Login ('auth')
   const getInitialScreen = (): GameScreen => {
-    if (progress.profile.onboardingStep >= 5) return 'world-map';
-    if (storageService.hasExistingProfile()) return 'world-map';
-    return 'welcome';
+    const sessionEmail = authDatabaseService.getCurrentSessionEmail();
+    if (!sessionEmail) return 'auth';
+    return 'world-map';
   };
   
   const [currentScreen, setCurrentScreen] = useState<GameScreen>(getInitialScreen);
@@ -209,13 +207,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProgress(loadedProgress);
       
       // Route user to where they left off
-      if (loadedProgress.profile?.onboardingStep >= 5) {
-        setCurrentScreen('world-map');
-      } else if (loadedProgress.profile?.onboardingStep >= 2) {
-        setCurrentScreen('character-creator');
-      } else {
-        setCurrentScreen('world-map');
-      }
+      // Direct user straight to their progress where they left off
+      setCurrentScreen('world-map');
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Error al iniciar sesión.' };
@@ -233,14 +226,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       setCurrentUserEmail(user.email);
       setProgress(registeredProgress);
-      setCurrentScreen('character-creator');
+      // Direct registered player straight to their adventure where they start off
+      setCurrentScreen('world-map');
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Error al registrar la cuenta.' };
     }
   }, [progress]);
 
-  // Database Auth: Log out user, save their current progress to Supabase, and return to Welcome screen
+  // Database Auth: Log out user, save their current progress to Supabase, and return to 1st screen (Login page)
   const logoutUser = useCallback(() => {
     if (currentUserEmail) {
       authDatabaseService.saveUserProgress(currentUserEmail, progress);
@@ -252,15 +246,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...INITIAL_PROGRESS,
       profile: {
         ...DEFAULT_PROFILE,
-        id: `guest_${Date.now().toString(36)}`,
-        displayName: 'Invitado',
-        isGuest: true,
+        id: '',
+        displayName: 'Viajero',
+        isGuest: false,
         createdAt: new Date().toISOString(),
-        onboardingStep: 0
+        onboardingStep: 5,
+        tutorialCompleted: true
       }
     };
     setProgress(guestProgress);
-    setCurrentScreen('welcome');
+    setCurrentScreen('auth');
   }, [currentUserEmail, progress]);
 
   // Record single question attempt with anti-duplication safeguards

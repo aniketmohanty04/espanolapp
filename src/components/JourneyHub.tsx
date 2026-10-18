@@ -37,7 +37,6 @@ interface JourneyHubProps {
   onOpenSyllabus: () => void;
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
-  onOpenCharacterCreator: () => void;
 }
 
 interface ChatMessage {
@@ -100,8 +99,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   onOpenStudyPlan,
   onOpenSyllabus,
   onOpenAchievements,
-  onOpenSettings,
-  onOpenCharacterCreator
+  onOpenSettings
 }) => {
   const { progress } = useGame();
   
@@ -315,14 +313,8 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                     <p className="text-[10px] text-[#8C7A6B]">Nivel {progress.stats.level} • {selectedCity.name}</p>
                   </div>
                   <button
-                    onClick={() => { setShowProfileMenu(false); onOpenCharacterCreator(); }}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#FAF7F2] transition-colors flex items-center space-x-2 mt-1"
-                  >
-                    <span>🎨 Personalizar Personaje</span>
-                  </button>
-                  <button
                     onClick={() => { setShowProfileMenu(false); onOpenStudyPlan(); }}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#FAF7F2] transition-colors flex items-center space-x-2"
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-[#FAF7F2] transition-colors flex items-center space-x-2 mt-1"
                   >
                     <Calendar className="w-3.5 h-3.5 text-[#E05615]" />
                     <span>Plan de Estudio 35 Días</span>
