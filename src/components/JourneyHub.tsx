@@ -395,24 +395,6 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 <span>View the map</span>
               </button>
             </div>
-
-            {/* Social Proof Counter */}
-            <div className="flex items-center space-x-3 mt-8 pt-4">
-              <div className="flex -space-x-2">
-                <div className="w-7 h-7 rounded-full bg-[#F27A59] border-2 border-[#FAF7F2] flex items-center justify-center text-[10px] text-white font-black shadow-xs">
-                  ★
-                </div>
-                <div className="w-7 h-7 rounded-full bg-[#3BB8A7] border-2 border-[#FAF7F2] flex items-center justify-center text-[10px] text-white font-black shadow-xs">
-                  ☀
-                </div>
-                <div className="w-7 h-7 rounded-full bg-[#DE5B38] border-2 border-[#FAF7F2] flex items-center justify-center text-[10px] text-white font-black shadow-xs">
-                  +
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm font-semibold text-[#7D6B5E]">
-                <strong className="text-[#24140E]">2,481 travelers</strong> are learning on the road
-              </p>
-            </div>
           </div>
 
           {/* Right Column: Editorial Postcard Artwork with Geometric Overlays */}
