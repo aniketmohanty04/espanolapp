@@ -334,10 +334,13 @@ export const CityScreen: React.FC<CityScreenProps> = ({
     bossName: city.bossMission.characterName,
     isPassed: isBossPassed,
     allLevelsDone,
+    completedCount: completedLevels.length,
     onInteract: () => {
-      onOpenBoss();
+      if (allLevelsDone || isBossPassed) {
+        onOpenBoss();
+      }
     }
-  } : undefined, [city.bossMission, isBossPassed, allLevelsDone, onOpenBoss]);
+  } : undefined, [city.bossMission, isBossPassed, allLevelsDone, completedLevels.length, onOpenBoss]);
 
   return (
     <div className="min-h-[calc(100vh-68px)] p-4 sm:p-6 max-w-6xl mx-auto flex flex-col gap-6">
@@ -727,13 +730,17 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                 className="notranslate z-20 w-80 sm:w-96 text-center"
               >
               <div
-                onClick={onOpenBoss}
-                className={`group cursor-pointer rounded-3xl p-4 sm:p-5 border-4 transition-all duration-300 shadow-2xl flex flex-col items-center ${
+                onClick={() => {
+                  if (allLevelsDone || isBossPassed) {
+                    onOpenBoss();
+                  }
+                }}
+                className={`group rounded-3xl p-4 sm:p-5 border-4 transition-all duration-300 shadow-2xl flex flex-col items-center ${
                   isBossPassed
-                    ? 'bg-gradient-to-b from-[#1c1828] via-[#291b35] to-[#141221] border-amber-300 shadow-purple-500/30 hover:scale-102'
+                    ? 'bg-gradient-to-b from-[#1c1828] via-[#291b35] to-[#141221] border-amber-300 shadow-purple-500/30 hover:scale-102 cursor-pointer'
                     : allLevelsDone
-                    ? 'bg-gradient-to-b from-[#3b1218] via-[#4a1520] to-[#240c12] border-amber-400 shadow-rose-600/50 hover:scale-105 animate-pulse'
-                    : 'bg-gradient-to-b from-[#181926] via-[#1e2030] to-[#12131d] border-slate-600 shadow-black/60 hover:scale-102'
+                    ? 'bg-gradient-to-b from-[#3b1218] via-[#4a1520] to-[#240c12] border-amber-400 shadow-rose-600/50 hover:scale-105 animate-pulse cursor-pointer'
+                    : 'bg-gradient-to-b from-[#181926] via-[#1e2030] to-[#12131d] border-slate-700 shadow-black/60 opacity-90 cursor-not-allowed'
                 }`}
               >
                 {/* Castle Battlements Crown */}
@@ -752,15 +759,27 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                       {city.bossMission.badgeIcon}
                     </div>
                   </div>
-                  {isBossPassed && (
+                  {isBossPassed ? (
                     <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
-                  )}
+                  ) : !allLevelsDone ? (
+                    <div className="absolute -bottom-1 -right-1 bg-slate-900 text-amber-400 rounded-full p-1 border-2 border-slate-600 shadow flex items-center justify-center">
+                      <Lock className="w-3.5 h-3.5" />
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-300 text-[10px] sm:text-xs font-black uppercase mb-1">
-                  <ShieldAlert className="w-3.5 h-3.5" />
+                <div className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-xs font-black uppercase mb-1 ${
+                  allLevelsDone || isBossPassed
+                    ? 'bg-rose-500/20 border-rose-400/50 text-rose-300'
+                    : 'bg-slate-800 border-slate-600 text-slate-400'
+                }`}>
+                  {allLevelsDone || isBossPassed ? (
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  )}
                   <span>Misión del Jefe de {city.name}</span>
                 </div>
 
@@ -774,33 +793,48 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                 {/* Progress bar to boss */}
                 <div className="w-full mt-2.5 px-3 py-1.5 rounded-xl bg-white/10 flex items-center justify-between text-[11px] font-bold">
                   <span className="text-slate-300">Requisito de Entrada:</span>
-                  <span className={allLevelsDone ? 'text-emerald-400 font-black' : 'text-amber-300'}>
+                  <span className={allLevelsDone ? 'text-emerald-400 font-black' : 'text-amber-300 font-bold'}>
+                    {!allLevelsDone && !isBossPassed && '🔒 '}
                     {completedLevels.length} / 10 Niveles
                   </span>
                 </div>
+                {!allLevelsDone && !isBossPassed && (
+                  <p className="text-[10px] text-amber-200/80 mt-1 font-medium">
+                    Completa los {10 - completedLevels.length} niveles restantes para desbloquear al Jefe
+                  </p>
+                )}
 
                 {/* Status and Action Button */}
                 <div className="w-full mt-2.5">
                   <button
+                    disabled={!allLevelsDone && !isBossPassed}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onOpenBoss();
+                      if (allLevelsDone || isBossPassed) {
+                        onOpenBoss();
+                      }
                     }}
-                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 border-2 transition-transform cursor-pointer ${
+                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 border-2 transition-transform ${
                       isBossPassed
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-300 hover:scale-105'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-300 hover:scale-105 cursor-pointer'
                         : allLevelsDone
-                        ? 'bg-gradient-to-r from-amber-500 via-rose-600 to-amber-500 text-white border-white hover:scale-105 shadow-amber-500/40 glow-gold'
-                        : 'bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-amber-500 via-rose-600 to-amber-500 text-white border-white hover:scale-105 shadow-amber-500/40 glow-gold cursor-pointer'
+                        : 'bg-slate-800/90 text-slate-400 border-slate-700 cursor-not-allowed opacity-90'
                     }`}
                   >
-                    <Play className="w-4 h-4 fill-current" />
+                    {isBossPassed ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : allLevelsDone ? (
+                      <Play className="w-4 h-4 fill-current" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-slate-400" />
+                    )}
                     <span>
                       {isBossPassed
                         ? `¡Jefe Superado (${bossRecord?.scorePercent}%)! Reintentar`
                         : allLevelsDone
                         ? '¡Afrontar Desafío del Jefe (80% req.)!'
-                        : `Desafiar al Jefe (${completedLevels.length}/10 niveles)`}
+                        : `Bloqueado (${completedLevels.length}/10 niveles completados)`}
                     </span>
                   </button>
                 </div>

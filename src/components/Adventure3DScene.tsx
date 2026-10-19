@@ -45,6 +45,7 @@ export interface Adventure3DSceneProps {
     bossName: string;
     isPassed: boolean;
     allLevelsDone: boolean;
+    completedCount?: number;
     onInteract: () => void;
   };
   exitGate?: {
@@ -828,15 +829,19 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
             </div>
             ${
               isNearBoss
-                ? `<button class="mt-1 px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs rounded-xl shadow-lg border border-white hover:scale-105 active:scale-95 transition-all">
-                    E · Misión Jefe (Boss)
-                  </button>`
+                ? (currentBoss.allLevelsDone || currentBoss.isPassed)
+                  ? `<button class="mt-1 px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs rounded-xl shadow-lg border border-white hover:scale-105 active:scale-95 transition-all">
+                      E · Misión Jefe (Boss)
+                    </button>`
+                  : `<div class="mt-1 px-3 py-1 bg-slate-900/90 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 shadow flex items-center gap-1">
+                      🔒 Completa 10 niveles primero (${currentBoss.completedCount ?? 0}/10)
+                    </div>`
                 : ''
             }
           </div>
         `;
 
-        if (isNearBoss) {
+        if (isNearBoss && (currentBoss.allLevelsDone || currentBoss.isPassed)) {
           const btn = bossTagEl.querySelector('button');
           if (btn) btn.onclick = () => currentBoss.onInteract();
         }

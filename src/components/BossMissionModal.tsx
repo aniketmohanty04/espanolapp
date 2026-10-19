@@ -51,6 +51,13 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
 
   const currentQuestion: Question = bossMission.questions[currentIndex];
 
+  // Safeguard: Boss is only unlocked after completion of all 10 levels of that city
+  const isBossPassed = Boolean(progress.completedBosses[bossMission.cityId]?.passed);
+  const cityCompletedLevelsCount = Object.keys(progress.completedLevels).filter(
+    id => id.startsWith(`${bossMission.cityId}-`)
+  ).length;
+  const isBossUnlocked = cityCompletedLevelsCount >= 10 || isBossPassed;
+
   const shuffledOptions = useMemo(() => {
     return currentQuestion?.options ? shuffleArray(currentQuestion.options) : [];
   }, [currentQuestion?.id, currentQuestion?.options]);
@@ -173,8 +180,38 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
           </button>
         </div>
 
-        {/* SCREEN 12: Boss Mission Intro Briefing (Before starting) */}
-        {!hasStarted ? (
+        {/* Locked Screen: If 10 levels of this city are not yet completed */}
+        {!isBossUnlocked ? (
+          <div className="p-8 sm:p-10 space-y-6 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-600 mx-auto flex items-center justify-center">
+              <Lock className="w-10 h-10 text-amber-600" />
+            </div>
+
+            <div>
+              <span className="text-xs font-black uppercase tracking-widest text-[#B45309]">
+                Acceso Bloqueado (Misión de Jefe)
+              </span>
+              <h3 className="text-2xl font-black text-[#24140E] font-serif mt-1">
+                Completa los 10 niveles de {cityName}
+              </h3>
+              <p className="text-sm text-[#6B584D] max-w-md mx-auto mt-2 leading-relaxed font-medium">
+                {bossMission.characterName} ({bossMission.characterRole}) solo acepta desafiar a viajeros que hayan completado los 10 niveles de preparación de {cityName}.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border-2 border-[#EADFCF] max-w-sm mx-auto flex items-center justify-between font-bold text-sm shadow-xs">
+              <span className="text-[#6B584D]">Niveles completados:</span>
+              <span className="text-amber-600 font-black">{cityCompletedLevelsCount} / 10 Niveles</span>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="px-8 py-3.5 rounded-full bg-gradient-to-r from-[#E05615] to-[#F3B33D] text-white font-black text-sm shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              Volver a la Ciudad
+            </button>
+          </div>
+        ) : !hasStarted ? (
           <div className="p-6 sm:p-8 space-y-6 text-center">
             {/* Illustrated Boss Portrait */}
             <div className="relative w-28 h-28 mx-auto">

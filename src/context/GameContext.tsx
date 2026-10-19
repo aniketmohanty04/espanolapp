@@ -625,21 +625,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let newXp = prev.stats.xp;
 
       if (passed) {
-        // Unlock next city if exists
-        const nextCity = getNextCity(cityId);
-        if (nextCity && !unlockedCityIds.includes(nextCity.id)) {
-          unlockedCityIds.push(nextCity.id);
-          unlockedNextCityId = nextCity.id;
-        }
+        // Enforce that all 10 levels of this city are completed before unlocking next city
+        const cityCompletedCount = Object.keys(prev.completedLevels).filter(id => id.startsWith(`${cityId}-`)).length;
+        const previouslyPassed = Boolean(prev.completedBosses[cityId]?.passed);
 
-        // City completion bonus (500 coins)
-        if (!rewardedCities.includes(cityId)) {
-          bonusCoins = REWARD_CONFIG.CITY_COMPLETION_BONUS_COINS;
-          newCoins += bonusCoins;
-          rewardedCities.push(cityId);
-        }
+        if (cityCompletedCount >= 10 || previouslyPassed) {
+          // Unlock next city if exists
+          const nextCity = getNextCity(cityId);
+          if (nextCity && !unlockedCityIds.includes(nextCity.id)) {
+            unlockedCityIds.push(nextCity.id);
+            unlockedNextCityId = nextCity.id;
+          }
 
-        newXp += 200;
+          // City completion bonus (500 coins)
+          if (!rewardedCities.includes(cityId)) {
+            bonusCoins = REWARD_CONFIG.CITY_COMPLETION_BONUS_COINS;
+            newCoins += bonusCoins;
+            rewardedCities.push(cityId);
+          }
+
+          newXp += 200;
+        }
       }
 
       // Check achievements

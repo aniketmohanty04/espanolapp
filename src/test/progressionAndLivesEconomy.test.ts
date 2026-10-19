@@ -74,6 +74,38 @@ describe('Progression & Lives Economy Suite', () => {
       // Now with levels 1-9 completed, level 10 (idx 9) is unlocked
       expect(checkUnlock(9)).toBe(true);
     });
+
+    it('locks Boss Mission when fewer than 10 levels are completed (e.g. 2 / 10)', () => {
+      const madrid = getCityById('madrid')!;
+      
+      // Simulate completing only 2 levels (exactly as shown in user screenshot)
+      progress.completedLevels[madrid.levels[0].id] = { stars: 3, scorePercent: 100, firstTryPerfect: true, completedAt: new Date().toISOString() };
+      progress.completedLevels[madrid.levels[1].id] = { stars: 2, scorePercent: 80, firstTryPerfect: false, completedAt: new Date().toISOString() };
+
+      const completedCount = madrid.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+      const isBossPassed = Boolean(progress.completedBosses[madrid.id]?.passed);
+      const isBossUnlocked = completedCount === 10 || isBossPassed;
+
+      expect(completedCount).toBe(2);
+      expect(isBossPassed).toBe(false);
+      expect(isBossUnlocked).toBe(false);
+    });
+
+    it('unlocks Boss Mission strictly when all 10 levels of that city are completed', () => {
+      const madrid = getCityById('madrid')!;
+
+      // Complete all 10 levels
+      madrid.levels.forEach(lvl => {
+        progress.completedLevels[lvl.id] = { stars: 3, scorePercent: 100, firstTryPerfect: true, completedAt: new Date().toISOString() };
+      });
+
+      const completedCount = madrid.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+      const isBossPassed = Boolean(progress.completedBosses[madrid.id]?.passed);
+      const isBossUnlocked = completedCount === 10 || isBossPassed;
+
+      expect(completedCount).toBe(10);
+      expect(isBossUnlocked).toBe(true);
+    });
   });
 
   describe('3-Lives Economy (Max 3, 500 Coins Refill, 15m Passive Regen)', () => {

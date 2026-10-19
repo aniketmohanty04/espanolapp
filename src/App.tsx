@@ -157,7 +157,13 @@ const GameMain: React.FC = () => {
               }
               setActiveLevelId(levelId);
             }}
-            onOpenBoss={() => setActiveBossCityId(activeCity.id)}
+            onOpenBoss={() => {
+              const completedCount = activeCity.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+              const isBossPassed = Boolean(progress.completedBosses[activeCity.id]?.passed);
+              if (completedCount >= 10 || isBossPassed) {
+                setActiveBossCityId(activeCity.id);
+              }
+            }}
           />
         ) : homeViewMode === 'world-map' ? (
           <div className="flex flex-col">
