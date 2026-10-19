@@ -6,7 +6,9 @@
 // Fallback key assembled dynamically to prevent repository push protection triggers
 const KEY_SEGMENTS = ['AQ', 'Ab8RN6KgvPsYYRtPI1BLEu', 'AcsEyxbyO_vjvDk56UjhUvrheVw'];
 export const DEFAULT_GEMINI_API_KEY = `${KEY_SEGMENTS[0]}.${KEY_SEGMENTS[1]}-${KEY_SEGMENTS[2]}`;
-export const GEMINI_MODEL = 'gemini-3.8-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
+export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
+export const GEMINI_FALLBACK_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
 
 export interface CaminoResponse {
   text: string;
@@ -100,8 +102,8 @@ export function getMaskedApiKey(): string {
 }
 
 /**
- * Calls Gemini 3.8 Flash to generate an intelligent, culturally authentic Spanish guide response.
- * Specializes in Spanish fluency, direct translations, fault-finding in user Spanish, and encouragement.
+ * Calls Gemini API with automatic model failover to generate an intelligent, Spanish Teacher response.
+ * Strictly acts as a dedicated Spanish Teacher (Profesor de Español).
  */
 export async function askCaminoGemini(
   userQuery: string,
@@ -111,105 +113,112 @@ export async function askCaminoGemini(
 
   const currentCity = context?.cityName || 'Madrid';
   const streak = context?.streak || 1;
-  const playerName = context?.playerName || 'Viajero';
+  const playerName = context?.playerName || 'Estudiante';
 
-  const systemInstruction = `You are Camino (🤖), the witty, warm, and encouraging AI Spanish learning companion and travel guide in the adventure game "¡Aventura Española!".
-The player (${playerName}) is currently in ${currentCity} (Day ${streak} streak).
-Your primary role and mission:
-1. SPANISH TRANSLATIONS & VOCABULARY: Always provide the accurate, authentic Spanish words with correct gender (el/la) and examples in Spanish.
-2. FAULT FINDING & CORRECTION: When the user writes or attempts Spanish, actively inspect their grammar, spelling, gender agreement, verb conjugation, and phrasing. If there is any fault, point it out gently, provide the corrected Spanish, and explain the rule. If correct, praise their fluency!
-3. FLUENCY & ENCOURAGEMENT: Always encourage learning Spanish fluently and invite the user to practice with a follow-up prompt.
+  const systemInstruction = `You are Camino (🤖), the dedicated and expert Spanish Teacher (Profesor de Español) in the adventure game "¡Aventura Española!".
+The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).
 
-CRITICAL RULES FOR JSON OUTPUT:
-- "text": Warm, conversational response in English with Spanish flair (1-2 sentences).
-- "spanishText": MUST BE PURE SPANISH ONLY! The Spanish translation, vocabulary, or corrected Spanish sentence with proper accents (¡ !, ¿ ?, á, é, í, ó, ú, ñ). NEVER put English words here.
-- "pronunciation": Phonetic pronunciation guide (e.g., "ehl beh-RAH-noh").
-- "englishText": English translation and clear grammar rule/tip.
-- "correctionNotice": If the user wrote Spanish with mistakes, clearly explain what was corrected (or null if no mistakes).
-- "practicePrompt": A fun, engaging practice challenge in Spanish for the user to try next.
+YOUR STRICT MANDATE AS A SPANISH TEACHER:
+1. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction.
+2. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
+3. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly.
+4. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule.
+5. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
+6. PRACTICE CHALLENGE: Always provide a short, fun practice question or sentence in Spanish directly relevant to what was just taught.
 
-Respond ONLY with valid JSON matching this schema:
+FORBIDDEN:
+- NEVER give generic, evasive, or random answers that ignore the student's prompt.
+- NEVER put English in "spanishText". It must strictly contain pure Spanish text with proper Spanish punctuation (¡ !, ¿ ?, á, é, í, ó, ú, ñ).
+
+JSON OUTPUT SCHEMA:
 {
-  "text": "string",
-  "spanishText": "string",
-  "pronunciation": "string",
-  "englishText": "string",
-  "correctionNotice": "string or null",
-  "practicePrompt": "string"
+  "text": "Warm, encouraging teacher response in English with Spanish flair explaining the answer directly in 1-2 sentences.",
+  "spanishText": "Pure Spanish translation, vocabulary with articles (el/la), or corrected Spanish phrase with proper accents (¡ !, ¿ ?, á, é, í, ó, ú, ñ).",
+  "pronunciation": "Phonetic pronunciation guide (e.g. 'ehl beh-RAH-noh').",
+  "englishText": "English translation and pedagogical explanation of the grammar rule.",
+  "correctionNotice": "Specific explanation of what was corrected in the student's Spanish, or null if no error was made.",
+  "practicePrompt": "An engaging question or sentence exercise in Spanish directly testing this concept."
 }`;
 
   if (!apiKey || apiKey.trim() === '') {
     return getFallbackCaminoResponse(userQuery, context);
   }
 
-  try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const candidateModels = [DEFAULT_GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: userQuery }]
-          }
-        ],
-        systemInstruction: {
-          parts: [{ text: systemInstruction }]
-        },
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-          maxOutputTokens: 1200
-        }
-      })
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.warn(`Gemini API error status ${response.status}:`, await response.text().catch(() => ''));
-      return getFallbackCaminoResponse(userQuery, context);
-    }
-
-    const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!rawText) {
-      return getFallbackCaminoResponse(userQuery, context);
-    }
-
-    // Clean and parse JSON response
+  for (const model of candidateModels) {
     try {
-      const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      const parsed = JSON.parse(cleaned);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-      return {
-        text: parsed.text || '¡Aquí tienes lo que necesitas para tu aventura en español!',
-        spanishText: parsed.spanishText || undefined,
-        pronunciation: parsed.pronunciation || undefined,
-        englishText: parsed.englishText || undefined,
-        correctionNotice: parsed.correctionNotice && parsed.correctionNotice !== 'null' ? parsed.correctionNotice : undefined,
-        practicePrompt: parsed.practicePrompt || undefined,
-        source: 'gemini'
-      };
-    } catch {
-      // If output wasn't strictly JSON, return text directly
-      return {
-        text: rawText,
-        source: 'gemini'
-      };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6500);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: userQuery }]
+            }
+          ],
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          },
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.3,
+            maxOutputTokens: 1200
+          }
+        })
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn(`Gemini model ${model} status ${response.status}, failing over to next model...`);
+        continue;
+      }
+
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawText) {
+        continue;
+      }
+
+      // Clean and parse JSON response
+      try {
+        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const parsed = JSON.parse(cleaned);
+
+        return {
+          text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
+          spanishText: parsed.spanishText || undefined,
+          pronunciation: parsed.pronunciation || undefined,
+          englishText: parsed.englishText || undefined,
+          correctionNotice: parsed.correctionNotice && parsed.correctionNotice !== 'null' ? parsed.correctionNotice : undefined,
+          practicePrompt: parsed.practicePrompt || undefined,
+          source: 'gemini'
+        };
+      } catch {
+        // If output wasn't strictly JSON, return text directly
+        return {
+          text: rawText,
+          source: 'gemini'
+        };
+      }
+    } catch (err) {
+      console.warn(`Gemini model ${model} request error, failing over to next model:`, err);
+      continue;
     }
-  } catch (err) {
-    console.warn('Gemini request failed, using intelligent offline fallback:', err);
-    return getFallbackCaminoResponse(userQuery, context);
   }
+
+  // If all candidate models failed (or completely offline), use intelligent offline Spanish teacher engine
+  return getFallbackCaminoResponse(userQuery, context);
 }
 
 // ============================================================================
@@ -251,6 +260,27 @@ const VERB_CONJUGATIONS: Record<string, { verb: string; meaning: string; yo: str
 
 const VOCAB_ENTRIES: Record<string, FallbackEntry> = {
   // Food & Dining
+  fork: { text: 'Dining utensil in Spanish:', spanishText: 'El tenedor\nEjemplo: ¿Me trae un tenedor limpio, por favor?', pronunciation: 'ehl teh-neh-DOHR', englishText: 'The fork (masculine noun: "el tenedor").', practicePrompt: '¿Cómo pides un tenedor en el restaurante?' },
+  spoon: { text: 'Dining utensil in Spanish:', spanishText: 'La cuchara\nEjemplo: Una cuchara para la sopa, por favor.', pronunciation: 'lah koo-CHAH-rah', englishText: 'The spoon (feminine noun: "la cuchara").', practicePrompt: '¿Cómo pides una cuchara para la sopa?' },
+  knife: { text: 'Dining utensil in Spanish:', spanishText: 'El cuchillo\nEjemplo: Un cuchillo para cortar la carne.', pronunciation: 'ehl koo-CHEE-yoh', englishText: 'The knife (masculine noun: "el cuchillo").', practicePrompt: '¿Cómo pides un cuchillo que corte bien?' },
+  glass: { text: 'Drinking glass in Spanish:', spanishText: 'Un vaso (de agua / de zumo)\nEjemplo: Un vaso de agua del grifo, por favor.', pronunciation: 'oon BAH-soh', englishText: 'A drinking glass (masculine noun: "el vaso"). Note: for wine use "la copa"; for hot drinks use "la taza"!', practicePrompt: '¿Cómo pides un vaso de agua en la barra?' },
+  cup: { text: 'Cup or mug in Spanish:', spanishText: 'Una taza (de café / de té)\nEjemplo: Una taza de café con leche.', pronunciation: 'OO-nah TAH-zah', englishText: 'A cup / mug (feminine noun: "la taza").', practicePrompt: '¿Prefieres una taza grande o pequeña?' },
+  napkin: { text: 'Essential table item in Spanish:', spanishText: 'La servilleta\nEjemplo: ¿Nos trae más servilletas, por favor?', pronunciation: 'lah sehr-bee-YEH-tah', englishText: 'The napkin (feminine noun: "la servilleta").', practicePrompt: '¿Cómo pides una servilleta al camarero?' },
+  milk: { text: 'Dairy essential in Spanish:', spanishText: 'La leche\nEjemplo: Café con leche entera / desnatada / de avena.', pronunciation: 'lah LEH-cheh', englishText: 'The milk (feminine noun: "la leche").', practicePrompt: '¿Tomas el café con leche fría o caliente?' },
+  sugar: { text: 'Sweetener in Spanish:', spanishText: 'El azúcar\nEjemplo: Sin azúcar / Con un sobre de azúcar, por favor.', pronunciation: 'ehl ah-THOO-kahr', englishText: 'The sugar (masculine noun: "el azúcar").', practicePrompt: '¿Tomas el té con o sin azúcar?' },
+  salt: { text: 'Seasoning in Spanish:', spanishText: 'La sal\nEjemplo: ¿Me pasa la sal, por favor?', pronunciation: 'lah sahl', englishText: 'The salt (feminine noun: "la sal").', practicePrompt: '¿Cómo pides la sal en la mesa?' },
+  apple: { text: 'Common fruit in Spanish:', spanishText: 'La manzana\nEjemplo: Una manzana fresca de postre.', pronunciation: 'lah mahn-THAH-nah', englishText: 'The apple (feminine noun: "la manzana").', practicePrompt: '¿Cuál es tu fruta favorita?' },
+  orange: { text: 'Famous Spanish citrus (especially from Valencia!):', spanishText: 'La naranja • El zumo de naranja', pronunciation: 'lah nah-RAHN-hah', englishText: 'The orange (feminine fruit: "la naranja") • Orange juice ("zumo de naranja").', practicePrompt: '¿Pides zumo de naranja natural en el desayuno?' },
+  family: { text: 'Family is central to Spanish culture:', spanishText: 'La familia\nEjemplo: Mi familia vive en una ciudad maravillosa.', pronunciation: 'lah fah-MEE-lyah', englishText: 'The family (feminine noun: "la familia").', practicePrompt: '¿Cómo se dice "father" y "mother" en español? (padre y madre)' },
+  friend: { text: 'Friendship in Spanish:', spanishText: 'El amigo / La amiga\nEjemplo: Salgo con mis amigos a tomar tapas por el centro.', pronunciation: 'ehl ah-MEE-goh / lah ah-MEE-gah', englishText: 'The friend (masculine: "el amigo", feminine: "la amiga").', practicePrompt: '¿Tienes amigos que hablen español?' },
+  house: { text: 'Living and home in Spanish:', spanishText: 'La casa\nEjemplo: Mi casa es tu casa. / Vamos a casa.', pronunciation: 'lah KAH-sah', englishText: 'The house / home (feminine noun: "la casa").', practicePrompt: '¿Cómo describes tu casa en español?' },
+  book: { text: 'Reading and literature:', spanishText: 'El libro\nEjemplo: Estoy leyendo un libro fascinante en español.', pronunciation: 'ehl LEE-broh', englishText: 'The book (masculine noun: "el libro"). Don Quijote de la Mancha is the most famous Spanish book in history!', practicePrompt: '¿Qué libro en español te gustaría leer?' },
+  school: { text: 'Education in Spanish:', spanishText: 'La escuela / El colegio / El instituto', pronunciation: 'lah ehs-KWEH-lah', englishText: 'The school (feminine noun: "la escuela").', practicePrompt: '¿Cómo se dice "I study Spanish at school"?' },
+  teacher: { text: 'Teacher in Spanish:', spanishText: 'El profesor / La profesora • El maestro / La maestra', pronunciation: 'ehl proh-feh-SOHR / lah proh-feh-SOH-rah', englishText: 'The teacher / professor (masculine: el profesor, feminine: la profesora). ¡Yo soy tu profesor de español Camino!', practicePrompt: '¿Cómo saludas a tu profesor de español?' },
+  student: { text: 'Student in Spanish:', spanishText: 'El estudiante / La estudiante • El alumno / La alumna', pronunciation: 'ehl ehs-too-DYAHN-teh', englishText: 'The student (gender-neutral ending "-e", uses el or la).', practicePrompt: '¿Te consideras un buen estudiante de español?' },
+  yes: { text: 'Affirmative in Spanish:', spanishText: 'Sí (with accent)\nEjemplo: ¡Sí, por supuesto! / Sí, claro.', pronunciation: 'see', englishText: 'Yes (always write with an accent: "sí". Without an accent, "si" means "if"!).', practicePrompt: '¿Cómo respondes "yes, of course" en español?' },
+  no: { text: 'Negative in Spanish:', spanishText: 'No\nEjemplo: No, gracias. / No entiendo muy bien.', pronunciation: 'noh', englishText: 'No / Not. In Spanish, "no" always precedes the conjugated verb ("No hablo").', practicePrompt: '¿Cómo dices "No, thank you" amablemente?' },
+  name: { text: 'Introducing yourself and asking names in Spanish:', spanishText: '¿Cómo te llamas? (informal) • Me llamo [nombre].', pronunciation: 'KOH-moh teh YAH-mahs • meh YAH-moh', englishText: 'What is your name? • My name is [name] (literally: "I call myself").', practicePrompt: '¿Cómo te llamas tú? Di: "Me llamo..."' },
   tea: { text: 'Ordering tea in Spain is simple and customary:', spanishText: 'Un té, por favor.', pronunciation: 'oon teh, pohr fah-BOHR', englishText: 'A tea, please (add "con limón" or "con leche"!).', practicePrompt: '¿Prefieres té verde o té negro?' },
   water: { text: 'Asking for water with proper gender and options:', spanishText: 'Una botella de agua mineral, por favor.', pronunciation: 'OO-nah boh-TEH-yah deh AH-gwah mee-neh-RAHL', englishText: 'A bottle of mineral water, please. (Add "sin gas" for still, or "con gas" for sparkling). Note: "agua" is feminine but takes "el" in singular ("el agua") to prevent two "a" sounds clashing!', practicePrompt: '¿Prefieres agua con gas o sin gas?' },
   bread: { text: 'Bread is a staple at every Spanish table:', spanishText: 'El pan\nEjemplo: ¿Nos trae un poco más de pan, por favor?', pronunciation: 'ehl pahn', englishText: 'The bread (masculine noun).', practicePrompt: '¿Te gusta el pan con tomate y aceite de oliva?' },
@@ -549,13 +579,13 @@ function getFallbackCaminoResponse(
     }
   }
 
-  // 17. INFORMATIVE REGIONAL GUIDE FALLBACK (Always Educational & Spanish-focused)
+  // 17. DEDICATED SPANISH TEACHER FALLBACK (Strict teacher role, never random proverbs)
   return {
-    text: `¡Qué gran pregunta para tu viaje por ${cityName}! Here is a golden Spanish phrase for your adventure:`,
-    spanishText: 'Poco a poco se va lejos.\nVocabulario útil: El camino • La aventura • El idioma • La fluidez.',
-    pronunciation: 'POH-koh ah POH-koh seh bah LEH-hohs',
-    englishText: 'Little by little, one goes far. Practice makes fluent! Ask me to translate any word, explain a verb conjugation, or check a Spanish sentence for mistakes.',
-    practicePrompt: "Escribe una frase corta en español que quieras usar hoy y te ayudaré a perfeccionarla.",
+    text: `As your Spanish Teacher in ${cityName}, here is how you express that in Spanish:`,
+    spanishText: `¿Cómo se dice en español? • Estudio español con mi profesor Camino.`,
+    pronunciation: 'KOH-moh seh DEE-seh ehn ehs-pah-NYOHL',
+    englishText: `To ask how to say any word, use: "¿Cómo se dice [palabra] en español?". You can also ask me to conjugate any verb (hablar, comer, vivir, ser, estar, tener), explain grammar rules, or write a Spanish sentence for me to correct!`,
+    practicePrompt: `Pregúntame: "¿Cómo se dice [palabra] en español?" o escribe una frase para que la revise.`,
     source: 'fallback'
   };
 }

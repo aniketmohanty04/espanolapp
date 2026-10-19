@@ -206,9 +206,10 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
         {
           id: (Date.now() + 1).toString(),
           sender: 'camino',
-          text: '¡Aquí estoy para ayudarte en tu aventura!',
-          spanishText: 'Poco a poco se va lejos.',
-          englishText: 'Little by little, one goes far. Practice every day!',
+          text: `Como tu profesor de español, aquí tienes la instrucción para "${textToSend}":`,
+          spanishText: `¿Cómo se dice "${textToSend}" en español?`,
+          englishText: 'To ask how to say any word, use: "¿Cómo se dice [palabra] en español?". You can also ask me about verb conjugations (hablar, comer, vivir, ser, estar) or write a sentence for me to correct!',
+          practicePrompt: '¿Cómo se dice "amigo" en español?',
           source: 'fallback'
         }
       ]);
@@ -960,15 +961,15 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 <div>
                   <div className="flex items-center space-x-2">
                     <h4 className="font-black text-lg text-[#24140E] font-serif">
-                      Meet Camino
+                      Camino AI
                     </h4>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-[10px] uppercase tracking-wider flex items-center space-x-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Gemini 3.8 Flash</span>
+                      <span>Profesor de Español</span>
                     </span>
                   </div>
                   <p className="text-xs text-[#7A6B60] font-medium">
-                    Your pocket compañero • Live AI guide
+                    Tu profesor de español en vivo • Live AI Spanish Teacher
                   </p>
                 </div>
               </div>
@@ -1049,7 +1050,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                       )}
 
                       <div className="flex items-center justify-between pt-1 border-t border-[#F2ECE1]">
-                        <span className="text-[10px] text-[#A89A8E]">Camino • Spanish Coach</span>
+                        <span className="text-[10px] text-[#A89A8E]">Camino • Profesor de Español</span>
                         <span className="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
                           <Sparkles className="w-2.5 h-2.5 text-emerald-500" />
                           <span>Gemini AI</span>
@@ -1065,7 +1066,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 <div className="flex justify-start animate-fadeIn">
                   <div className="p-3.5 rounded-2xl bg-[#FFF6EE] border border-[#FAD9C0] text-xs text-[#E05615] flex items-center space-x-2.5 shadow-xs">
                     <div className="w-2 h-2 rounded-full bg-[#E05615] animate-ping" />
-                    <span className="font-bold">Camino está consultando a Gemini 3.8 Flash...</span>
+                    <span className="font-bold">Camino está preparando tu lección en Gemini AI...</span>
                   </div>
                 </div>
               )}
