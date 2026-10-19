@@ -443,56 +443,33 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
           {/* Right Column: Editorial Postcard Artwork with Geometric Overlays */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
             <div 
-              className="relative w-full max-w-[460px] aspect-[4/3.5] rounded-[2.5rem] bg-[#E8C2B3] p-4 sm:p-5 shadow-2xl border-8 border-white overflow-hidden"
+              className="relative w-full max-w-[460px] aspect-[4/3.5] rounded-[2.5rem] bg-gradient-to-br from-[#F5DDD2] to-[#E8C2B3] p-4 sm:p-5 shadow-2xl border-8 border-white overflow-hidden group"
               style={{
-                backgroundImage: 'linear-gradient(rgba(195, 115, 95, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(195, 115, 95, 0.25) 1px, transparent 1px)',
-                backgroundSize: '24px 24px'
+                backgroundImage: 'linear-gradient(rgba(195, 115, 95, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(195, 115, 95, 0.16) 1px, transparent 1px)',
+                backgroundSize: '22px 22px'
               }}
             >
               {/* Inner Photographic Card */}
               <div 
-                className="w-full h-full rounded-2xl overflow-hidden relative shadow-md"
+                className="w-full h-full rounded-2xl overflow-hidden relative shadow-lg group-hover:shadow-xl transition-all duration-500"
                 style={{
                   backgroundImage: 'url(https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=1000&q=80)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center 35%'
                 }}
               >
-                {/* Soft Warm Sky Tint */}
-                <div className="absolute inset-0 bg-gradient-to-t from-orange-950/20 via-transparent to-amber-200/10 pointer-events-none" />
+                {/* Luminous Warm Mediterranean Sunlight Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#24140E]/85 via-[#24140E]/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/20 via-transparent to-amber-200/15 pointer-events-none" />
 
-                {/* Golden Sun Disc (Upper Right) */}
-                <div 
-                  className="absolute top-2 right-10 w-32 h-32 rounded-full bg-[#E5B242] mix-blend-multiply opacity-90 pointer-events-none" 
-                />
-
-                {/* Geometric Terracotta Architectural Silhouettes (Bottom Edge) */}
-                <svg 
-                  viewBox="0 0 400 130" 
-                  preserveAspectRatio="none" 
-                  className="absolute bottom-0 left-0 right-0 w-full h-28 pointer-events-none z-10"
-                >
-                  {/* Layer 1: Darker Terracotta Background Blocks */}
-                  <rect x="0" y="45" width="70" height="85" fill="#B84B2E" opacity="0.85" />
-                  <rect x="55" y="70" width="65" height="60" fill="#A83F24" opacity="0.80" />
-                  <rect x="110" y="40" width="75" height="90" fill="#B84B2E" opacity="0.85" />
-                  <rect x="175" y="60" width="70" height="70" fill="#A83F24" opacity="0.80" />
-                  <rect x="235" y="30" width="65" height="100" fill="#B84B2E" opacity="0.85" />
-                  <rect x="290" y="55" width="60" height="75" fill="#A83F24" opacity="0.80" />
-                  <rect x="340" y="40" width="60" height="90" fill="#B84B2E" opacity="0.85" />
-
-                  {/* Layer 2: Foreground Warm Terracotta Blocks */}
-                  <rect x="0" y="60" width="55" height="70" fill="#C85A3B" opacity="0.95" />
-                  <rect x="45" y="85" width="50" height="45" fill="#C85A3B" opacity="0.95" />
-                  <rect x="85" y="55" width="65" height="75" fill="#C85A3B" opacity="0.95" />
-                  <rect x="140" y="75" width="80" height="55" fill="#C85A3B" opacity="0.95" />
-                  <rect x="210" y="45" width="70" height="85" fill="#C85A3B" opacity="0.95" />
-                  <rect x="270" y="70" width="65" height="60" fill="#C85A3B" opacity="0.95" />
-                  <rect x="325" y="50" width="75" height="80" fill="#C85A3B" opacity="0.95" />
-                </svg>
+                {/* Soft Golden Sun Disc (Upper Right) - Natural Spanish Sunlight */}
+                <div className="absolute -top-4 right-12 w-32 h-32 rounded-full bg-gradient-to-br from-amber-300/35 via-orange-400/20 to-transparent blur-md pointer-events-none" />
+                <div className="absolute top-4 right-14 w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400/70 via-yellow-200/80 to-white/70 shadow-lg shadow-amber-500/25 border border-white/60 pointer-events-none flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-xs" />
+                </div>
 
                 {/* Floating Badge 1: Level Up (Top Right) */}
-                <div className="absolute top-6 right-5 z-20 px-3.5 py-1.5 rounded-full bg-white text-[#24140E] text-xs font-black shadow-lg border border-slate-100 flex items-center space-x-1.5 select-none animate-bounce">
+                <div className="absolute top-4 right-4 z-20 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#24140E] text-xs font-black shadow-lg border border-white/90 flex items-center space-x-1.5 select-none hover:scale-105 transition-transform">
                   <span className="text-amber-500 font-bold">★</span>
                   <span>Level up</span>
                 </div>
@@ -500,20 +477,37 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 {/* Floating Badge 2: hola -> hello (Middle Right) */}
                 <div 
                   translate="no" 
-                  className="notranslate absolute bottom-16 right-5 z-20 px-3.5 py-1.5 rounded-full bg-white text-[#24140E] text-xs font-black shadow-lg border border-slate-100 flex items-center space-x-1.5 select-none"
+                  className="notranslate absolute bottom-20 right-4 z-20 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#24140E] text-xs font-black shadow-lg border border-white/90 flex items-center space-x-1.5 select-none hover:scale-105 transition-transform"
                 >
                   <span className="text-[#E05615] font-black">hola</span>
                   <span className="text-slate-400 font-bold mx-1">→</span>
                   <span className="text-[#24140E] font-black">hello</span>
                 </div>
 
-                {/* Floating Badge 3: Madrid, España (Bottom Left) */}
+                {/* Floating Badge 3: Madrid, España • Cap. de España (Bottom Left) */}
                 <div 
                   translate="no" 
-                  className="notranslate absolute bottom-4 left-4 z-20 px-3.5 py-1.5 rounded-full bg-white text-[#24140E] text-xs font-bold shadow-lg border border-slate-100 flex items-center space-x-1.5 select-none"
+                  className="notranslate absolute bottom-4 left-4 z-20 px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md text-[#24140E] shadow-xl border border-white/90 flex items-center space-x-2.5 select-none hover:scale-[1.02] transition-transform"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-[#E05615]" />
-                  <span>Madrid, España</span>
+                  <div className="w-7 h-7 rounded-xl bg-orange-100 text-[#E05615] flex items-center justify-center shrink-0 shadow-2xs">
+                    <MapPin className="w-4 h-4 text-[#E05615]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-xs sm:text-sm font-black text-[#24140E] font-serif">
+                        Madrid, España
+                      </span>
+                      <span 
+                        title="Capital de España"
+                        className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#E05615] text-white text-[9px] font-black uppercase tracking-wider shadow-2xs"
+                      >
+                        Cap. España
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#7A6B60] font-semibold block mt-0.5">
+                      Cap. de España • Spain&apos;s Capital 🇪🇸
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
