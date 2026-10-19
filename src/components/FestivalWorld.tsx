@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { FESTIVAL_STALLS, FESTIVAL_CHARACTERS } from '../data/festivalData';
 import { FestivalStall, FestivalCharacter } from '../types';
@@ -236,25 +236,40 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
   const [viewMode, setViewMode] = useState<'3d' | 'plaza' | 'list'>('plaza');
 
   // Coordinates for the 6 stalls and 14 characters in 3D
-  const stallCoords: Record<string, { x: number; z: number }> = {
+  const stallCoords: Record<string, { x: number; z: number }> = useMemo(() => ({
     'stall-tapas': { x: -14, z: 8 },
     'stall-flamenco': { x: -14, z: 0 },
     'stall-libreria': { x: -14, z: -8 },
     'stall-relojero': { x: 14, z: 8 },
     'stall-estacion': { x: 14, z: 0 },
     'stall-capitania': { x: 14, z: -8 },
-  };
+  }), []);
 
-  const stallColors: Record<string, number> = {
+  const stallColors: Record<string, number> = useMemo(() => ({
     'stall-tapas': 0xc60b1e,
     'stall-flamenco': 0xe07a5f,
     'stall-libreria': 0x1d3557,
     'stall-relojero': 0x2a9d8f,
     'stall-estacion': 0xf59e0b,
     'stall-capitania': 0x0284c7,
-  };
+  }), []);
 
-  const festival3DStations: AdventureStation3D[] = [
+  // Open NPC dialogue
+  const handleOpenNpc = useCallback((npc: FestivalCharacter) => {
+    setActiveNpc(npc);
+    setNpcQuizAnswer(null);
+    setNpcQuizFeedback({ isCorrect: false, show: false });
+    setShowEnglishTranslation(false);
+  }, []);
+
+  // Open Market Stall mini-quiz
+  const handleOpenStall = useCallback((stall: FestivalStall) => {
+    setActiveStall(stall);
+    setStallAnswer('');
+    setStallFeedback({ isCorrect: false, show: false });
+  }, []);
+
+  const festival3DStations: AdventureStation3D[] = useMemo(() => [
     // 6 Market Stalls
     ...FESTIVAL_STALLS.map(stall => {
       const visited = progress.festivalVisitedStalls.includes(stall.id);
@@ -291,15 +306,15 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
         onInteract: () => handleOpenNpc(char)
       };
     })
-  ];
+  ], [progress.festivalVisitedStalls, progress.rewardedDialogueIds, stallCoords, stallColors, handleOpenStall, handleOpenNpc]);
 
-  const examStationData = {
+  const examStationData = useMemo(() => ({
     label: 'Carpa Real Academia Española',
     bossName: 'Examen Oficial Acumulativo BAESP101',
     isPassed: Boolean(progress.finalAssessmentCompleted),
     allLevelsDone: true,
     onInteract: () => onStartFinalAssessment()
-  };
+  }), [progress.finalAssessmentCompleted, onStartFinalAssessment]);
 
   const playerName = (progress.profile?.displayName && progress.profile.displayName !== 'Viajero' && progress.profile.displayName !== 'years')
     ? progress.profile.displayName
@@ -310,14 +325,6 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
   const rightStalls = FESTIVAL_STALLS.filter(s => s.side === 'right');
   const visitedStallsCount = progress.festivalVisitedStalls.length;
   const rewardedDialoguesCount = progress.rewardedDialogueIds.length;
-
-  // Open NPC dialogue
-  const handleOpenNpc = (npc: FestivalCharacter) => {
-    setActiveNpc(npc);
-    setNpcQuizAnswer(null);
-    setNpcQuizFeedback({ isCorrect: false, show: false });
-    setShowEnglishTranslation(false);
-  };
 
   // Check NPC interactive quiz answer
   const handleAnswerNpcQuiz = (option: string) => {
@@ -338,13 +345,6 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
       }
       recordDialogueCompleted(activeNpc.id);
     }
-  };
-
-  // Open Market Stall mini-quiz
-  const handleOpenStall = (stall: FestivalStall) => {
-    setActiveStall(stall);
-    setStallAnswer('');
-    setStallFeedback({ isCorrect: false, show: false });
   };
 
   // Check Stall mini-quiz answer

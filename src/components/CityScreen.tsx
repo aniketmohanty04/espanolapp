@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { City, Level, DifficultyTier, PlayerCharacter } from '../types';
 import { LevelDetailsModal } from './LevelDetailsModal';
@@ -268,14 +268,14 @@ export const CityScreen: React.FC<CityScreenProps> = ({
   const tiersOrder: DifficultyTier[] = ['easy', 'medium', 'tough', 'hard', 'hot'];
 
   // Check if a level is unlocked (sequential progression: level 1 is always unlocked; level N is unlocked if level N-1 is completed)
-  const isLevelUnlocked = (levelIndex: number): boolean => {
+  const isLevelUnlocked = useCallback((levelIndex: number): boolean => {
     if (levelIndex === 0) return true;
     const prevLevel = city.levels[levelIndex - 1];
     return Boolean(progress.completedLevels[prevLevel.id]);
-  };
+  }, [city.levels, progress.completedLevels]);
 
   // 3D Adventure Stalls Layout (positions matching the square)
-  const STALL_POSITIONS = [
+  const STALL_POSITIONS = useMemo(() => [
     { x: -8, z: 8 },
     { x: 8, z: 8 },
     { x: -14, z: 2 },
@@ -286,48 +286,50 @@ export const CityScreen: React.FC<CityScreenProps> = ({
     { x: 14, z: 2 },
     { x: -4, z: 12 },
     { x: 4, z: 12 },
-  ];
+  ], []);
 
-  const TIER_COLORS: Record<DifficultyTier, number> = {
+  const TIER_COLORS: Record<DifficultyTier, number> = useMemo(() => ({
     easy: 0x10b981,
     medium: 0x38bdf8,
     tough: 0xf59e0b,
     hard: 0xf97316,
     hot: 0xf43f5e
-  };
+  }), []);
 
-  const stations3D: AdventureStation3D[] = city.levels.map((lvl, idx) => {
-    const isCompleted = Boolean(progress.completedLevels[lvl.id]);
-    const isUnlocked = isLevelUnlocked(idx);
-    const pos = STALL_POSITIONS[idx] || { x: 0, z: 0 };
+  const stations3D: AdventureStation3D[] = useMemo(() => {
+    return city.levels.map((lvl, idx) => {
+      const isCompleted = Boolean(progress.completedLevels[lvl.id]);
+      const isUnlocked = isLevelUnlocked(idx);
+      const pos = STALL_POSITIONS[idx] || { x: 0, z: 0 };
 
-    return {
-      id: lvl.id,
-      x: pos.x,
-      z: pos.z,
-      label: `Nivel ${lvl.levelNumber}: ${lvl.title}`,
-      subLabel: lvl.subtitle,
-      status: isCompleted ? 'completed' : isUnlocked ? 'unlocked' : 'locked',
-      color: TIER_COLORS[lvl.tier] || 0xf59e0b,
-      goodsColor: 0xffc94a,
-      onInteract: () => {
-        if (isUnlocked) {
-          setSelectedLevelForPreview(lvl);
+      return {
+        id: lvl.id,
+        x: pos.x,
+        z: pos.z,
+        label: `Nivel ${lvl.levelNumber}: ${lvl.title}`,
+        subLabel: lvl.subtitle,
+        status: isCompleted ? 'completed' : isUnlocked ? 'unlocked' : 'locked',
+        color: TIER_COLORS[lvl.tier] || 0xf59e0b,
+        goodsColor: 0xffc94a,
+        onInteract: () => {
+          if (isUnlocked) {
+            setSelectedLevelForPreview(lvl);
+          }
         }
-      }
-    };
-  });
+      };
+    });
+  }, [city.levels, progress.completedLevels, isLevelUnlocked, STALL_POSITIONS, TIER_COLORS]);
 
   const nextCity = getNextCity(city.id);
-  const exitGateData = {
+  const exitGateData = useMemo(() => ({
     targetCityName: nextCity?.name || 'La Gran Fiesta',
     isUnlocked: isBossPassed || allLevelsDone,
     onWalkThrough: () => {
       onBackToMap();
     }
-  };
+  }), [nextCity?.name, isBossPassed, allLevelsDone, onBackToMap]);
 
-  const bossStationData = city.bossMission ? {
+  const bossStationData = useMemo(() => city.bossMission ? {
     label: city.bossMission.title,
     bossName: city.bossMission.characterName,
     isPassed: isBossPassed,
@@ -335,7 +337,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
     onInteract: () => {
       onOpenBoss();
     }
-  } : undefined;
+  } : undefined, [city.bossMission, isBossPassed, allLevelsDone, onOpenBoss]);
 
   return (
     <div className="min-h-[calc(100vh-68px)] p-4 sm:p-6 max-w-6xl mx-auto flex flex-col gap-6">

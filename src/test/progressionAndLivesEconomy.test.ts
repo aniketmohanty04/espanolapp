@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ALL_CITIES, getCityById } from '../data/citiesData';
 import { INITIAL_PROGRESS } from '../services/storageService';
 import { PlayerProgress } from '../types';
+import { calculateSecondsUntilNextLife } from '../context/GameContext';
 
 describe('Progression & Lives Economy Suite', () => {
   let progress: PlayerProgress;
@@ -154,6 +155,17 @@ describe('Progression & Lives Economy Suite', () => {
       expect(earned3).toBe(3);
       const fullLives = Math.min(3, progress.stats.lives + earned3);
       expect(fullLives).toBe(3);
+    });
+
+    it('calculateSecondsUntilNextLife accurately calculates countdown and returns null when lives are full', () => {
+      // When lives are full (3), returns null (no countdown needed)
+      expect(calculateSecondsUntilNextLife(3, undefined)).toBeNull();
+
+      // When lives < 3 and life was lost 300 seconds ago, remaining is 600 seconds (10 minutes)
+      const fiveMinutesAgo = new Date(Date.now() - 300 * 1000).toISOString();
+      const remaining = calculateSecondsUntilNextLife(2, fiveMinutesAgo);
+      expect(remaining).toBeGreaterThanOrEqual(598);
+      expect(remaining).toBeLessThanOrEqual(602);
     });
   });
 });

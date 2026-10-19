@@ -1,6 +1,6 @@
 import React from 'react';
 import { Heart, Coins, Clock, X, Sparkles, AlertCircle } from 'lucide-react';
-import { useGame } from '../context/GameContext';
+import { useGame, useLifeCountdown } from '../context/GameContext';
 
 interface OutOfLivesModalProps {
   isOpen: boolean;
@@ -15,7 +15,8 @@ export const formatLifeTimer = (seconds: number | null): string => {
 };
 
 export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClose }) => {
-  const { progress, refillLivesWithCoins, secondsUntilNextLife } = useGame();
+  const { progress, refillLivesWithCoins } = useGame();
+  const secondsUntilNextLife = useLifeCountdown();
 
   if (!isOpen) return null;
 

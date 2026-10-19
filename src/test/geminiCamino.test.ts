@@ -17,8 +17,9 @@ describe('Gemini Camino AI Service', () => {
     vi.restoreAllMocks();
   });
 
-  it('provides the default empty key configuration and correct model identifier', () => {
-    expect(DEFAULT_GEMINI_API_KEY).toBe('');
+  it('provides the default active key configuration and correct model identifier', () => {
+    expect(DEFAULT_GEMINI_API_KEY.startsWith('AQ.')).toBe(true);
+    expect(DEFAULT_GEMINI_API_KEY.length).toBeGreaterThan(40);
     expect(GEMINI_MODEL).toBe('gemini-3.8-flash');
   });
 
@@ -109,5 +110,30 @@ describe('Gemini Camino AI Service', () => {
     expect(response.correctionNotice).toBeDefined();
     expect(response.correctionNotice).toContain('Tengo calor');
     expect(response.spanishText).toContain('Tengo calor');
+  });
+
+  it('intelligently conjugates verbs like "hablar" and "comer" in offline mode', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('conjugate the verb hablar', {
+      cityName: 'Sevilla'
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.spanishText).toContain('hablo');
+    expect(response.spanishText).toContain('hablamos');
+    expect(response.englishText).toContain('to speak');
+  });
+
+  it('translates essential travel phrases like bathroom in offline mode', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('where is the bathroom', {
+      cityName: 'Barcelona'
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.spanishText).toContain('¿Dónde está el baño?');
+    expect(response.pronunciation).toBeDefined();
   });
 });

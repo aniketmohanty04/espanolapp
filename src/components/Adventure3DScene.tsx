@@ -228,6 +228,16 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
   const pantsHex = 0x2b3a67;
 
+  // Stable references for dynamic props so the 3D WebGL scene never tears down during gameplay
+  const stationsRef = useRef(stations);
+  stationsRef.current = stations;
+  const bossStationRef = useRef(bossStation);
+  bossStationRef.current = bossStation;
+  const exitGateRef = useRef(exitGate);
+  exitGateRef.current = exitGate;
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
+
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -398,6 +408,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
     // 8. 3D Market Stalls for each Station
     const stationElements: {
+      id: string;
       station: AdventureStation3D;
       pos: { x: number; z: number };
       tagEl: HTMLDivElement;
@@ -445,6 +456,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       if (tagsContainer) tagsContainer.appendChild(tagEl);
 
       stationElements.push({
+        id: station.id,
         station,
         pos: { x, z: z + 2.4 }, // interaction spot in front of counter
         tagEl
@@ -554,25 +566,30 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
       // Match the same interaction radius used by the visible interaction prompt.
       let bestDist = 3.8;
-      let bestStation: AdventureStation3D | null = null;
+      let bestStationId: string | null = null;
       stationElements.forEach(item => {
         const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
-        if (d < bestDist && item.station.status !== 'locked') {
+        const currentSt = stationsRef.current.find(s => s.id === item.id) || item.station;
+        if (d < bestDist && currentSt.status !== 'locked') {
           bestDist = d;
-          bestStation = item.station;
+          bestStationId = item.id;
         }
       });
 
-      if (bestStation) {
-        (bestStation as AdventureStation3D).onInteract();
-        return;
+      if (bestStationId) {
+        const found = stationsRef.current.find(s => s.id === bestStationId);
+        if (found) {
+          found.onInteract();
+          return;
+        }
       }
 
       // Boss interaction is available only when all prerequisite levels are complete.
-      if (bossStation) {
+      const currentBoss = bossStationRef.current;
+      if (currentBoss) {
         const bossDistance = Math.hypot(playerPos.x, playerPos.z + 18);
-        if (bossDistance < 4.2 && bossStation.allLevelsDone && !bossStation.isPassed) {
-          bossStation.onInteract();
+        if (bossDistance < 4.2 && currentBoss.allLevelsDone && !currentBoss.isPassed) {
+          currentBoss.onInteract();
         }
       }
     };
@@ -762,7 +779,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       stationElements.forEach(item => {
         const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
         const isNearby = d < 3.8;
-        const st = item.station;
+        const st = stationsRef.current.find(s => s.id === item.id) || item.station;
 
         item.tagEl.innerHTML = `
           <div class="pointer-events-auto flex flex-col items-center">
@@ -794,19 +811,20 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       });
 
       // Update Boss Tag
-      if (bossTagEl && bossStation) {
+      const currentBoss = bossStationRef.current;
+      if (bossTagEl && currentBoss) {
         const bd = Math.hypot(playerPos.x - 0, playerPos.z - (-18));
         const isNearBoss = bd < 4.2;
         bossTagEl.innerHTML = `
           <div class="pointer-events-auto flex flex-col items-center">
             <div class="px-3 py-1 rounded-full text-xs font-black shadow-lg border backdrop-blur-md ${
-              bossStation.isPassed
+              currentBoss.isPassed
                 ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500'
-                : bossStation.allLevelsDone
+                : currentBoss.allLevelsDone
                 ? 'bg-rose-950/90 text-rose-300 border-rose-500 glow-red'
                 : 'bg-slate-900/90 text-slate-400 border-slate-700'
             }">
-              <span>👑 ${bossStation.label}</span>
+              <span>👑 ${currentBoss.label}</span>
             </div>
             ${
               isNearBoss
@@ -820,12 +838,14 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
         if (isNearBoss) {
           const btn = bossTagEl.querySelector('button');
-          if (btn) btn.onclick = () => bossStation.onInteract();
+          if (btn) btn.onclick = () => currentBoss.onInteract();
         }
         projectToScreen(0, 4.8, -20, bossTagEl);
       }
 
       // Update Gate Tag
+      const currentGate = exitGateRef.current;
+      const isGateOpen = Boolean(currentGate?.isUnlocked);
       if (gateTagEl) {
         gateTagEl.innerHTML = `
           <div class="px-2.5 py-1 rounded-full text-xs font-black shadow-lg border backdrop-blur-md ${
@@ -833,7 +853,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
               ? 'bg-emerald-950/80 text-emerald-300 border-emerald-400'
               : 'bg-rose-950/80 text-rose-300 border-rose-500/60'
           }">
-            <span>${isGateOpen ? '🚪 ' + (exitGate?.targetCityName || 'Siguiente Ciudad') : '🔒 Camino Cerrado'}</span>
+            <span>${isGateOpen ? '🚪 ' + (currentGate?.targetCityName || 'Siguiente Ciudad') : '🔒 Camino Cerrado'}</span>
           </div>
         `;
         projectToScreen(22, 5.5, 0, gateTagEl);
@@ -859,7 +879,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       renderer.dispose();
     };
-  }, [accentColor, exitGate, stations, bossStation, shirtHex, hairHex, pantsHex, skinHex, showToast]);
+  }, [accentColor, cityName, shirtHex, hairHex, pantsHex, skinHex]);
 
   const completedCount = stations.filter(s => s.status === 'completed').length;
   const totalStars = Object.values(progress.completedLevels).reduce((acc, lvl) => acc + (lvl.stars || 0), 0);

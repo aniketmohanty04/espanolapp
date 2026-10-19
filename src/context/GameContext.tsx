@@ -75,6 +75,22 @@ interface GameContextType {
   currentUserEmail: string | null;
 }
 
+export const LIFE_REFILL_COIN_COST = 500;
+export const LIFE_REGEN_INTERVAL_SECONDS = 15 * 60; // 900 seconds (15 minutes)
+
+export function calculateSecondsUntilNextLife(
+  lives: number | undefined,
+  lastLifeLostAt: string | undefined
+): number | null {
+  const currentLives = typeof lives === 'number' ? Math.min(3, lives) : 3;
+  if (currentLives >= 3) return null;
+  const now = Date.now();
+  const lostAtMs = lastLifeLostAt ? new Date(lastLifeLostAt).getTime() : now;
+  const safeLostAtMs = isNaN(lostAtMs) ? now : lostAtMs;
+  const elapsedSeconds = Math.max(0, Math.floor((now - safeLostAtMs) / 1000));
+  return Math.max(0, LIFE_REGEN_INTERVAL_SECONDS - (elapsedSeconds % LIFE_REGEN_INTERVAL_SECONDS));
+}
+
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -141,16 +157,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [soundMuted, setSoundMuted] = useState<boolean>(soundService.getIsMuted());
 
   // Life Management Constants (3 max lives, 500 coins to refill, 15 minutes per free life)
-  const LIFE_REFILL_COIN_COST = 500;
-  const LIFE_REGEN_INTERVAL_SECONDS = 15 * 60; // 900 seconds
-  const [secondsUntilNextLife, setSecondsUntilNextLife] = useState<number | null>(null);
+  const secondsUntilNextLife = calculateSecondsUntilNextLife(
+    progress.stats.lives,
+    progress.stats.lastLifeLostAt
+  );
 
-  // Passive 15-Minute Life Regeneration Check & Countdown
+  // Passive 15-Minute Life Regeneration Check (runs every 15s, re-renders ONLY when a life is actually awarded)
   useEffect(() => {
     const checkAndRegen = () => {
       const currentLives = typeof progress.stats.lives === 'number' ? Math.min(3, progress.stats.lives) : 3;
       if (currentLives >= 3) {
-        setSecondsUntilNextLife(null);
         return;
       }
 
@@ -174,14 +190,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastLifeLostAt: newLostAt
           }
         }));
-      } else {
-        const remainingSeconds = Math.max(0, LIFE_REGEN_INTERVAL_SECONDS - (elapsedSeconds % LIFE_REGEN_INTERVAL_SECONDS));
-        setSecondsUntilNextLife(remainingSeconds);
       }
     };
 
     checkAndRegen();
-    const interval = setInterval(checkAndRegen, 1000);
+    const interval = setInterval(checkAndRegen, 15000);
     return () => clearInterval(interval);
   }, [progress.stats.lives, progress.stats.lastLifeLostAt]);
 
@@ -230,7 +243,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   }, [progress.stats.coins]);
 
-  // Save progress whenever it updates (both to storageService and auth database if logged in)
+  // Save progress whenever it updates (immediate to local storage, debounced 800ms to Supabase cloud)
   useEffect(() => {
     // CRITICAL: Do NOT write uninitialized local progress to database while remote load is still in flight!
     if (!isRemoteSyncReady) {
@@ -240,7 +253,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     storageService.saveProgress(progress);
     const emailToSave = currentUserEmail || progress.profile?.email;
     if (emailToSave) {
-      authDatabaseService.saveUserProgress(emailToSave, progress);
+      const saveTimer = setTimeout(() => {
+        authDatabaseService.saveUserProgress(emailToSave, progress);
+      }, 800);
+      return () => clearTimeout(saveTimer);
     }
   }, [progress, currentUserEmail, isRemoteSyncReady]);
 
@@ -875,3 +891,26 @@ export const useGame = () => {
   }
   return context;
 };
+
+/**
+ * Localized hook for components needing a 1-second live countdown timer (e.g. Navbar, OutOfLivesModal).
+ * Confines 1-second re-renders strictly to the mounting component without re-rendering the whole app tree.
+ */
+export function useLifeCountdown(): number | null {
+  const { progress } = useGame();
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    calculateSecondsUntilNextLife(progress.stats.lives, progress.stats.lastLifeLostAt)
+  );
+
+  useEffect(() => {
+    const update = () => {
+      setRemaining(calculateSecondsUntilNextLife(progress.stats.lives, progress.stats.lastLifeLostAt));
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [progress.stats.lives, progress.stats.lastLifeLostAt]);
+
+  return remaining;
+}
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useGame, REWARD_CONFIG } from '../context/GameContext';
+import { useGame, useLifeCountdown, REWARD_CONFIG } from '../context/GameContext';
 import { Level, Question, DialogueChoice } from '../types';
 import { 
   SpanishWaiterIllustration, 
@@ -44,9 +44,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     recordDialogueCompleted, 
     purchaseTranslation, 
     recordLevelCompleted,
-    refillLivesWithCoins,
-    secondsUntilNextLife
+    refillLivesWithCoins
   } = useGame();
+  const secondsUntilNextLife = useLifeCountdown();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string>('');

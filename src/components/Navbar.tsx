@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame, useLifeCountdown } from '../context/GameContext';
 import { PlayerAvatar } from './PlayerAvatar';
 import { 
   Coins, 
@@ -50,7 +50,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFestival,
   onOpenLivesModal
 }) => {
-  const { progress, logoutUser, currentUserEmail, secondsUntilNextLife } = useGame();
+  const { progress, logoutUser, currentUserEmail } = useGame();
+  const secondsUntilNextLife = useLifeCountdown();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const mistakeCount = Object.values(progress.incorrectQuestions).filter(q => !q.mastered).length;
