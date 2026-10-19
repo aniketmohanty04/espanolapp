@@ -23,7 +23,8 @@ import {
   Award, 
   Settings, 
   User,
-  Heart
+  Heart,
+  Volume2
 } from 'lucide-react';
 
 interface JourneyHubProps {
@@ -215,6 +216,24 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
       ]);
     } finally {
       setIsCaminoLoading(false);
+    }
+  };
+
+  const speakSpanish = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      // Speak the primary Spanish sentence/phrase, removing bullets if any
+      const cleanText = text
+        .split('\n')[0]
+        .replace(/^[•\-\*]\s*/, '')
+        .trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText || text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.88;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('Speech synthesis error:', err);
     }
   };
 
@@ -979,7 +998,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
             {/* Conversation Feed */}
             <div 
               ref={chatScrollRef}
-              className="py-4 space-y-3.5 max-h-[290px] overflow-y-auto scrollbar-none pr-1"
+              className="py-4 space-y-3.5 max-h-[380px] sm:max-h-[440px] overflow-y-auto scrollbar-none pr-1"
             >
               {messages.map(msg => {
                 if (msg.sender === 'user') {
@@ -1012,24 +1031,64 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                         </div>
                       )}
 
-                      {/* Pure Spanish Target Text with Pronunciation */}
+                      {/* Prominent Spanish Answer Showcase */}
                       {msg.spanishText && (
-                        <div className="p-3 rounded-xl bg-white border border-[#EADFCF] shadow-xs space-y-1">
-                          <div className="text-xs font-black text-[#E05615] whitespace-pre-line tracking-wide">
+                        <div className="my-2.5 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#FFFDF9] via-[#FFF8F0] to-[#FFF1E5] border-2 border-[#E8C4A2] border-l-4 border-l-[#E05615] shadow-md space-y-3">
+                          {/* Header badge & Audio pronunciation button */}
+                          <div className="flex items-center justify-between gap-2 border-b border-[#F4E3D2] pb-2.5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#E05615] to-[#EA580C] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs">
+                              <span>🇪🇸</span>
+                              <span>Respuesta en Español</span>
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => speakSpanish(msg.spanishText!)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-orange-50 active:bg-orange-100 border border-orange-200 text-xs font-bold text-[#C9470C] transition-all hover:scale-105 active:scale-95 shadow-2xs cursor-pointer"
+                              title="Escuchar en español (Listen in Spanish)"
+                            >
+                              <Volume2 className="w-3.5 h-3.5 text-[#E05615]" />
+                              <span>Escuchar</span>
+                            </button>
+                          </div>
+
+                          {/* The Prominent Spanish Answer */}
+                          <div className="text-2xl sm:text-3xl font-black text-[#1F110B] font-serif leading-snug tracking-tight whitespace-pre-line select-all drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)]">
                             {msg.spanishText}
                           </div>
+
+                          {/* Pronunciation Guide */}
                           {msg.pronunciation && (
-                            <div className="text-[11px] font-semibold text-slate-500 flex items-center space-x-1">
-                              <span className="text-[10px] uppercase font-bold text-slate-400">Say:</span>
-                              <span className="italic text-slate-600">{msg.pronunciation}</span>
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 border border-[#EFE3D5] text-xs text-slate-700 shadow-2xs">
+                              <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#C9470C]">
+                                Pronunciación:
+                              </span>
+                              <span className="font-semibold text-slate-800 italic">
+                                {msg.pronunciation}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* English Meaning / Explanation */}
+                          {msg.englishText && (
+                            <div className="pt-2.5 border-t border-[#F4E3D2] flex items-start gap-2">
+                              <span className="text-sm shrink-0 leading-tight">🇬🇧</span>
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                  Significado • Meaning & Note
+                                </span>
+                                <p className="text-xs sm:text-sm font-medium text-[#4A382C] leading-relaxed">
+                                  {msg.englishText}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* English Meaning / Explanation */}
-                      {msg.englishText && (
-                        <p className="text-xs text-[#6B584D] italic">
+                      {/* Fallback English text if spanishText is not provided */}
+                      {!msg.spanishText && msg.englishText && (
+                        <p className="text-xs sm:text-sm text-[#4A382C] leading-relaxed font-medium">
                           {msg.englishText}
                         </p>
                       )}
