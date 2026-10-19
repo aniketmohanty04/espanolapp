@@ -154,7 +154,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* Gemini AI Companion (Camino) Configuration */}
+          {/* Camino AI Companion Configuration */}
           <div className="p-4 rounded-2xl bg-white border-2 border-emerald-300/80 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -163,9 +163,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center space-x-1.5">
-                    <p className="font-black text-[#24140E] text-xs sm:text-sm">Camino AI (Guía Inteligente)</p>
+                    <p className="font-black text-[#24140E] text-xs sm:text-sm">Camino AI (Profesor Inteligente)</p>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
-                      Gemini 3.8 Flash
+                      Profesor IA Activo
                     </span>
                   </div>
                   <p className="text-[11px] text-[#7A6B60]">Motor de conversación y aprendizaje de español activo</p>
@@ -194,14 +194,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {isEditingKey && (
               <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EADFCF] space-y-2">
                 <p className="text-[11px] text-[#524136] font-medium">
-                  Introduce tu clave de API de Google Gemini:
+                  Introduce tu clave de API para Camino AI:
                 </p>
                 <div className="flex items-center space-x-2">
                   <input
                     type="text"
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Introduce tu clave API de Gemini..."
+                    placeholder="Introduce tu clave API de IA..."
                     className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-[#E0D5C7] text-[#24140E] font-mono text-xs focus:outline-none focus:border-[#E05615]"
                   />
                   <button

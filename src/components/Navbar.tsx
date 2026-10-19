@@ -115,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={onOpenHub}
                     className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all shadow-xs"
-                    title="Preguntar a Camino AI (Google Gemini 3.8 Flash)"
+                    title="Preguntar a Camino AI (Tu Profesor de Español)"
                   >
                     <span className="text-xs">🤖</span>
                     <span>Camino AI</span>
@@ -316,8 +316,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-950 transition-colors font-serif">
                           Camino AI Guide
                         </span>
-                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase">
-                          Gemini 3.8
+                        <span className="px-1.5 py-0.5 rounded-full bg-[#E05615] text-white text-[9px] font-black uppercase tracking-wider">
+                          Profesor IA
                         </span>
                       </div>
                       <span className="text-[11px] text-emerald-800 font-medium">Pregunta dudas de español en vivo</span>

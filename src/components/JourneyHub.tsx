@@ -122,7 +122,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   // Stepper scroll container reference
   const stepperRef = useRef<HTMLDivElement>(null);
 
-  // Chatbot state for "Meet Camino" powered by Google Gemini 3.8 Flash
+  // Chatbot state for Camino AI - Independent Spanish Tutor
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -138,6 +138,29 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   const [chatInput, setChatInput] = useState<string>('');
   const [isCaminoLoading, setIsCaminoLoading] = useState<boolean>(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic pedagogical thinking steps shown while Camino processes
+  const THINKING_STEPS = [
+    'Pensando en tu respuesta...',
+    'Analizando la gramática y el vocabulario en español...',
+    'Consultando modismos y reglas del idioma...',
+    'Preparando la pronunciación correcta...'
+  ];
+  const [thinkingStepIndex, setThinkingStepIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isCaminoLoading) {
+      setThinkingStepIndex(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setThinkingStepIndex(prev => (prev + 1) % THINKING_STEPS.length);
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }
+    }, 1400);
+    return () => clearInterval(timer);
+  }, [isCaminoLoading]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -159,7 +182,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
     }
   };
 
-  // Camino AI Responses powered by Google Gemini 3.8 Flash
+  // Camino AI Responses
   const handleSendChat = async (customText?: string) => {
     const textToSend = customText || chatInput.trim();
     if (!textToSend || isCaminoLoading) return;
@@ -1110,9 +1133,9 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 
                       <div className="flex items-center justify-between pt-1 border-t border-[#F2ECE1]">
                         <span className="text-[10px] text-[#A89A8E]">Camino • Profesor de Español</span>
-                        <span className="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
-                          <Sparkles className="w-2.5 h-2.5 text-emerald-500" />
-                          <span>Gemini AI</span>
+                        <span className="text-[10px] font-bold text-[#E05615] flex items-center space-x-1">
+                          <Sparkles className="w-2.5 h-2.5 text-[#E05615]" />
+                          <span>Camino AI</span>
                         </span>
                       </div>
                     </div>
@@ -1120,12 +1143,31 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 );
               })}
 
-              {/* Live Loading Thinking Indicator */}
+              {/* Live Loading Thinking Indicator - Camino Standalone AI */}
               {isCaminoLoading && (
                 <div className="flex justify-start animate-fadeIn">
-                  <div className="p-3.5 rounded-2xl bg-[#FFF6EE] border border-[#FAD9C0] text-xs text-[#E05615] flex items-center space-x-2.5 shadow-xs">
-                    <div className="w-2 h-2 rounded-full bg-[#E05615] animate-ping" />
-                    <span className="font-bold">Camino está preparando tu lección en Gemini AI...</span>
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FFF8EE] to-[#FFF3E8] border-2 border-[#FAD9C0] text-xs sm:text-sm text-[#24140E] shadow-sm space-y-1.5 max-w-[90%]">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-orange-100 text-[#E05615] font-bold text-base shadow-2xs shrink-0">
+                        <Bot className="w-5 h-5 text-[#E05615] animate-pulse" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#E05615] animate-ping" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-extrabold text-[#E05615] text-xs uppercase tracking-wider font-serif">
+                            Camino está pensando
+                          </span>
+                          <span className="flex space-x-1 items-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E05615] animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E05615] animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E05615] animate-bounce" />
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#7A6B60] font-medium transition-all duration-300">
+                          {THINKING_STEPS[thinkingStepIndex]}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
