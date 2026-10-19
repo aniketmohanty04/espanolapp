@@ -148,7 +148,7 @@ describe('Progression & Lives Economy Suite', () => {
       expect(newLives).toBe(1);
 
       // If 45 minutes passed (2700 seconds), all 3 lives regenerate
-      const fortyFiveMinutesAgo = new Date(Date.now() - 2700 * 1000).toISOString();
+      const fortyFiveMinutesAgo = new Date(now - 2700 * 1000).toISOString();
       const elapsed45 = Math.floor((now - new Date(fortyFiveMinutesAgo).getTime()) / 1000);
       const earned3 = Math.floor(elapsed45 / REGEN_INTERVAL_SECONDS);
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { FESTIVAL_STALLS, FESTIVAL_CHARACTERS } from '../data/festivalData';
 import { FestivalStall, FestivalCharacter } from '../types';
+import { shuffleArray } from '../utils/shuffle';
 import { PlayerAvatar } from './PlayerAvatar';
 import confetti from 'canvas-confetti';
 import { Adventure3DScene, AdventureStation3D } from './Adventure3DScene';
@@ -216,6 +217,20 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
     isCorrect: false,
     show: false
   });
+
+  // Memoized shuffled options for NPC dialog quiz
+  const shuffledNpcOptions = useMemo(() => {
+    return activeNpc?.interactiveQuestion?.options
+      ? shuffleArray(activeNpc.interactiveQuestion.options)
+      : [];
+  }, [activeNpc?.id, activeNpc?.interactiveQuestion?.options]);
+
+  // Memoized shuffled options for Stall mini quiz
+  const shuffledStallOptions = useMemo(() => {
+    return activeStall?.miniQuiz?.options
+      ? shuffleArray(activeStall.miniQuiz.options)
+      : [];
+  }, [activeStall?.id, activeStall?.miniQuiz?.options]);
 
   // Fun festival features state
   const [showWheel, setShowWheel] = useState<boolean>(false);
@@ -1308,7 +1323,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
 
                 {/* 3 Selectable Answers */}
                 <div className="space-y-2">
-                  {activeNpc.interactiveQuestion.options.map((option, idx) => (
+                  {shuffledNpcOptions.map((option, idx) => (
                     <button
                       key={idx}
                       disabled={npcQuizFeedback.show && npcQuizFeedback.isCorrect}
@@ -1418,7 +1433,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
 
               {activeStall.miniQuiz.options ? (
                 <div className="space-y-2">
-                  {activeStall.miniQuiz.options.map((opt, i) => (
+                  {shuffledStallOptions.map((opt, i) => (
                     <button
                       key={i}
                       disabled={stallFeedback.show && stallFeedback.isCorrect}

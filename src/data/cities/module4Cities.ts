@@ -32,10 +32,10 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do you say in Spanish "I wake up at seven in the morning"?',
             audioText: 'Me despierto a las siete de la mañana',
             options: [
-              'Me despierto a las siete de la mañana',
               'Yo despierto a las siete de la mañana',
               'Me levanto a las siete de la noche',
-              'Despiértome en siete de la mañana'
+              'Despiértome en siete de la mañana',
+              'Me despierto a las siete de la mañana'
             ],
             correctAnswer: 'Me despierto a las siete de la mañana',
             explanation: 'Despertarse es un verbo reflexivo (despertar-se) con cambio e -> ie en presente: Yo me despierto.',
@@ -77,8 +77,8 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'What is the correct form for "She takes a shower every morning"?',
             audioText: 'Ella se ducha todas las mañanas',
             options: [
-              'Ella se ducha todas las mañanas',
               'Ella ducha todas las mañanas',
+              'Ella se ducha todas las mañanas',
               'Ella te ducha todas las mañanas',
               'Ella le ducha todas las mañanas'
             ],
@@ -94,7 +94,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Vestirse tiene cambio de vocal e -> i: "Yo me ______ con ropa cómoda."',
             englishPrompt: 'Vestirse has an e -> i vowel change: "Yo me visto con ropa cómoda."',
             audioText: 'visto',
-            options: ['visto', 'vesto', 'vistas', 'viste'],
+            options: ['vesto', 'vistas', 'visto', 'viste'],
             correctAnswer: 'visto',
             explanation: 'Vestirse es irregular de cambio e -> i: me visto, te vistes, se viste, nos vestimos, os vestís, se visten.',
             hints: ['Primera persona con cambio a i: v-i-s-t-o.'],
@@ -122,10 +122,10 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do you say in Spain "You all go to bed late" informally?',
             audioText: 'Vosotros os acostáis tarde',
             options: [
-              'Vosotros os acostáis tarde',
               'Vosotros se acuestan tarde',
               'Vosotros nos acostamos tarde',
-              'Vosotros acostáis tarde'
+              'Vosotros acostáis tarde',
+              'Vosotros os acostáis tarde'
             ],
             correctAnswer: 'Vosotros os acostáis tarde',
             explanation: 'Con vosotros el pronombre reflexivo es "os" y acostarse diptonga o -> ue salvo en nosotros y vosotros: vosotros os acostáis.',
@@ -167,8 +167,8 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'What is the usual chronological order of meals in Spain?',
             audioText: 'desayuno, comida / almuerzo, merienda, cena',
             options: [
-              'desayuno, comida / almuerzo, merienda, cena',
               'almuerzo, desayuno, cena, merienda',
+              'desayuno, comida / almuerzo, merienda, cena',
               'cena, desayuno, merienda, comida',
               'desayuno, cena, almuerzo, merienda'
             ],
@@ -184,7 +184,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Completa: "Por la mañana yo ______ café con leche y tostadas con tomate."',
             englishPrompt: 'Complete: "In the morning I have coffee with milk and toast with tomato for breakfast."',
             audioText: 'desayuno',
-            options: ['desayuno', 'ceno', 'meriendo', 'duermo'],
+            options: ['ceno', 'meriendo', 'desayuno', 'duermo'],
             correctAnswer: 'desayuno',
             explanation: 'Desayunar es la primera comida de la mañana: "yo desayuno".',
             hints: ['Primera persona singular de desayunar.'],
@@ -211,7 +211,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: '¿Qué preposición se usa en español para indicar el medio de transporte (autobús, metro, tren)?',
             englishPrompt: 'Which preposition is used in Spanish to indicate the means of transport (bus, metro, train)?',
             audioText: 'en (ir en metro, viajar en tren)',
-            options: ['en', 'por', 'con', 'a'],
+            options: ['por', 'con', 'a', 'en'],
             correctAnswer: 'en',
             explanation: 'Para medios de transporte mecánicos usamos "en": en metro, en autobús, en tren, en coche, en avión. Solo decimos "a pie" o "a caballo".',
             hints: ['Preposición "en".'],
@@ -252,8 +252,8 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'Which two constructions are grammatically correct for "I have to wake up early"?',
             audioText: 'Me tengo que despertar temprano / Tengo que despertarme temprano',
             options: [
-              'Me tengo que despertar temprano / Tengo que despertarme temprano',
               'Tengo me que despertar temprano / Me tengo despertarme',
+              'Me tengo que despertar temprano / Tengo que despertarme temprano',
               'Tengo que me despertar temprano / Despertarme tengo',
               'Tengo que despierto temprano / Me despierto tengo'
             ],
@@ -322,20 +322,20 @@ export const MODULE4_CITIES: City[] = [
               englishPrompt: 'Hello! I usually run in the Turia park at 7 AM. What time do you normally get up?',
               choices: [
                 {
-                  id: 'c1',
-                  text: 'Normalmente me levanto a las siete y media, me ducho y voy a clase.',
-                  englishHint: 'Normally I get up at 7:30, shower and go to class.',
-                  isCorrect: true,
-                  npcResponse: '¡Qué buen horario! La mañana cunde muchísimo cuando madrugas.',
-                  explanation: 'Excelente narración con verbos reflexivos concordantes.'
-                },
-                {
                   id: 'c2',
                   text: 'En Valencia hace mucho calor en verano.',
                   englishHint: 'In Valencia it is very hot in summer.',
                   isCorrect: false,
                   npcResponse: 'Sí que hace calor, ¡pero te preguntaba por tu hora de levantarte!',
                   explanation: 'Fuera de contexto.'
+                },
+                {
+                  id: 'c1',
+                  text: 'Normalmente me levanto a las siete y media, me ducho y voy a clase.',
+                  englishHint: 'Normally I get up at 7:30, shower and go to class.',
+                  isCorrect: true,
+                  npcResponse: '¡Qué buen horario! La mañana cunde muchísimo cuando madrugas.',
+                  explanation: 'Excelente narración con verbos reflexivos concordantes.'
                 }
               ]
             }
@@ -360,7 +360,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Acostarse diptonga: "Por la noche yo leo un libro y me ______ a las once (acostarse)."',
             englishPrompt: 'Acostarse changes vowel: "At night I read a book and go to bed at eleven."',
             audioText: 'acuesto',
-            options: ['acuesto', 'acosto', 'acuestas', 'acuestan'],
+            options: ['acosto', 'acuestas', 'acuesto', 'acuestan'],
             correctAnswer: 'acuesto',
             explanation: 'Acostarse: yo me acuesto, tú te acuestas, él se acuesta, nosotros nos acostamos, vosotros os acostáis, ellos se acuestan.',
             hints: ['Primera persona con diptongo ue: a-c-u-e-s-t-o.'],
@@ -388,10 +388,10 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'Which of the following sentences contains NO grammatical error?',
             audioText: 'Mis hermanos se despiertan temprano y se preparan el desayuno',
             options: [
-              'Mis hermanos se despiertan temprano y se preparan el desayuno',
               'Mis hermanos nos despiertan temprano y se prepara el desayuno',
               'Mis hermanos despiertan se temprano y preparan se el desayuno',
-              'Mis hermanos se despiertan temprano y te preparan su desayuno'
+              'Mis hermanos se despiertan temprano y te preparan su desayuno',
+              'Mis hermanos se despiertan temprano y se preparan el desayuno'
             ],
             correctAnswer: 'Mis hermanos se despiertan temprano y se preparan el desayuno',
             explanation: 'Sujeto 3.ª persona plural (mis hermanos) concuerda con pronombre reflexivo "se" en ambos verbos (se despiertan, se preparan).',
@@ -427,11 +427,11 @@ export const MODULE4_CITIES: City[] = [
           englishPrompt: 'Pau: "For morning workout plan, which is the perfectly worded habits description?"',
           audioText: 'Nosotros nos levantamos a las seis, nos hidratamos y salimos a correr.',
           options: [
-            'Nosotros nos levantamos a las seis, nos hidratamos y salimos a correr.',
-            'Nosotros se levantamos a las seis, os hidratamos y salimos correr.',
-            'Nosotros levantamos a las seis, hidratamos nos y vamos a correr.',
-            'Nosotros nos levantan a las seis, nos hidrata y salen a correr.'
-          ],
+              'Nosotros nos levantamos a las seis, nos hidratamos y salimos a correr.',
+              'Nosotros se levantamos a las seis, os hidratamos y salimos correr.',
+              'Nosotros levantamos a las seis, hidratamos nos y vamos a correr.',
+              'Nosotros nos levantan a las seis, nos hidrata y salen a correr.'
+            ],
           correctAnswer: 'Nosotros nos levantamos a las seis, nos hidratamos y salimos a correr.',
           explanation: 'Primera persona plural con pronombre reflexivo "nos" en todos los verbos reflexivos.',
           hints: ['Nosotros concuerda con "nos levantamos" y "nos hidratamos".'],
@@ -444,7 +444,7 @@ export const MODULE4_CITIES: City[] = [
           prompt: 'Pau: "Después del entrenamiento los atletas ______ duchan con agua templada y ______ visten (ducharse / vestirse)."',
           englishPrompt: 'Pau: "After training the athletes shower with lukewarm water and get dressed."',
           audioText: 'se / se',
-          options: ['se / se', 'nos / nos', 'os / os', 'te / te'],
+          options: ['nos / nos', 'se / se', 'os / os', 'te / te'],
           correctAnswer: 'se / se',
           explanation: 'Sujeto en tercera persona plural ("los atletas") requiere el pronombre reflexivo "se" en ambas oraciones.',
           hints: ['Pronombre de tercera persona plural: se.'],
@@ -498,9 +498,9 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do we express a time range: "From 9:00 to 11:00"?',
             audioText: 'De nueve a once / Desde las nueve hasta las once',
             options: [
-              'De nueve a once / Desde las nueve hasta las once',
               'En nueve para once',
               'Por nueve a once',
+              'De nueve a once / Desde las nueve hasta las once',
               'Entre nueve con once'
             ],
             correctAnswer: 'De nueve a once / Desde las nueve hasta las once',
@@ -515,7 +515,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Para las asignaturas de tarde decimos: "Tengo clases ______ la tarde."',
             englishPrompt: 'For afternoon subjects we say: "Tengo clases por la tarde."',
             audioText: 'por',
-            options: ['por', 'en', 'a', 'sobre'],
+            options: ['en', 'a', 'sobre', 'por'],
             correctAnswer: 'por',
             explanation: 'Para partes del día en sentido general usamos "por": por la mañana, por la tarde, por la noche.',
             hints: ['Preposición "por".'],
@@ -555,7 +555,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Para decir "I study Hispanic Literature": "Yo ______ Literatura Hispánica."',
             englishPrompt: 'To say "I study Hispanic Literature": "Yo estudio Literatura Hispánica."',
             audioText: 'estudio',
-            options: ['estudio', 'estudias', 'estudia', 'estudian'],
+            options: ['estudias', 'estudio', 'estudia', 'estudian'],
             correctAnswer: 'estudio',
             explanation: 'Primera persona singular del verbo regular estudiar: yo estudio.',
             hints: ['Termina en -o para yo.'],
@@ -582,7 +582,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: '¿Cuál es el adjetivo opuesto de "ruidoso" para describir una calle o barrio?',
             englishPrompt: 'What is the opposite adjective of "ruidoso" to describe a street or neighborhood?',
             audioText: 'tranquilo o silencioso',
-            options: ['tranquilo', 'antiguo', 'estrecho', 'luminoso'],
+            options: ['antiguo', 'estrecho', 'tranquilo', 'luminoso'],
             correctAnswer: 'tranquilo',
             explanation: '"Tranquilo" o "silencioso" es el antónimo directo de "ruidoso" (noisy).',
             hints: ['Significa con paz y sin ruidos.'],
@@ -595,7 +595,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Completa con concordancia: "Las calles del Barrio Gótico son estrechas y ______ (antiguo)."',
             englishPrompt: 'Complete with agreement: "The streets of the Gothic Quarter are narrow and ancient."',
             audioText: 'antiguas',
-            options: ['antiguas', 'antiguo', 'antigua', 'antiguos'],
+            options: ['antiguo', 'antigua', 'antiguos', 'antiguas'],
             correctAnswer: 'antiguas',
             explanation: '"Calles" es femenino plural, por tanto el adjetivo debe ser "antiguas".',
             hints: ['Femenino plural concuerda con calles.'],
@@ -635,7 +635,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Para saber en qué parada bajarse: "¿Cuál es la ______ de la Sagrada Família?"',
             englishPrompt: 'To know at which stop to get off: "¿Cuál es la parada de la Sagrada Família?"',
             audioText: 'parada',
-            options: ['parada', 'calle', 'hora', 'puerta'],
+            options: ['calle', 'parada', 'hora', 'puerta'],
             correctAnswer: 'parada',
             explanation: '"La parada" (de metro o autobús) es el punto reglamentario donde se detiene el transporte.',
             hints: ['Lugar donde se para el transporte.'],
@@ -663,9 +663,9 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'Select the grammatically perfect option for a student schedule:',
             audioText: 'Me levanto a las ocho, voy a la facultad en metro y como con mis amigos',
             options: [
-              'Me levanto a las ocho, voy a la facultad en metro y como con mis amigos',
               'Yo levanto a las ocho, voy en la facultad por metro y como mis amigos',
               'Me despierto en las ocho, viajo en metro para facultad y ceno con amigos',
+              'Me levanto a las ocho, voy a la facultad en metro y como con mis amigos',
               'Se levanto a las ocho, va a facultad con metro y comemos amigos'
             ],
             correctAnswer: 'Me levanto a las ocho, voy a la facultad en metro y como con mis amigos',
@@ -695,10 +695,10 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do we say in Spanish "The Eixample is calmer than the Gothic Quarter"?',
             audioText: 'El Eixample es más tranquilo que el Barrio Gótico',
             options: [
-              'El Eixample es más tranquilo que el Barrio Gótico',
               'El Eixample es más tranquilo de el Barrio Gótico',
               'El Eixample es muy tranquilo que el Barrio Gótico',
-              'El Eixample es tan tranquilo que el Barrio Gótico'
+              'El Eixample es tan tranquilo que el Barrio Gótico',
+              'El Eixample es más tranquilo que el Barrio Gótico'
             ],
             correctAnswer: 'El Eixample es más tranquilo que el Barrio Gótico',
             explanation: 'La estructura comparativa de superioridad es: más + adjetivo + que.',
@@ -831,8 +831,8 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do you say in Spanish "The university campus has a large library and many classrooms"?',
             audioText: 'El campus universitario tiene una biblioteca grande y muchas aulas',
             options: [
-              'El campus universitario tiene una biblioteca grande y muchas aulas',
               'El campus universitario es una biblioteca grande y mucho aulas',
+              'El campus universitario tiene una biblioteca grande y muchas aulas',
               'El campus universitario está una biblioteca grande y muchas aulas',
               'El campus universitario hay una biblioteca grande y muy aulas'
             ],
@@ -870,11 +870,11 @@ export const MODULE4_CITIES: City[] = [
           englishPrompt: 'Marc: "Indicate the option that expresses with absolute correctness the lecture schedule:"',
           audioText: 'El seminario tiene lugar desde las diez hasta las doce de la mañana.',
           options: [
-            'El seminario tiene lugar desde las diez hasta las doce de la mañana.',
-            'El seminario tiene lugar de las diez hasta las doce de la mañana.',
-            'El seminario tiene lugar desde diez a doce de la mañana.',
-            'El seminario tiene lugar en diez hasta doce de la mañana.'
-          ],
+              'El seminario tiene lugar de las diez hasta las doce de la mañana.',
+              'El seminario tiene lugar desde diez a doce de la mañana.',
+              'El seminario tiene lugar desde las diez hasta las doce de la mañana.',
+              'El seminario tiene lugar en diez hasta doce de la mañana.'
+            ],
           correctAnswer: 'El seminario tiene lugar desde las diez hasta las doce de la mañana.',
           explanation: '"Desde las... hasta las..." es la pareja correlativa correcta en español.',
           hints: ['Pareja correlativa: desde las... hasta las...'],
@@ -887,7 +887,7 @@ export const MODULE4_CITIES: City[] = [
           prompt: 'Marc: "Para desplazarse al campus de la Diagonal los alumnos viajan ______ metro y bajan en Palau Reial."',
           englishPrompt: 'Marc: "To travel to the Diagonal campus, students travel by metro and get off at Palau Reial."',
           audioText: 'en',
-          options: ['en', 'a', 'por', 'con'],
+          options: ['a', 'por', 'con', 'en'],
           correctAnswer: 'en',
           explanation: 'Medio de transporte mecánico = preposición "en" (viajar en metro).',
           hints: ['Preposición "en".'],
@@ -953,7 +953,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Para la barba y el bigote usamos el verbo TENER: "Mi compañero ______ barba y bigote."',
             englishPrompt: 'For beard and mustache we use TENER: "Mi compañero tiene barba y bigote."',
             audioText: 'tiene',
-            options: ['tiene', 'es', 'está', 'hace'],
+            options: ['es', 'tiene', 'está', 'hace'],
             correctAnswer: 'tiene',
             explanation: 'Rasgos específicos como barba, pelo y ojos se construyen con TENER: "Tiene barba".',
             hints: ['Tercera persona singular de TENER.'],
@@ -980,7 +980,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: '¿Cuál es el antónimo (opuesto) de una persona "simpática"?',
             englishPrompt: 'What is the antonym (opposite) of a "simpática" person?',
             audioText: 'antipática',
-            options: ['antipática', 'generosa', 'alegre', 'trabajadora'],
+            options: ['generosa', 'alegre', 'antipática', 'trabajadora'],
             correctAnswer: 'antipática',
             explanation: 'El opuesto de simpático/a es antipático/a (unpleasant/unfriendly).',
             hints: ['Lleva el prefijo anti-.'],
@@ -993,7 +993,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Una persona a la que le gusta mucho bromear y hacer reír es muy: "______" (femenino singular).',
             englishPrompt: 'A person who likes to joke and make people laugh is very: "divertida".',
             audioText: 'divertida',
-            options: ['divertida', 'aburrida', 'seria', 'triste'],
+            options: ['aburrida', 'seria', 'triste', 'divertida'],
             correctAnswer: 'divertida',
             explanation: '"Divertida" (fun/amusing) describe a alguien que entretiene y hace sonreír.',
             hints: ['Opuesto de aburrida.'],
@@ -1038,7 +1038,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Completa para "Él": "Mi mejor amigo ______ cocinar paella riquísima (saber)."',
             englishPrompt: 'Complete for "Él": "My best friend knows how to cook delicious paella."',
             audioText: 'sabe',
-            options: ['sabe', 'sé', 'saben', 'sabemos'],
+            options: ['sé', 'sabe', 'saben', 'sabemos'],
             correctAnswer: 'sabe',
             explanation: 'Tercera persona singular del verbo saber: él sabe.',
             hints: ['Forma de él para el verbo saber.'],
@@ -1066,9 +1066,9 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'What is the fundamental difference between SABER and CONOCER?',
             audioText: 'SABER para datos y habilidades; CONOCER para estar familiarizado con personas o lugares',
             options: [
-              'SABER para datos y habilidades (sé nadar); CONOCER para personas o ciudades (conozco Zaragoza)',
               'SABER es formal y CONOCER informal',
               'Son sinónimos idénticos',
+              'SABER para datos y habilidades (sé nadar); CONOCER para personas o ciudades (conozco Zaragoza)',
               'CONOCER solo se usa en preguntas y SABER en respuestas'
             ],
             correctAnswer: 'SABER para datos y habilidades (sé nadar); CONOCER para personas o ciudades (conozco Zaragoza)',
@@ -1083,7 +1083,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Para una persona se usa la "a" personal con conocer: "Yo conozco ______ la profesora de arte."',
             englishPrompt: 'For a person the personal "a" is used with conocer: "Yo conozco a la profesora de arte."',
             audioText: 'a',
-            options: ['a', 'en', 'de', 'con'],
+            options: ['en', 'de', 'con', 'a'],
             correctAnswer: 'a',
             explanation: 'Cuando el objeto directo es una persona determinada, en español es preceptiva la "a" personal: conocer a alguien.',
             hints: ['La famosa "a" personal del español.'],
@@ -1142,7 +1142,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Completa para primera persona plural: "Nosotros ______ bailar la jota aragonesa (saber)."',
             englishPrompt: 'Complete for first person plural: "Nosotros sabemos bailar la jota aragonesa."',
             audioText: 'sabemos',
-            options: ['sabemos', 'sabéis', 'saben', 'sé'],
+            options: ['sabéis', 'sabemos', 'saben', 'sé'],
             correctAnswer: 'sabemos',
             explanation: 'Nosotros concuerda con "sabemos": nosotros sabemos bailar.',
             hints: ['Primera persona plural del verbo saber.'],
@@ -1208,20 +1208,20 @@ export const MODULE4_CITIES: City[] = [
               englishPrompt: 'Hello traveler! I am Pilar. In Aragon we are noble and hard-working people. What do you value most in a friend?',
               choices: [
                 {
-                  id: 'c1',
-                  text: 'Valoro mucho la sinceridad, la generosidad y el buen sentido del humor.',
-                  englishHint: 'I value honesty, generosity and a good sense of humor very much.',
-                  isCorrect: true,
-                  npcResponse: '¡Qué gran respuesta! Esas virtudes crean amistades para toda la vida.',
-                  explanation: 'Expresión comunicativa admirable y rica en valores.'
-                },
-                {
                   id: 'c2',
                   text: 'Son las dos y cuarto de la tarde en mi reloj.',
                   englishHint: 'It is a quarter past two in the afternoon on my watch.',
                   isCorrect: false,
                   npcResponse: 'La hora es exacta, pero te preguntaba por lo que valoras en un amigo.',
                   explanation: 'Fuera de contexto.'
+                },
+                {
+                  id: 'c1',
+                  text: 'Valoro mucho la sinceridad, la generosidad y el buen sentido del humor.',
+                  englishHint: 'I value honesty, generosity and a good sense of humor very much.',
+                  isCorrect: true,
+                  npcResponse: '¡Qué gran respuesta! Esas virtudes crean amistades para toda la vida.',
+                  explanation: 'Expresión comunicativa admirable y rica en valores.'
                 }
               ]
             }
@@ -1247,9 +1247,9 @@ export const MODULE4_CITIES: City[] = [
             englishPrompt: 'How do we say "She knows how to dance and she loves dancing"?',
             audioText: 'Ella sabe bailar y le encanta bailar',
             options: [
-              'Ella sabe bailar y le encanta bailar',
               'Ella conoce bailar y le gusta baile',
               'Ella es bailar y tiene encanto',
+              'Ella sabe bailar y le encanta bailar',
               'Ella sabo bailar y se encanta'
             ],
             correctAnswer: 'Ella sabe bailar y le encanta bailar',
@@ -1278,7 +1278,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Completa: "Mi mejor amiga ______ levanta a las siete y ______ hablar español con mucha soltura."',
             englishPrompt: 'Complete: "My best friend gets up at seven and knows how to speak Spanish with great fluency."',
             audioText: 'se / sabe',
-            options: ['se / sabe', 'me / sé', 'te / sabes', 'se / conoce'],
+            options: ['me / sé', 'te / sabes', 'se / conoce', 'se / sabe'],
             correctAnswer: 'se / sabe',
             explanation: 'Tercera persona singular: pronombre reflexivo "se" (se levanta) + habilidad aprendida con saber "sabe" (sabe hablar).',
             hints: ['Pronombre "se" para levantarse y verbo "sabe" para la habilidad.'],
@@ -1313,11 +1313,11 @@ export const MODULE4_CITIES: City[] = [
           englishPrompt: 'Doña Pilar: "Describe our volunteer guide accurately. Which is the impeccable phrasing?"',
           audioText: 'El guía es muy amable, tiene los ojos verdes y sabe orientar a los visitantes.',
           options: [
-            'El guía es muy amable, tiene los ojos verdes y sabe orientar a los visitantes.',
-            'El guía está muy amable, es los ojos verdes y conoce orientar a los visitantes.',
-            'El guía tiene muy amable, hace los ojos verdes y puede orientar a los visitantes.',
-            'El guía es muy amable, tiene los ojos verdes y sabo orientar los visitantes.'
-          ],
+              'El guía es muy amable, tiene los ojos verdes y sabe orientar a los visitantes.',
+              'El guía está muy amable, es los ojos verdes y conoce orientar a los visitantes.',
+              'El guía tiene muy amable, hace los ojos verdes y puede orientar a los visitantes.',
+              'El guía es muy amable, tiene los ojos verdes y sabo orientar los visitantes.'
+            ],
           correctAnswer: 'El guía es muy amable, tiene los ojos verdes y sabe orientar a los visitantes.',
           explanation: 'SER para carácter (es amable), TENER para rasgos anatómicos (tiene los ojos verdes) y SABER + infinitivo para competencia técnica (sabe orientar a...).',
           hints: ['SER amable, TENER ojos verdes, SABER orientar.'],
@@ -1330,7 +1330,7 @@ export const MODULE4_CITIES: City[] = [
           prompt: 'Doña Pilar: "Nosotros ______ Zaragoza muy bien y ______ preparar la tradicional borraja aragonesa (conocer / saber)."',
           englishPrompt: 'Doña Pilar: "We know Zaragoza very well and know how to prepare traditional borage."',
           audioText: 'conocemos / sabemos',
-          options: ['conocemos / sabemos', 'sabemos / conocemos', 'conocemos / conocemos', 'sabemos / sabemos'],
+          options: ['sabemos / conocemos', 'conocemos / sabemos', 'conocemos / conocemos', 'sabemos / sabemos'],
           correctAnswer: 'conocemos / sabemos',
           explanation: 'Para la ciudad se usa CONOCER ("conocemos Zaragoza") y para la técnica culinaria se usa SABER + infinitivo ("sabemos preparar").',
           hints: ['CONOCER para la ciudad, SABER para la receta.'],

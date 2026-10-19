@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { CUMULATIVE_FINAL_ASSESSMENT } from '../data/festivalData';
 import { Question } from '../types';
+import { shuffleArray } from '../utils/shuffle';
 import { 
   X, 
   GraduationCap, 
@@ -41,6 +42,10 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
 
   const totalQuestions = CUMULATIVE_FINAL_ASSESSMENT.length;
   const currentQ: Question = CUMULATIVE_FINAL_ASSESSMENT[currentIndex];
+
+  const shuffledOptions = useMemo(() => {
+    return currentQ.options ? shuffleArray(currentQ.options) : [];
+  }, [currentQ.id, currentQ.options]);
 
   // Set up word order words if current question is word-order
   React.useEffect(() => {
@@ -200,7 +205,7 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
               {/* Multiple Choice */}
               {currentQ.type === 'multiple-choice' && currentQ.options && (
                 <div className="space-y-2.5">
-                  {currentQ.options.map((opt, i) => (
+                  {shuffledOptions.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => handleSelectOption(opt)}

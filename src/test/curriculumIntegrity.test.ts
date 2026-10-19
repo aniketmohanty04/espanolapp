@@ -72,4 +72,23 @@ describe('Curriculum Integrity and Answer Key Validation', () => {
       expect(citiesInMod[2].number).toBe(expectedEndCityNum);
     }
   });
+
+  it('validates that correct answers are shuffled across options and NOT always Option A', () => {
+    let index0Count = 0;
+    let totalMcq = 0;
+
+    allQuestions.forEach(q => {
+      if (q.type === 'multiple-choice' && q.options && typeof q.correctAnswer === 'string') {
+        totalMcq++;
+        if (q.options.indexOf(q.correctAnswer) === 0) {
+          index0Count++;
+        }
+      }
+    });
+
+    const index0Ratio = index0Count / totalMcq;
+    // Confirm Option A is ~25% and definitely less than 40% (previously it was >99%)
+    expect(index0Ratio).toBeLessThan(0.40);
+    expect(index0Ratio).toBeGreaterThan(0.15);
+  });
 });

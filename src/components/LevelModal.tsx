@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGame, useLifeCountdown, REWARD_CONFIG } from '../context/GameContext';
+import { shuffleArray } from '../utils/shuffle';
 import { Level, Question, DialogueChoice } from '../types';
 import { 
   SpanishWaiterIllustration, 
@@ -202,8 +203,27 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     }
   };
 
+  // Shuffled multiple-choice options so the correct answer is not always Option A
+  const shuffledOptions = useMemo(() => {
+    return shuffleArray(currentQuestion.options);
+  }, [currentQuestion.id, currentQuestion.options]);
+
+  // Shuffled dialogue choices so Option A is not always the correct one
+  const shuffledDialogueChoices = useMemo(() => {
+    const rawChoices = currentQuestion.dialogue?.choices || (currentQuestion.options ? currentQuestion.options.map((opt, i): DialogueChoice => ({
+      id: `choice-${i}`,
+      text: opt,
+      isCorrect: opt === currentQuestion.correctAnswer,
+      npcResponse: opt === currentQuestion.correctAnswer ? '¡Excelente!' : 'Respuesta incorrecta.',
+      explanation: currentQuestion.explanation
+    })) : []);
+    return shuffleArray(rawChoices);
+  }, [currentQuestion.id, currentQuestion.dialogue?.choices, currentQuestion.options, currentQuestion.correctAnswer, currentQuestion.explanation]);
+
   // Fill in the blank word bank options
-  const wordBankOptions = currentQuestion.options || ['en', 'a', 'de', 'con'];
+  const wordBankOptions = useMemo(() => {
+    return shuffleArray(currentQuestion.options || ['en', 'a', 'de', 'con']);
+  }, [currentQuestion.id, currentQuestion.options]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
@@ -387,7 +407,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
               {/* Question Modality 1: Multiple Choice (Panel 8) */}
               {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
                 <div className="space-y-3">
-                  {currentQuestion.options.map((option, idx) => {
+                  {shuffledOptions.map((option, idx) => {
                     const letter = String.fromCharCode(65 + idx); // A, B, C, D
                     const isSelected = selectedOption === option;
                     const isAnswer = hasSubmitted && option === currentQuestion.correctAnswer;
@@ -542,13 +562,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
                   {/* Dialogue Choices list */}
                   <div className="space-y-2.5">
-                    {(currentQuestion.dialogue?.choices || (currentQuestion.options ? currentQuestion.options.map((opt, i): DialogueChoice => ({
-                      id: `choice-${i}`,
-                      text: opt,
-                      isCorrect: opt === currentQuestion.correctAnswer,
-                      npcResponse: opt === currentQuestion.correctAnswer ? '¡Excelente!' : 'Respuesta incorrecta.',
-                      explanation: currentQuestion.explanation
-                    })) : [])).map((choice, idx) => {
+                    {shuffledDialogueChoices.map((choice, idx) => {
                       const letter = String.fromCharCode(65 + idx);
                       const isSelected = selectedOption === choice.text || dialogueChosenChoice?.id === choice.id;
                       const isAnswer = hasSubmitted && choice.isCorrect;

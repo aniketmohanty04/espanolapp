@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { getQuestionById, getCityById } from '../data/citiesData';
 import { Question } from '../types';
+import { shuffleArray } from '../utils/shuffle';
 import { 
   X, 
   BookOpen, 
@@ -26,6 +27,10 @@ export const ReviewNotebookModal: React.FC<ReviewNotebookModalProps> = ({ onClos
     isCorrect: false,
     show: false
   });
+
+  const shuffledPracticeOptions = useMemo(() => {
+    return activePracticeQuestion?.options ? shuffleArray(activePracticeQuestion.options) : [];
+  }, [activePracticeQuestion?.id, activePracticeQuestion?.options]);
 
   const mistakesList = Object.values(progress.incorrectQuestions);
   const pendingMistakes = mistakesList.filter(m => !m.mastered);
@@ -156,7 +161,7 @@ export const ReviewNotebookModal: React.FC<ReviewNotebookModalProps> = ({ onClos
               {/* Multiple Choice Options or Text Input */}
               {activePracticeQuestion.options ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {activePracticeQuestion.options.map((opt, i) => (
+                  {shuffledPracticeOptions.map((opt, i) => (
                     <button
                       key={i}
                       disabled={practiceFeedback.show && practiceFeedback.isCorrect}

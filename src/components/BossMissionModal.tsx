@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGame, REWARD_CONFIG } from '../context/GameContext';
 import { BossMission, Question } from '../types';
+import { shuffleArray } from '../utils/shuffle';
 import { 
   X, 
   ShieldAlert, 
@@ -49,6 +50,10 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   } | null>(null);
 
   const currentQuestion: Question = bossMission.questions[currentIndex];
+
+  const shuffledOptions = useMemo(() => {
+    return currentQuestion?.options ? shuffleArray(currentQuestion.options) : [];
+  }, [currentQuestion?.id, currentQuestion?.options]);
 
   useEffect(() => {
     setSelectedOption('');
@@ -270,7 +275,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
               {/* Question Interaction */}
               {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
                 <div className="space-y-3">
-                  {currentQuestion.options.map((opt, idx) => {
+                  {shuffledOptions.map((opt, idx) => {
                     const letter = String.fromCharCode(65 + idx);
                     const isSelected = selectedOption === opt;
                     const isAnswer = hasSubmitted && opt === currentQuestion.correctAnswer;
