@@ -67,14 +67,14 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
           </h2>
           <p className="text-xs text-[#7D6B5E] mt-1 leading-relaxed">
             {currentLives === 0
-              ? 'Has agotado tus 3 vidas en los desafíos. Elige cómo quieres continuar tu aventura:'
+              ? 'Has agotado tus vidas en los desafíos. Puedes comprar 1 vida de inmediato por 500 monedas o esperar a que se regeneren gratis:'
               : currentLives < 3
-              ? `Tienes ${currentLives} de 3 vidas. Puedes recargar las 3 vidas completas de inmediato por 500 monedas o esperar a que se regeneren gratis.`
+              ? `Tienes ${currentLives} de 3 vidas. Puedes comprar 1 vida (+1 ❤️) de inmediato por 500 monedas o esperar a que se regeneren gratis cada 15 minutos.`
               : 'Tienes tus 3 vidas completas listas para cualquier desafío en el camino.'}
           </p>
         </div>
 
-        {/* Option 1: Instant Refill for 500 Coins */}
+        {/* Option 1: Instant Life Purchase for 500 Coins */}
         <div className={`p-4 rounded-2xl border-2 mb-3.5 transition-all ${
           canAffordRefill 
             ? 'bg-amber-500/10 border-amber-400/60 shadow-xs' 
@@ -84,8 +84,8 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
             <div className="flex items-center space-x-2">
               <span className="text-xl">🪙</span>
               <div>
-                <h4 className="font-black text-sm text-[#24140E]">Recargar 3 Vidas Ahora</h4>
-                <p className="text-[11px] text-[#6B584D]">Restaura tus 3 corazones de inmediato</p>
+                <h4 className="font-black text-sm text-[#24140E]">Comprar 1 Vida Ahora</h4>
+                <p className="text-[11px] text-[#6B584D]">Obtén +1 corazón de inmediato</p>
               </div>
             </div>
             <span className="font-black text-sm text-[#B45309]">500 🪙</span>
@@ -112,7 +112,7 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
               {currentLives >= 3
                 ? 'Vidas ya completas (3/3 ❤️)'
                 : canAffordRefill 
-                ? 'Gastar 500 Monedas y Recargar 3 Vidas' 
+                ? 'Pagar 500 Monedas y Obtener 1 Vida (+1 ❤️)' 
                 : `Monedas insuficientes (Faltan ${500 - currentCoins} 🪙)`}
             </span>
           </button>

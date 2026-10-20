@@ -219,8 +219,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return remaining;
   }, []);
 
-  // Spend 500 coins to restore 3 lives immediately
+  // Spend 500 coins to get 1 life immediately (up to max 3)
   const refillLivesWithCoins = useCallback((): { success: boolean; error?: string } => {
+    const currentLives = typeof progress.stats.lives === 'number' ? progress.stats.lives : 3;
+    if (currentLives >= 3) {
+      return {
+        success: false,
+        error: 'Ya tienes el máximo de vidas (3/3 ❤️).'
+      };
+    }
+
     if (progress.stats.coins < LIFE_REFILL_COIN_COST) {
       return {
         success: false,
@@ -228,20 +236,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    setProgress(prev => ({
-      ...prev,
-      stats: {
-        ...prev.stats,
-        coins: Math.max(0, prev.stats.coins - LIFE_REFILL_COIN_COST),
-        lives: 3,
-        maxLives: 3,
-        lastLifeLostAt: undefined
-      }
-    }));
+    setProgress(prev => {
+      const cur = typeof prev.stats.lives === 'number' ? prev.stats.lives : 3;
+      const nextLives = Math.min(3, cur + 1);
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          coins: Math.max(0, prev.stats.coins - LIFE_REFILL_COIN_COST),
+          lives: nextLives,
+          maxLives: 3,
+          lastLifeLostAt: nextLives >= 3 ? undefined : prev.stats.lastLifeLostAt
+        }
+      };
+    });
 
     soundService.playLevelComplete();
     return { success: true };
-  }, [progress.stats.coins]);
+  }, [progress.stats.coins, progress.stats.lives]);
 
   // Save progress whenever it updates (immediate to local storage, debounced 800ms to Supabase cloud)
   useEffect(() => {

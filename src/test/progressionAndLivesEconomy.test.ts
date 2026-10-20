@@ -126,21 +126,33 @@ describe('Progression & Lives Economy Suite', () => {
       expect(progress.stats.lives).toBe(0);
     });
 
-    it('refills 3 lives when spending 500 coins', () => {
+    it('purchases 1 life (+1 heart) when spending 500 coins', () => {
       progress.stats.lives = 0;
       progress.stats.coins = 600;
-      progress.stats.lastLifeLostAt = new Date().toISOString();
+      const initialLostAt = new Date().toISOString();
+      progress.stats.lastLifeLostAt = initialLostAt;
 
       const refillCost = 500;
-      if (progress.stats.coins >= refillCost) {
+      if (progress.stats.coins >= refillCost && progress.stats.lives < 3) {
         progress.stats.coins -= refillCost;
-        progress.stats.lives = 3;
-        progress.stats.maxLives = 3;
-        progress.stats.lastLifeLostAt = undefined;
+        progress.stats.lives = Math.min(3, progress.stats.lives + 1);
+        progress.stats.lastLifeLostAt = progress.stats.lives >= 3 ? undefined : progress.stats.lastLifeLostAt;
       }
 
-      expect(progress.stats.lives).toBe(3);
+      // Grants exactly 1 life, leaves 100 coins
+      expect(progress.stats.lives).toBe(1);
       expect(progress.stats.coins).toBe(100);
+      expect(progress.stats.lastLifeLostAt).toBe(initialLostAt);
+
+      // Reaching max 3 lives resets lastLifeLostAt
+      progress.stats.lives = 2;
+      progress.stats.coins = 500;
+      if (progress.stats.coins >= refillCost && progress.stats.lives < 3) {
+        progress.stats.coins -= refillCost;
+        progress.stats.lives = Math.min(3, progress.stats.lives + 1);
+        progress.stats.lastLifeLostAt = progress.stats.lives >= 3 ? undefined : progress.stats.lastLifeLostAt;
+      }
+      expect(progress.stats.lives).toBe(3);
       expect(progress.stats.lastLifeLostAt).toBeUndefined();
     });
 

@@ -704,7 +704,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                       <span className="font-mono font-black text-rose-600">{formatLifeTimer(secondsUntilNextLife)}</span>
                     </div>
 
-                    {/* Spend 500 Coins for 3 Lives */}
+                    {/* Spend 500 Coins for 1 Life */}
                     {progress.stats.coins >= 500 ? (
                       <button
                         onClick={() => {
@@ -715,14 +715,14 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                           }
                         }}
                         className="px-5 py-3 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center space-x-1.5 cursor-pointer"
-                        title="Gastar 500 monedas para recargar 3 vidas"
+                        title="Gastar 500 monedas para obtener 1 vida"
                       >
                         <Sparkles className="w-4 h-4" />
-                        <span>Recargar 3 Vidas (500 🪙)</span>
+                        <span>Comprar 1 Vida (500 🪙)</span>
                       </button>
                     ) : (
                       <div className="px-4 py-2.5 rounded-full bg-stone-100 border border-stone-300 text-stone-500 font-bold text-xs" title="Monedas insuficientes">
-                        <span>Faltan {500 - progress.stats.coins} 🪙 para vidas</span>
+                        <span>Faltan {500 - progress.stats.coins} 🪙 para 1 vida</span>
                       </div>
                     )}
 
