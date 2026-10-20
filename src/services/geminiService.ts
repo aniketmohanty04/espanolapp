@@ -26,6 +26,12 @@ export interface CaminoContext {
   levelNumber?: number;
   streak?: number;
   playerName?: string;
+  syllabusTopic?: string;
+  levelTitle?: string;
+  questionPrompt?: string;
+  submittedAnswer?: string;
+  isCorrect?: boolean;
+  explanation?: string;
 }
 
 // In-memory fallback for test and non-browser environments
@@ -114,9 +120,19 @@ export async function askCaminoGemini(
   const currentCity = context?.cityName || 'Madrid';
   const streak = context?.streak || 1;
   const playerName = context?.playerName || 'Estudiante';
+  const curriculumTopic = context?.syllabusTopic ? `\nCurriculum Topic: ${context.syllabusTopic}` : '';
+  const levelTitle = context?.levelTitle ? `\nCurrent Level: ${context.levelTitle}` : '';
+  const reviewContext = context?.questionPrompt
+    ? `\n\nACTIVE REVIEW CONTEXT (The student has already submitted their answer and is now reviewing feedback):
+- Question Asked: "${context.questionPrompt}"
+- Student's Submitted Answer: "${context.submittedAnswer || '(none)'}"
+- Result: ${context.isCorrect ? 'Correct ✓' : 'Incorrect ✗'}
+${context.explanation ? `- Official Explanation: "${context.explanation}"` : ''}
+Instruction: Clarify why the answer is correct or incorrect, explain relevant grammar or vocabulary, and help the student understand. Under NO circumstances reveal or discuss answers to any other active questions.`
+    : '';
 
   const systemInstruction = `You are Camino (🤖), the dedicated and expert Spanish Teacher (Profesor de Español) in the adventure game "¡Aventura Española!".
-The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).
+The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).${curriculumTopic}${levelTitle}${reviewContext}
 
 YOUR STRICT MANDATE AS A SPANISH TEACHER:
 1. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction.
@@ -129,6 +145,7 @@ YOUR STRICT MANDATE AS A SPANISH TEACHER:
 
 FORBIDDEN:
 - NEVER give generic, evasive, or random answers that ignore the student's prompt.
+- NEVER reveal answers to upcoming questions or quizzes that the student hasn't submitted.
 - NEVER put English in "spanishText". It must strictly contain pure Spanish text with proper Spanish punctuation (¡ !, ¿ ?, á, é, í, ó, ú, ñ).
 - NEVER mention Google, Gemini, or underlying models. You are purely Camino.
 
@@ -374,6 +391,34 @@ function getFallbackCaminoResponse(
 ): CaminoResponse {
   const lower = userQuery.toLowerCase().trim();
   const cityName = context?.cityName || 'Madrid';
+
+  // 0. REVIEW CONTEXT: Student asks about their submitted answer or question explanation
+  if (context?.questionPrompt && (
+    lower.includes('por qué') ||
+    lower.includes('why') ||
+    lower.includes('wrong') ||
+    lower.includes('error') ||
+    lower.includes('right') ||
+    lower.includes('correct') ||
+    lower.includes('explic') ||
+    lower.includes('pregunta') ||
+    lower.includes('answer') ||
+    lower.includes('respuesta') ||
+    lower.includes('duda')
+  )) {
+    const isCorrect = Boolean(context.isCorrect);
+    return {
+      text: isCorrect
+        ? `¡Buen trabajo! Tu respuesta "${context.submittedAnswer || ''}" es correcta.`
+        : `Analicemos tu respuesta "${context.submittedAnswer || ''}":`,
+      spanishText: context.explanation || context.questionPrompt,
+      englishText: isCorrect
+        ? `You answered correctly. ${context.explanation || 'You applied the right grammar rule!'}`
+        : `Explanation: ${context.explanation || 'Notice the correct grammatical agreement and verb tense.'}`,
+      practicePrompt: '¿Te gustaría repasar otro ejemplo de este tema?',
+      source: 'fallback'
+    };
+  }
 
   // 1. FAULT FINDING: "yo soy calor" / "soy caliente"
   if (lower.includes('soy calor') || lower.includes('soy caliente')) {

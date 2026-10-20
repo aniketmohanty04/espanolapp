@@ -17,6 +17,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { FinalAssessmentModal } from './components/FinalAssessmentModal';
 import { JourneyHub } from './components/JourneyHub';
 import { OutOfLivesModal } from './components/OutOfLivesModal';
+import { FloatingChatbot } from './components/FloatingChatbot';
 import { getCityById, getLevelById, ALL_CITIES } from './data/citiesData';
 
 const GameMain: React.FC = () => {
@@ -342,6 +343,9 @@ const GameMain: React.FC = () => {
         isOpen={showOutOfLivesModal}
         onClose={() => setShowOutOfLivesModal(false)}
       />
+
+      {/* Floating Spanish Tutor AI Chatbot (Accessible across all active game pages) */}
+      <FloatingChatbot />
 
       {/* Footer */}
       <footer className="border-t border-[#EADFCF] bg-[#FAF7F2] py-4 px-6 text-center text-xs text-[#7A6B60]">

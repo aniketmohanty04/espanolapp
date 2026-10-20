@@ -22,7 +22,7 @@ interface FinalAssessmentModalProps {
 }
 
 export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onClose }) => {
-  const { recordFinalAssessment, progress } = useGame();
+  const { recordFinalAssessment, progress, setActiveQuizState } = useGame();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -46,6 +46,19 @@ export const FinalAssessmentModal: React.FC<FinalAssessmentModalProps> = ({ onCl
   const shuffledOptions = useMemo(() => {
     return currentQ.options ? shuffleArray(currentQ.options) : [];
   }, [currentQ.id, currentQ.options]);
+
+  React.useEffect(() => {
+    setActiveQuizState({
+      isActive: true,
+      isAnswered: isSubmitted,
+      cityName: 'La Gran Fiesta',
+      levelTitle: 'Evaluación Final Acumulativa',
+      syllabusTopic: 'Examen de Certificación Final'
+    });
+    return () => {
+      setActiveQuizState(null);
+    };
+  }, [isSubmitted, setActiveQuizState]);
 
   // Set up word order words if current question is word-order
   React.useEffect(() => {

@@ -16,6 +16,20 @@ export const REWARD_CONFIG = {
   BOSS_MASTERY_THRESHOLD_PERCENT: 80
 };
 
+export interface ActiveQuizState {
+  isActive: boolean;
+  isAnswered: boolean;
+  cityId?: string;
+  cityName?: string;
+  levelId?: string;
+  levelTitle?: string;
+  syllabusTopic?: string;
+  questionPrompt?: string;
+  submittedAnswer?: string;
+  isCorrect?: boolean;
+  explanation?: string;
+}
+
 interface GameContextType {
   progress: PlayerProgress;
   currentScreen: GameScreen;
@@ -24,6 +38,8 @@ interface GameContextType {
   activeBossCityId: string | null;
   isFestivalOpen: boolean;
   soundMuted: boolean;
+  activeQuizState: ActiveQuizState | null;
+  setActiveQuizState: React.Dispatch<React.SetStateAction<ActiveQuizState | null>>;
   setCurrentScreen: (screen: GameScreen) => void;
   setActiveCityId: (id: string | null) => void;
   setActiveLevelId: (id: string | null) => void;
@@ -157,6 +173,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeBossCityId, setActiveBossCityId] = useState<string | null>(null);
   const [isFestivalOpen, setIsFestivalOpen] = useState<boolean>(false);
   const [soundMuted, setSoundMuted] = useState<boolean>(soundService.getIsMuted());
+  const [activeQuizState, setActiveQuizState] = useState<ActiveQuizState | null>(null);
 
   // Life Management Constants (3 max lives, 500 coins to refill, 15 minutes per free life)
   const secondsUntilNextLife = calculateSecondsUntilNextLife(
@@ -905,6 +922,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeBossCityId,
         isFestivalOpen,
         soundMuted,
+        activeQuizState,
+        setActiveQuizState,
         setCurrentScreen,
         setActiveCityId,
         setActiveLevelId,

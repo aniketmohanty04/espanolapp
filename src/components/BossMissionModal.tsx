@@ -31,7 +31,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { recordBossCompleted, progress, purchaseVocabHint } = useGame();
+  const { recordBossCompleted, progress, purchaseVocabHint, setActiveQuizState } = useGame();
 
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -89,7 +89,25 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
       setConstructedWords([]);
       setAvailableWords([...currentQuestion.sentencePieces]);
     }
-  }, [currentIndex, currentQuestion?.id, hasStarted]);
+
+    if (hasStarted && currentQuestion) {
+      setActiveQuizState({
+        isActive: true,
+        isAnswered: false,
+        cityId: bossMission.cityId,
+        cityName,
+        levelTitle: `Misión del Jefe de ${cityName}`,
+        syllabusTopic: 'Misión del Jefe de Ciudad'
+      });
+    }
+  }, [currentIndex, currentQuestion?.id, hasStarted, bossMission.cityId, cityName, setActiveQuizState]);
+
+  // Clear quiz state on unmount
+  useEffect(() => {
+    return () => {
+      setActiveQuizState(null);
+    };
+  }, [setActiveQuizState]);
 
   // Purchase Vocabulary Hint ("Pista de vocabulario") for Boss question
   const handlePurchaseVocabHint = () => {
@@ -150,6 +168,20 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
     setIsCorrect(correct);
     setHasSubmitted(true);
 
+    // Tutor enters review mode for this submitted boss question
+    setActiveQuizState({
+      isActive: true,
+      isAnswered: true,
+      cityId: bossMission.cityId,
+      cityName,
+      levelTitle: `Misión del Jefe de ${cityName}`,
+      syllabusTopic: 'Misión del Jefe de Ciudad',
+      questionPrompt: currentQuestion.prompt,
+      submittedAnswer: userVal,
+      isCorrect: correct,
+      explanation: currentQuestion.explanation
+    });
+
     if (correct) {
       setCorrectCount(prev => prev + 1);
     }
@@ -157,8 +189,18 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
 
   const handleNext = () => {
     if (currentIndex + 1 < bossMission.questions.length) {
+      // Tutor immediately locks again for the next unanswered boss question
+      setActiveQuizState({
+        isActive: true,
+        isAnswered: false,
+        cityId: bossMission.cityId,
+        cityName,
+        levelTitle: `Misión del Jefe de ${cityName}`,
+        syllabusTopic: 'Misión del Jefe de Ciudad'
+      });
       setCurrentIndex(prev => prev + 1);
     } else {
+      setActiveQuizState(null);
       // Evaluate Boss Mastery
       const total = bossMission.questions.length;
       const finalCorrect = correctCount + (isCorrect ? 1 : 0);
@@ -175,6 +217,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   };
 
   const handleRetryBoss = () => {
+    setActiveQuizState(null);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIsFinished(false);

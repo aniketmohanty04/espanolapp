@@ -47,7 +47,8 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     purchaseTranslation,
     purchaseVocabHint,
     recordLevelCompleted,
-    refillLivesWithCoins
+    refillLivesWithCoins,
+    setActiveQuizState
   } = useGame();
   const secondsUntilNextLife = useLifeCountdown();
 
@@ -118,6 +119,25 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     }
   }, [currentIndex, currentQuestion.id]);
 
+  // Synchronize active quiz state for tutor lock (strictly locked while unanswered)
+  useEffect(() => {
+    setActiveQuizState({
+      isActive: true,
+      isAnswered: false,
+      cityId,
+      levelId: level.id,
+      levelTitle: level.title,
+      syllabusTopic: level.syllabusTopic
+    });
+  }, [currentIndex, currentQuestion.id, cityId, level.id, level.title, level.syllabusTopic, setActiveQuizState]);
+
+  // Clear quiz state on unmount
+  useEffect(() => {
+    return () => {
+      setActiveQuizState(null);
+    };
+  }, [setActiveQuizState]);
+
   // Word order handlers
   const addWordToConstructed = (word: string, index: number) => {
     if (hasSubmitted) return;
@@ -166,6 +186,20 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     setIsCorrect(correct);
     const isFirstTry = attemptCount === 0;
 
+    // Transition tutor to Review Mode (unlocked for questions/feedback on this specific submitted question)
+    setActiveQuizState({
+      isActive: true,
+      isAnswered: true,
+      cityId,
+      levelId: level.id,
+      levelTitle: level.title,
+      syllabusTopic: level.syllabusTopic,
+      questionPrompt: currentQuestion.prompt,
+      submittedAnswer: userVal,
+      isCorrect: correct,
+      explanation: currentQuestion.explanation
+    });
+
     recordQuestionResult(currentQuestion, cityId, level.id, correct, isFirstTry);
 
     if (correct) {
@@ -183,8 +217,18 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   // Move to next question or complete level
   const handleNextQuestion = () => {
     if (currentIndex + 1 < level.questions.length) {
+      // Immediately re-lock tutor for the new question
+      setActiveQuizState({
+        isActive: true,
+        isAnswered: false,
+        cityId,
+        levelId: level.id,
+        levelTitle: level.title,
+        syllabusTopic: level.syllabusTopic
+      });
       setCurrentIndex(prev => prev + 1);
     } else {
+      setActiveQuizState(null);
       // Level Finished! (Panel 11)
       const totalQ = level.questions.length;
       const scorePercent = Math.round((correctFirstTries / totalQ) * 100);
