@@ -814,14 +814,14 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
           2. VIEW 0: PLAYABLE 3D FESTIVAL PLAZA
           ======================================================== */}
       {viewMode === '3d' && (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+        <div className="p-2 sm:p-4 max-w-7xl mx-auto w-full">
           <Adventure3DScene
-            cityName="La Gran Fiesta Española"
-            cityNumber={16}
+            cityName="Sevilla"
+            cityNumber={4}
             totalCities={16}
-            regionName="Plaza Mayor de la Celebración"
+            regionName="La Gran Fiesta"
             accentColor="#C60B1E"
-            landmarkName="Carpa de la Real Academia & Puestos"
+            landmarkName="La Gran Fiesta"
             stations={festival3DStations}
             bossStation={examStationData}
             onBackToMap={onBackToMap}

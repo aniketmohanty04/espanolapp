@@ -15,7 +15,14 @@ import {
   ShieldAlert,
   Flame,
   Star,
-  Coins
+  Coins,
+  Sun,
+  Clock,
+  MapPin,
+  Lock,
+  Compass,
+  Check,
+  X
 } from 'lucide-react';
 
 export interface AdventureStation3D {
@@ -188,6 +195,12 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   const [toastText, setToastText] = useState<string | null>(null);
   const toastTimeoutRef = useRef<any>(null);
 
+  // Dynamic distance and target tracking for quest HUD (matching reference image)
+  const [nearestDistance, setNearestDistance] = useState<number>(12);
+  const [nearestStation, setNearestStation] = useState<AdventureStation3D | null>(null);
+  const [showInventory, setShowInventory] = useState<boolean>(false);
+  const [isMissionsCollapsed, setIsMissionsCollapsed] = useState<boolean>(false);
+
   const showToast = useCallback((msg: string) => {
     setToastText(msg);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -202,7 +215,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     keysRef.current[key] = pressed;
   };
 
-  // Convert player profile to colors
+  // Convert player profile to colors - default to vibrant orange jacket & blue jeans matching reference image
   const skinHex = {
     light: 0xfddcb5,
     'medium-light': 0xe8b98a,
@@ -213,21 +226,16 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
   const hairHex = {
     black: 0x1a1a2e,
-    brown: 0x6b3a2a,
+    brown: 0x241711,
     blonde: 0xe8c96a,
     red: 0xb34233,
     gray: 0x9ca3af
-  }[progress.profile?.character?.hairColor || 'brown'] || 0x6b3a2a;
+  }[progress.profile?.character?.hairColor || 'brown'] || 0x241711;
 
-  const shirtHex = {
-    casual: 0x3b82f6,
-    traveler: 0xb45309,
-    flamenco: 0xc60b1e,
-    sporty: 0x16a34a,
-    elegant: 0x7c3aed
-  }[progress.profile?.character?.outfit || 'traveler'] || 0xb45309;
-
-  const pantsHex = 0x2b3a67;
+  // Vibrant Spanish terracotta/orange jacket matching reference image
+  const shirtHex = 0xe05615;
+  // Deep navy blue trousers matching reference image
+  const pantsHex = 0x24355a;
 
   // Stable references for dynamic props so the 3D WebGL scene never tears down during gameplay
   const stationsRef = useRef(stations);
@@ -259,8 +267,9 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x9fd0f0);
-    scene.fog = new THREE.Fog(0x9fd0f0, 45, 110);
+    // Warm Spanish Dusk Sky matching user reference image
+    scene.background = new THREE.Color(0xd97736);
+    scene.fog = new THREE.Fog(0xb85b2e, 45, 115);
     scene.add(worldGroup);
 
     camera = new THREE.PerspectiveCamera(
@@ -270,10 +279,10 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       200
     );
 
-    // Lights
-    scene.add(new THREE.HemisphereLight(0xdcefff, 0x8a7a5a, 0.95));
-    const sun = new THREE.DirectionalLight(0xfff0d0, 0.85);
-    sun.position.set(18, 34, 12);
+    // Warm Festive Golden Hour Lighting (matching user reference image)
+    scene.add(new THREE.HemisphereLight(0xffcaa0, 0x854d0e, 1.15));
+    const sun = new THREE.DirectionalLight(0xffecc0, 1.1);
+    sun.position.set(16, 28, 14);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     Object.assign(sun.shadow.camera, {
@@ -284,6 +293,15 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       far: 90
     });
     scene.add(sun);
+
+    // Warm Central Lantern Glow Points (lighting the cobblestones like in the reference image)
+    const lanternLight1 = new THREE.PointLight(0xff9933, 1.3, 36);
+    lanternLight1.position.set(0, 5, 0);
+    scene.add(lanternLight1);
+
+    const lanternLight2 = new THREE.PointLight(0xff6622, 1.1, 30);
+    lanternLight2.position.set(0, 4.5, -14);
+    scene.add(lanternLight2);
 
     // Materials helper
     const mat = (c: number | string) => new THREE.MeshLambertMaterial({ color: c });
@@ -299,17 +317,83 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     // Obstacles collision list: [x, z, radius]
     const obstacles: [number, number, number][] = [];
 
-    // 1. Plaza ground
-    const baseColor = new THREE.Color(accentColor).offsetHSL(0, -0.2, 0.2);
-    const gr = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), mat(baseColor.clone().multiplyScalar(0.75).getHex()));
+    // 1. Plaza ground - Warm terracotta red cobblestone pattern matching reference image
+    const gr = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), mat(0x8a3822));
     gr.rotation.x = -Math.PI / 2;
     worldGroup.add(gr);
 
-    const plazaFloor = new THREE.Mesh(new THREE.PlaneGeometry(44, 44), mat(baseColor.getHex()));
+    const plazaFloor = new THREE.Mesh(new THREE.PlaneGeometry(44, 44), mat(0xc85a3b));
     plazaFloor.rotation.x = -Math.PI / 2;
     plazaFloor.position.y = 0.02;
     plazaFloor.receiveShadow = true;
     worldGroup.add(plazaFloor);
+
+    // 1b. Hanging Festive String Lights & Glowing Farolillos (Crisscrossing the square)
+    const lanternColors = [0xef4444, 0xfbbf24, 0xf97316, 0xef4444, 0xffffff, 0xfbbf24];
+    [-10, 0, 10].forEach((sz, idx) => {
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-18, 5.5, sz - 6),
+        new THREE.Vector3(-8, 4.3, sz - 2),
+        new THREE.Vector3(0, 4.0, sz),
+        new THREE.Vector3(8, 4.3, sz + 2),
+        new THREE.Vector3(18, 5.5, sz + 6)
+      ]);
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.025, 4, false), mat(0x452515));
+      worldGroup.add(cable);
+
+      const points = curve.getPoints(9);
+      points.forEach((pt, pIdx) => {
+        if (pIdx === 0 || pIdx === points.length - 1) return;
+        const color = lanternColors[(idx * 3 + pIdx) % lanternColors.length];
+        const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.4, 4), mat(0x333333));
+        cord.position.set(pt.x, pt.y - 0.2, pt.z);
+        worldGroup.add(cord);
+
+        const lanternMat = new THREE.MeshBasicMaterial({ color });
+        const lanternMesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), lanternMat);
+        lanternMesh.position.set(pt.x, pt.y - 0.45, pt.z);
+        worldGroup.add(lanternMesh);
+      });
+    });
+
+    // 1c. Tapas Chalkboard sign easel next to front stall (matching reference)
+    const easelGroup = new THREE.Group();
+    const easelLeg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 4), mat(0x5c3317));
+    easelLeg1.rotation.x = 0.2;
+    easelLeg1.position.set(0, 0.7, -0.15);
+    easelGroup.add(easelLeg1);
+    const easelLeg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 4), mat(0x5c3317));
+    easelLeg2.rotation.x = -0.2;
+    easelLeg2.position.set(0, 0.7, 0.15);
+    easelGroup.add(easelLeg2);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.06), mat(0x1a2e22));
+    board.position.set(0, 0.8, 0);
+    easelGroup.add(board);
+    easelGroup.position.set(10.5, 0, -6);
+    worldGroup.add(easelGroup);
+    obstacles.push([10.5, -6, 0.8]);
+
+    // Wine Barrels
+    [[-8, 6], [-8.8, 5.2], [11.5, -4.5], [12.2, -5.5]].forEach(([bx, bz]) => {
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 0.95, 10), mat(0x6b4423));
+      barrel.position.set(bx, 0.48, bz);
+      barrel.castShadow = true;
+      worldGroup.add(barrel);
+      obstacles.push([bx, bz, 0.6]);
+    });
+
+    // Red geranium flower planters along perimeter
+    for (let k = -12; k <= 12; k += 6) {
+      if (Math.abs(k) < 3) continue;
+      const planter = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.5), mat(0xb45309));
+      planter.position.set(k, 0.23, 16);
+      worldGroup.add(planter);
+      for (let f = -0.5; f <= 0.5; f += 0.35) {
+        const flower = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 5), mat(0xef4444));
+        flower.position.set(k + f, 0.52, 16);
+        worldGroup.add(flower);
+      }
+    }
 
     // 2. Perimeter Spanish town buildings
     const wallCol = new THREE.Color(0xd4c3a3);
@@ -464,29 +548,62 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       });
     });
 
-    // 9. Boss Station at North end of Plaza (if provided)
+    // 9. Boss Station / Grand Stage at North end of Plaza (matching reference image)
     let bossTagEl: HTMLDivElement | null = null;
     if (bossStation) {
       const bx = 0;
-      const bz = -20;
-      // Grand Palace Tent Archway
-      addBox(8, 0.3, 4, 0x22182d, bx, 0, bz);
-      addBox(0.4, 4, 0.4, 0xffc400, bx - 3.8, 0, bz);
-      addBox(0.4, 4, 0.4, 0xffc400, bx + 3.8, 0, bz);
-      addBox(8.4, 0.5, 0.6, 0xc60b1e, bx, 4, bz);
+      const bz = -18;
+      const stageGroup = new THREE.Group();
 
-      // Grand Boss NPC
+      // Elevated wooden stage platform
+      addBox(14, 0.8, 6, 0x8a4522, bx, 0, bz, stageGroup);
+      // Stage front steps
+      addBox(6, 0.4, 1.2, 0xa5582e, bx, 0, bz + 3.6, stageGroup);
+      // Grand Red Arch Backdrop
+      addBox(14, 4.5, 0.4, 0x991b1b, bx, 0.8, bz - 2.8, stageGroup);
+      // Golden Pillars
+      [-6.8, -2.5, 2.5, 6.8].forEach(px => {
+        addBox(0.4, 5.5, 0.4, 0xf59e0b, bx + px, 0.8, bz - 2.6, stageGroup);
+      });
+      // Archway Header Beam with Red Banner
+      addBox(14.4, 1.4, 0.8, 0xb91c1c, bx, 5.3, bz - 2.4, stageGroup);
+
+      // Musicians on stage (Guitarist + Singer)
+      const guitarist = createPersonMesh(0xb45309, 0x1f2937, 0x111827, 0xdeb887);
+      guitarist.position.set(bx - 2.8, 0.8, bz - 0.5);
+      guitarist.rotation.y = 0.35;
+      stageGroup.add(guitarist);
+
+      const singer = createPersonMesh(0xc60b1e, 0x111827, 0x111827, 0xfce7f3);
+      singer.position.set(bx + 2.8, 0.8, bz - 0.5);
+      singer.rotation.y = -0.35;
+      stageGroup.add(singer);
+
+      // Grand Boss NPC in center of stage
       const bossChar = createPersonMesh(0xc60b1e, 0x1a1a2e, 0x1f2937, 0xe0b08a);
-      bossChar.position.set(bx, 0, bz);
-      bossChar.scale.set(1.25, 1.25, 1.25);
-      worldGroup.add(bossChar);
+      bossChar.position.set(bx, 0.8, bz);
+      bossChar.scale.set(1.2, 1.2, 1.2);
+      stageGroup.add(bossChar);
 
-      obstacles.push([bx, bz, 2.6]);
+      worldGroup.add(stageGroup);
+      obstacles.push([bx, bz, 5.5]);
 
       bossTagEl = document.createElement('div');
       bossTagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-opacity select-none';
       if (tagsContainer) tagsContainer.appendChild(bossTagEl);
     }
+
+    // 9b. Dedicated Floating Quest Beacon Element (matching reference image)
+    const targetBeaconEl = document.createElement('div');
+    targetBeaconEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-all select-none z-20';
+    if (tagsContainer) tagsContainer.appendChild(targetBeaconEl);
+
+    // 9c. Flamenco dancer in red dress in front of the stage (matching reference)
+    const flamencoDancer = createPersonMesh(0xbe123c, 0x0f172a, 0x881337, 0xfce7f3);
+    flamencoDancer.position.set(6.2, 0, -11.5);
+    flamencoDancer.rotation.y = -0.4;
+    worldGroup.add(flamencoDancer);
+    obstacles.push([6.2, -11.5, 1.2]);
 
     // 10. Gate Tag
     const gateTagEl = document.createElement('div');
@@ -629,59 +746,93 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       }
     };
 
-    // Render Minimap Radar
+    // Render Minimap Radar - Ornate Brass Compass (matching reference image)
     const drawMinimap = () => {
       const mmCanvas = minimapCanvasRef.current;
       if (!mmCanvas) return;
       const ctx = mmCanvas.getContext('2d');
       if (!ctx) return;
 
-      ctx.clearRect(0, 0, 96, 96);
+      const size = 112;
+      const center = size / 2;
+      const radius = 50;
+
+      ctx.clearRect(0, 0, size, size);
       ctx.save();
       ctx.beginPath();
-      ctx.arc(48, 48, 45, 0, Math.PI * 2);
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
       ctx.clip();
 
-      // Background
-      ctx.fillStyle = '#1D2133';
-      ctx.fillRect(0, 0, 96, 96);
+      // Warm cobblestone dusk plaza background
+      ctx.fillStyle = '#26140D';
+      ctx.fillRect(0, 0, size, size);
+
+      // Radial rings & compass lines
+      ctx.strokeStyle = '#4A2A1A';
+      ctx.lineWidth = 1;
+      [18, 34, 48].forEach(r => {
+        ctx.beginPath();
+        ctx.arc(center, center, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      ctx.beginPath();
+      ctx.moveTo(center, 0);
+      ctx.lineTo(center, size);
+      ctx.moveTo(0, center);
+      ctx.lineTo(size, center);
+      ctx.stroke();
 
       // Coordinate converter (centered on player)
       const toMinimap = (wx: number, wz: number): [number, number] => {
-        return [48 + (wx - playerPos.x) * 1.8, 48 + (wz - playerPos.z) * 1.8];
+        return [center + (wx - playerPos.x) * 2.2, center + (wz - playerPos.z) * 2.2];
       };
 
-      // Draw fountain
+      // Draw fountain / plaza center
       const [fx, fz] = toMinimap(0, -5);
-      ctx.fillStyle = '#38BDF8';
+      ctx.fillStyle = '#0284C7';
       ctx.beginPath();
-      ctx.arc(fx, fz, 4, 0, Math.PI * 2);
+      ctx.arc(fx, fz, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw stations
+      // Draw station pins with vibrant colors
       stations.forEach(s => {
         const [sx, sz] = toMinimap(s.x, s.z);
-        ctx.fillStyle = s.status === 'completed' ? '#4ADE80' : s.status === 'unlocked' ? '#FBBF24' : '#64748B';
+        ctx.fillStyle = s.status === 'completed' ? '#10B981' : s.status === 'unlocked' ? '#F59E0B' : '#64748B';
         ctx.beginPath();
-        ctx.arc(sx, sz, 3.5, 0, Math.PI * 2);
+        ctx.arc(sx, sz, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(sx, sz, 1.8, 0, Math.PI * 2);
         ctx.fill();
       });
 
       // Draw Exit Gate
       const [gx, gz] = toMinimap(22, 0);
-      ctx.fillStyle = isGateOpen ? '#4ADE80' : '#EF4444';
+      ctx.fillStyle = isGateOpen ? '#10B981' : '#EF4444';
       ctx.fillRect(gx - 3, gz - 4, 6, 8);
 
-      // Draw player arrow in center
-      ctx.translate(48, 48);
+      // Draw player arrow in center (rotates with playerAngle)
+      ctx.translate(center, center);
       ctx.rotate(-playerAngle);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.5;
+      // Arrow shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
-      ctx.moveTo(0, -7);
-      ctx.lineTo(5, 5);
-      ctx.lineTo(-5, 5);
+      ctx.moveTo(0, -8);
+      ctx.lineTo(6, 6);
+      ctx.lineTo(-6, 6);
+      ctx.closePath();
+      ctx.fill();
+      // Golden Arrow
+      ctx.fillStyle = '#FBBF24';
+      ctx.strokeStyle = '#78350F';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -9);
+      ctx.lineTo(6, 5);
+      ctx.lineTo(0, 2);
+      ctx.lineTo(-6, 5);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
@@ -864,6 +1015,37 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
         projectToScreen(22, 5.5, 0, gateTagEl);
       }
 
+      // Track nearest station & update beacon (matching user reference image)
+      let minDist = 999;
+      let closestStation: AdventureStation3D | null = null;
+      for (const s of stationsRef.current) {
+        const d = Math.hypot(playerPos.x - s.x, playerPos.z - s.z);
+        if (d < minDist && s.status !== 'locked') {
+          minDist = d;
+          closestStation = s;
+        }
+      }
+
+      // Update beacon element above closest station
+      if (targetBeaconEl && closestStation) {
+        const target = closestStation as AdventureStation3D;
+        const mDistance = Math.max(1, Math.round(minDist * 1.5));
+        targetBeaconEl.innerHTML = `
+          <div class="pointer-events-auto flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-200 text-slate-950 font-black text-xs shadow-2xl border-2 border-white animate-bounce">
+            <span class="w-4 h-4 rounded-full bg-black text-amber-300 flex items-center justify-center text-[10px] font-black">!</span>
+            <span>${target.label || 'Organizadora de la Fiesta'}</span>
+            <span class="text-amber-800 text-[10px] font-bold">• 📍 ${mDistance} m</span>
+          </div>
+        `;
+        projectToScreen(target.x, 3.8, target.z, targetBeaconEl);
+      }
+
+      // Throttled state update for HUD
+      if (Math.floor(totalTime * 4) !== Math.floor((totalTime - dt) * 4)) {
+        setNearestDistance(Math.max(1, Math.round(minDist * 1.5)));
+        setNearestStation(closestStation);
+      }
+
       // Draw radar
       drawMinimap();
 
@@ -890,7 +1072,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   const totalStars = Object.values(progress.completedLevels).reduce((acc, lvl) => acc + (lvl.stars || 0), 0);
 
   return (
-    <div className="relative w-full h-[680px] sm:h-[760px] rounded-3xl overflow-hidden border-2 border-amber-400/40 shadow-2xl bg-[#0F111D] select-none">
+    <div className="relative w-full h-[680px] sm:h-[780px] rounded-3xl overflow-hidden border-4 border-amber-500/80 shadow-2xl bg-[#160B05] select-none">
       
       {/* 3D WebGL Canvas Mount */}
       <div ref={mountRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
@@ -899,121 +1081,313 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       <div ref={tagsContainerRef} className="absolute inset-0 pointer-events-none overflow-hidden" />
 
       {/* ========================================================
-          TOP-LEFT HUD: MINIMAP RADAR & QUEST INFO
+          1. TOP-LEFT HUD: BAROQUE CARVED HEADER PILL
           ======================================================== */}
-      <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-auto">
-        <div className="flex items-center space-x-2.5 p-2 rounded-2xl bg-white/95 backdrop-blur-md border-2 border-[#EADFCF] shadow-md text-[#24140E]">
-          {/* Circular Radar Minimap Canvas */}
-          <canvas
-            ref={minimapCanvasRef}
-            width={96}
-            height={96}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 shadow-inner"
-          />
-
-          {/* Location & Status Info */}
-          <div className="flex flex-col pr-2 text-left">
-            <div className="flex items-center space-x-1.5">
-              <span className="text-sm sm:text-base font-black text-[#24140E]">{cityName}</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-[#B45309] border border-amber-300">
-                {cityNumber}/{totalCities}
-              </span>
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 flex items-center space-x-2 sm:space-x-3 pointer-events-auto">
+        <div className="flex items-center space-x-2 sm:space-x-3 p-1.5 sm:p-2 rounded-2xl bg-gradient-to-r from-[#FFFDF9]/95 via-[#FFF8EE]/95 to-[#FFEAD1]/95 border-2 border-amber-400 shadow-xl backdrop-blur-md">
+          {/* Miniature landmark artwork */}
+          <div className="w-14 h-9 sm:w-16 sm:h-10 rounded-xl overflow-hidden border border-amber-300 shadow-xs shrink-0 bg-amber-100 flex items-center justify-center">
+            <img src="/game-art/sevilla-landmark.png" alt="Monumento" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex flex-col text-left pr-2">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-sm sm:text-base md:text-lg font-black font-serif text-[#24140E] tracking-tight leading-none">
+                {cityName || 'Sevilla'}
+              </h1>
+              <span className="text-sm sm:text-base leading-none">🇪🇸</span>
             </div>
-            <span className="text-[11px] font-semibold text-[#7A6B60]">{regionName}</span>
-            <span className="text-[10px] font-bold text-[#B45309] mt-1">
-              🎯 {completedCount}/{stations.length} Misiones
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8C5A2B] leading-tight mt-0.5">
+              {landmarkName || 'La Gran Fiesta'}
             </span>
           </div>
+          {/* Time / Weather Capsule */}
+          <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-b from-[#2B1108] to-[#160703] border border-amber-400/80 text-amber-200 text-[10px] sm:text-xs font-black shadow-inner flex items-center space-x-1.5">
+            <Sun className="w-3.5 h-3.5 text-amber-400 animate-spin-slow shrink-0" />
+            <span>Día 4 • 8:15 PM</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================
+          2. LEFT HUD: "MISIONES" QUEST PANEL
+          ======================================================== */}
+      <div className="absolute top-18 sm:top-20 left-3 sm:left-4 z-20 pointer-events-auto w-64 sm:w-72 transition-all">
+        <div className="bg-gradient-to-b from-[#2B1108]/95 via-[#1E0B05]/95 to-[#160703]/95 border-2 border-amber-500/70 rounded-2xl shadow-2xl p-3 text-amber-100 backdrop-blur-md space-y-2">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/30 pb-1.5">
+            <div className="flex items-center space-x-1.5">
+              <span className="text-base">📜</span>
+              <span className="text-xs font-black tracking-wider uppercase text-amber-300 font-serif">
+                MISIONES
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[11px] font-black text-amber-400 font-mono">
+                {completedCount}/20
+              </span>
+              <button
+                onClick={() => setIsMissionsCollapsed(!isMissionsCollapsed)}
+                className="text-amber-400 hover:text-white text-xs font-bold cursor-pointer"
+                title={isMissionsCollapsed ? 'Expandir' : 'Colapsar'}
+              >
+                {isMissionsCollapsed ? '▼' : '▲'}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-amber-500/30">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-300 rounded-full transition-all duration-500"
+              style={{ width: `${Math.round((completedCount / (stations.length || 20)) * 100)}%` }}
+            />
+          </div>
+
+          {!isMissionsCollapsed && (
+            <>
+              {/* Active Mission Card - Glowing Amber Gold */}
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#FBBF24] via-[#F59E0B] to-[#FBBF24] text-[#24140E] shadow-md border border-amber-300 space-y-1.5">
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex items-start space-x-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-amber-700/20 shrink-0 border border-amber-600/40">
+                      <img src="/game-art/sevilla-landmark.png" alt="Misión" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black leading-tight truncate font-serif">
+                        {nearestStation?.label || 'La Gran Fiesta'}
+                      </h4>
+                      <p className="text-[10px] text-[#422A16] font-semibold line-clamp-2 leading-tight mt-0.5">
+                        {nearestStation?.subLabel || 'Habla con la organizadora de la fiesta y ayuda con los preparativos.'}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Live Distance Beacon */}
+                  <div className="shrink-0 flex items-center space-x-0.5 bg-black/15 px-1.5 py-0.5 rounded-md text-[10px] font-black text-[#24140E]">
+                    <MapPin className="w-3 h-3 text-[#B45309]" />
+                    <span>{nearestDistance} m</span>
+                  </div>
+                </div>
+
+                {/* Checklist Objectives */}
+                <div className="space-y-1 pt-1.5 border-t border-amber-600/30 text-[10px] font-bold text-[#3B291A]">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center space-x-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full border border-[#8C6239] inline-flex items-center justify-center text-[9px] bg-white/40">
+                        {completedCount >= 1 ? '✓' : ''}
+                      </span>
+                      <span>Consigue las decoraciones</span>
+                    </span>
+                    <span className="font-mono">{Math.min(3, completedCount)}/3</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center space-x-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full border border-[#8C6239] inline-flex items-center justify-center text-[9px] bg-white/40">
+                        {completedCount >= 2 ? '✓' : ''}
+                      </span>
+                      <span>Habla con los músicos</span>
+                    </span>
+                    <span className="font-mono">{completedCount >= 2 ? '2/2' : '0/2'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center space-x-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full border border-[#8C6239] inline-flex items-center justify-center text-[9px] bg-white/40">
+                        {completedCount >= 3 ? '✓' : ''}
+                      </span>
+                      <span>Prueba una tapa típica</span>
+                    </span>
+                    <span className="font-mono">{completedCount >= 3 ? '1/1' : '0/1'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Locked Upcoming Missions */}
+              <div className="space-y-1 pt-0.5 text-xs">
+                <div className="p-1.5 rounded-xl bg-black/40 border border-amber-500/20 text-stone-300 flex items-center space-x-2 opacity-80">
+                  <span className="text-xs">🔒</span>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold block truncate text-amber-200">El Rincón de las Tapas</span>
+                    <span className="text-[9px] text-stone-400 block truncate">Completa "La Gran Fiesta"</span>
+                  </div>
+                </div>
+                <div className="p-1.5 rounded-xl bg-black/40 border border-amber-500/20 text-stone-300 flex items-center space-x-2 opacity-80">
+                  <span className="text-xs">🔒</span>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold block truncate text-amber-200">Explora Sevilla</span>
+                    <span className="text-[9px] text-stone-400 block truncate">Visita 5 lugares de interés.</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================
+          3. TOP-RIGHT HUD: BRASS COMPASS MINIMAP & BUTTONS
+          ======================================================== */}
+      <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 flex items-center space-x-2 sm:space-x-2.5 pointer-events-auto">
+        {/* Vertical Stack Action Buttons: Mapa & Inventario */}
+        <div className="flex flex-col space-y-2">
+          {/* 🗺️ Mapa (M) */}
+          <button
+            onClick={onBackToMap}
+            className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-b from-[#2B1108]/95 to-[#160703]/95 border-2 border-amber-400/80 text-amber-200 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+            title="Abrir mapa de España (M)"
+          >
+            <span className="text-base leading-none">🗺️</span>
+            <span className="text-[9px] font-black leading-tight mt-0.5">Mapa</span>
+            <span className="text-[8px] text-amber-400 font-mono opacity-80">(M)</span>
+          </button>
+
+          {/* 🎒 Inventario (1) */}
+          <button
+            onClick={() => setShowInventory(!showInventory)}
+            className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-b from-[#2B1108]/95 to-[#160703]/95 border-2 border-amber-400/80 text-amber-200 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+            title="Abrir inventario y estado (I)"
+          >
+            <span className="text-base leading-none">🎒</span>
+            <span className="text-[8px] font-black leading-tight mt-0.5">Inventario</span>
+            <span className="text-[8px] text-amber-400 font-mono opacity-80">(1)</span>
+          </button>
         </div>
 
-        {/* Back to map button */}
+        {/* Ornate Brass Minimap with Compass Points */}
+        <div className="relative p-1 rounded-full border-4 border-amber-500 shadow-2xl bg-[#1C0D07]">
+          {/* Cardinal Points */}
+          <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center shadow border border-amber-300 z-10">
+            N
+          </span>
+          <span className="absolute top-1/2 -right-2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#3B1E12] text-amber-200 font-black text-[9px] flex items-center justify-center shadow border border-amber-500 z-10">
+            E
+          </span>
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#3B1E12] text-amber-200 font-black text-[9px] flex items-center justify-center shadow border border-amber-500 z-10">
+            S
+          </span>
+          <span className="absolute top-1/2 -left-2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#3B1E12] text-amber-200 font-black text-[9px] flex items-center justify-center shadow border border-amber-500 z-10">
+            W
+          </span>
+
+          <canvas
+            ref={minimapCanvasRef}
+            width={112}
+            height={112}
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-inner block"
+          />
+        </div>
+      </div>
+
+      {/* ========================================================
+          4. BOTTOM-LEFT HUD: CARMEN GUIDE PORTRAIT & CONSEJO CARD
+          ======================================================== */}
+      <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 z-20 pointer-events-auto flex items-end space-x-2.5 max-w-sm sm:max-w-md">
+        {/* Carmen Avatar Circle with Red Flower */}
+        <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full border-3 border-amber-400 shadow-2xl overflow-hidden shrink-0 bg-amber-900 ring-2 ring-amber-600/50">
+          <img 
+            src="/game-art/guide-carmen.png" 
+            alt="Guía Carmen" 
+            className="w-full h-full object-cover" 
+          />
+        </div>
+        {/* Parchment Speech Bubble */}
+        <div className="relative p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-[#FFFDF9]/95 via-[#FAF4EA]/95 to-[#F5E8D3]/95 border-2 border-amber-400 shadow-2xl text-[#24140E] text-left backdrop-blur-sm">
+          <span className="text-xs font-black text-[#B45309] block uppercase tracking-wider mb-0.5 font-serif">
+            Consejo
+          </span>
+          <p className="text-[10px] sm:text-[11px] text-[#524136] font-medium leading-relaxed">
+            ¡La Gran Fiesta es una celebración muy importante en Sevilla! Habla con los organizadores, ayuda con los preparativos y disfruta de la música, las tapas y el baile.
+          </p>
+        </div>
+      </div>
+
+      {/* ========================================================
+          5. BOTTOM-CENTER HUD: CONTROLS GUIDE BAR
+          ======================================================== */}
+      <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto hidden md:flex items-center space-x-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-[#2B1108]/95 via-[#1E0B05]/95 to-[#160703]/95 border-2 border-amber-400/80 shadow-2xl text-amber-100 text-xs font-bold backdrop-blur-md">
+        <div className="flex items-center space-x-1 font-mono text-[11px]">
+          <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-400/60 text-amber-200">W</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-400/60 text-amber-200">A</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-400/60 text-amber-200">S</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-400/60 text-amber-200">D</kbd>
+          <span className="font-sans ml-1 text-amber-100">Moverse</span>
+        </div>
+        <span className="text-amber-500">•</span>
+        <div className="flex items-center space-x-1.5">
+          <kbd className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[11px] shadow-sm">E</kbd>
+          <span>Interactuar</span>
+        </div>
+        <span className="text-amber-500">•</span>
+        <div className="flex items-center space-x-1.5 text-stone-300">
+          <span>🖱️</span>
+          <span>Rotar Cámara</span>
+        </div>
+      </div>
+
+      {/* ========================================================
+          6. BOTTOM-RIGHT HUD: LANDMARK BUTTON
+          ======================================================== */}
+      <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20 pointer-events-auto">
         <button
-          onClick={onBackToMap}
-          className="self-start flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/95 hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] shadow-sm transition-all hover:scale-105"
+          onClick={() => bossStation?.onInteract ? bossStation.onInteract() : onBackToMap()}
+          className="flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-gradient-to-r from-[#FFFDF9] via-[#FAF4EA] to-[#F5E8D3] hover:from-white hover:to-amber-100 border-2 border-amber-400 text-[#78350F] font-black text-xs sm:text-sm shadow-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5 text-[#E05615]" />
-          <span>Volver al Mapa</span>
+          <span className="text-base">🏛️</span>
+          <span className="font-serif">Real Academia & Puestos</span>
+          <ChevronRight className="w-4 h-4 text-[#E05615]" />
         </button>
       </div>
 
       {/* ========================================================
-          TOP-RIGHT HUD: PLAYER STATS CAPSULE
+          7. INVENTORY MODAL (Toggled by "I" key or backpack icon)
           ======================================================== */}
-      <div className="absolute top-3 right-3 flex items-center space-x-2 pointer-events-auto">
-        <div className="flex items-center space-x-2.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border-2 border-[#EADFCF] text-xs font-black shadow-md text-[#24140E]">
-          <div className="flex items-center space-x-1 text-[#B45309]" title="Estrellas">
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-            <span>{totalStars}</span>
+      {showInventory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm bg-gradient-to-b from-[#2B1108] via-[#1E0B05] to-[#160703] border-3 border-amber-500 rounded-3xl p-5 text-amber-100 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-amber-500/40 pb-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🎒</span>
+                <h3 className="font-serif font-black text-base text-amber-300">Mochila del Aventurero</h3>
+              </div>
+              <button
+                onClick={() => setShowInventory(false)}
+                className="p-1 rounded-full hover:bg-white/10 text-stone-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/30">
+                <span className="text-[10px] text-amber-400 block font-bold">Monedas</span>
+                <span className="text-sm font-black text-amber-200">{progress.stats.coins.toLocaleString()} 🪙</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/30">
+                <span className="text-[10px] text-rose-400 block font-bold">Vidas</span>
+                <span className="text-sm font-black text-rose-300">{progress.stats.lives}/3 ❤️</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/30">
+                <span className="text-[10px] text-amber-400 block font-bold">Estrellas</span>
+                <span className="text-sm font-black text-amber-200">{totalStars} ⭐</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/30">
+                <span className="text-[10px] text-orange-400 block font-bold">Racha</span>
+                <span className="text-sm font-black text-orange-300">{progress.stats.streak} días 🔥</span>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200/90 leading-relaxed">
+              <span className="font-bold text-amber-300 block mb-0.5">📜 Pasaporte de Viaje:</span>
+              Has completado {completedCount} de {stations.length} estaciones en {cityName}.
+            </div>
+
+            <button
+              onClick={() => setShowInventory(false)}
+              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer"
+            >
+              Cerrar Mochila
+            </button>
           </div>
-          <div className="h-3 w-px bg-[#EADFCF]" />
-          <div className="flex items-center space-x-1 text-[#B45309]" title="Monedas">
-            <Coins className="w-3.5 h-3.5 text-[#E05615] fill-amber-400/30" />
-            <span>{progress.stats.coins.toLocaleString()}</span>
-          </div>
-          <div className="h-3 w-px bg-[#EADFCF] hidden sm:block" />
-          <div className="hidden sm:flex items-center space-x-1 text-[#EA580C]" title="Racha">
-            <Flame className="w-3.5 h-3.5 fill-[#EA580C] text-[#EA580C]" />
-            <span>{progress.stats.streak}d</span>
-          </div>
         </div>
-      </div>
-
-      {/* ========================================================
-          BOTTOM CONTROLS & HINT BAR
-          ======================================================== */}
-      <div className="absolute bottom-3 inset-x-3 flex items-center justify-between pointer-events-none">
-        
-        {/* Mobile Touch D-Pad */}
-        <div className="pointer-events-auto grid grid-cols-3 gap-1 bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border-2 border-[#EADFCF] shadow-md sm:hidden">
-          <span />
-          <button
-            onPointerDown={() => handleTouchKey('ArrowUp', true)}
-            onPointerUp={() => handleTouchKey('ArrowUp', false)}
-            className="w-10 h-10 rounded-xl bg-[#FAF7F2] active:bg-[#F3B33D] text-[#24140E] font-black flex items-center justify-center text-sm shadow border border-[#E0D5C7]"
-          >
-            ▲
-          </button>
-          <span />
-          <button
-            onPointerDown={() => handleTouchKey('ArrowLeft', true)}
-            onPointerUp={() => handleTouchKey('ArrowLeft', false)}
-            className="w-10 h-10 rounded-xl bg-[#FAF7F2] active:bg-[#F3B33D] text-[#24140E] font-black flex items-center justify-center text-sm shadow border border-[#E0D5C7]"
-          >
-            ◀
-          </button>
-          <button
-            onPointerDown={() => handleTouchKey('ArrowDown', true)}
-            onPointerUp={() => handleTouchKey('ArrowDown', false)}
-            className="w-10 h-10 rounded-xl bg-[#FAF7F2] active:bg-[#F3B33D] text-[#24140E] font-black flex items-center justify-center text-sm shadow border border-[#E0D5C7]"
-          >
-            ▼
-          </button>
-          <button
-            onPointerDown={() => handleTouchKey('ArrowRight', true)}
-            onPointerUp={() => handleTouchKey('ArrowRight', false)}
-            className="w-10 h-10 rounded-xl bg-[#FAF7F2] active:bg-[#F3B33D] text-[#24140E] font-black flex items-center justify-center text-sm shadow border border-[#E0D5C7]"
-          >
-            ▶
-          </button>
-        </div>
-
-        {/* Keyboard Controls Legend (Desktop) */}
-        <div className="hidden sm:flex items-center space-x-3 px-4 py-2 rounded-2xl bg-white/95 backdrop-blur-md border-2 border-[#EADFCF] text-xs text-[#6B584D] pointer-events-auto shadow-md">
-          <span className="font-bold text-[#B45309]">Controles 3D:</span>
-          <span>Camina con <kbd className="px-1.5 py-0.5 rounded bg-[#FAF7F2] border border-[#E0D5C7] font-mono text-[11px] text-[#24140E]">W</kbd> <kbd className="px-1.5 py-0.5 rounded bg-[#FAF7F2] border border-[#E0D5C7] font-mono text-[11px] text-[#24140E]">A</kbd> <kbd className="px-1.5 py-0.5 rounded bg-[#FAF7F2] border border-[#E0D5C7] font-mono text-[11px] text-[#24140E]">S</kbd> <kbd className="px-1.5 py-0.5 rounded bg-[#FAF7F2] border border-[#E0D5C7] font-mono text-[11px] text-[#24140E]">D</kbd> o Flechas</span>
-          <span>•</span>
-          <span>Pulsa <kbd className="px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 font-mono text-[11px] text-[#B45309] font-bold">E</kbd> para interactuar</span>
-          <span>•</span>
-          <span>Arrastra con el ratón para rotar la cámara</span>
-        </div>
-
-        {/* Quest Status Pill */}
-        <div className="hidden md:flex items-center space-x-2 px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md border-2 border-[#EADFCF] text-xs font-bold text-[#B45309] pointer-events-auto shadow-md">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>{landmarkName || 'Plaza Mayor Histórica'}</span>
-        </div>
-
-      </div>
+      )}
 
       {/* Toast Notification */}
       {toastText && (
