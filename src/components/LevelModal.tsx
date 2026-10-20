@@ -22,7 +22,9 @@ import {
   ArrowRight,
   HelpCircle,
   MessageCircle,
-  Clock
+  Clock,
+  Bot,
+  Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatLifeTimer } from './OutOfLivesModal';
@@ -48,7 +50,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     purchaseVocabHint,
     recordLevelCompleted,
     refillLivesWithCoins,
-    setActiveQuizState
+    setActiveQuizState,
+    isChatbotOpen,
+    setIsChatbotOpen
   } = useGame();
   const secondsUntilNextLife = useLifeCountdown();
 
@@ -131,12 +135,13 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     });
   }, [currentIndex, currentQuestion.id, cityId, level.id, level.title, level.syllabusTopic, setActiveQuizState]);
 
-  // Clear quiz state on unmount
+  // Clear quiz state and close chatbot on unmount
   useEffect(() => {
     return () => {
       setActiveQuizState(null);
+      setIsChatbotOpen(false);
     };
-  }, [setActiveQuizState]);
+  }, [setActiveQuizState, setIsChatbotOpen]);
 
   // Word order handlers
   const addWordToConstructed = (word: string, index: number) => {
@@ -216,6 +221,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
   // Move to next question or complete level
   const handleNextQuestion = () => {
+    // Immediately close/minimize chat window and re-lock for the new question
+    setIsChatbotOpen(false);
+
     if (currentIndex + 1 < level.questions.length) {
       // Immediately re-lock tutor for the new question
       setActiveQuizState({
@@ -468,18 +476,49 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                 <SpanishGuideIllustration size={230} />
               )}
 
-              {/* Pista de vocabulario (500 🪙) */}
-              <button
-                onClick={() => {
-                  setShowVocabHintModal(true);
-                  setVocabHintError(null);
-                }}
-                className="mt-2 flex items-center space-x-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black border border-amber-300 transition-all hover:scale-105 shadow-md cursor-pointer"
-                title="Comprar pista de vocabulario por 500 monedas"
-              >
-                <Lightbulb className="w-4 h-4 text-slate-950 fill-amber-300" />
-                <span>Pista de vocabulario (500 🪙)</span>
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                {/* Pista de vocabulario (500 🪙) */}
+                <button
+                  onClick={() => {
+                    setShowVocabHintModal(true);
+                    setVocabHintError(null);
+                  }}
+                  className="flex items-center space-x-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black border border-amber-300 transition-all hover:scale-105 shadow-md cursor-pointer"
+                  title="Comprar pista de vocabulario por 500 monedas"
+                >
+                  <Lightbulb className="w-4 h-4 text-slate-950 fill-amber-300" />
+                  <span>Pista de vocabulario (500 🪙)</span>
+                </button>
+
+                {/* Tutor IA Chatbot Button */}
+                <button
+                  type="button"
+                  data-testid="quiz-tutor-btn"
+                  onClick={() => {
+                    if (hasSubmitted) {
+                      setIsChatbotOpen(prev => !prev);
+                    }
+                  }}
+                  disabled={!hasSubmitted}
+                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition-all shadow-md ${
+                    !hasSubmitted
+                      ? 'bg-amber-100/90 text-amber-900 border-amber-300 opacity-75 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white border-emerald-300 hover:scale-105 active:scale-95 shadow-emerald-500/20 cursor-pointer animate-pulse'
+                  }`}
+                  title={
+                    !hasSubmitted
+                      ? '🔒 Consulta al tutor bloqueada durante la pregunta activa. Responde para desbloquear.'
+                      : 'Preguntar a Camino (Tutor IA) sobre esta pregunta'
+                  }
+                >
+                  {!hasSubmitted ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-700" />
+                  ) : (
+                    <Bot className="w-3.5 h-3.5 text-white" />
+                  )}
+                  <span>{hasSubmitted ? 'Preguntar al Tutor IA' : 'Tutor (Bloqueado)'}</span>
+                </button>
+              </div>
             </div>
 
             {/* RIGHT SIDE: Interactive Question Area (Panels 8 & 9) */}
@@ -758,24 +797,57 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                     Comprobar (Check)
                   </button>
                 ) : isCorrect ? (
-                  <button
-                    onClick={handleNextQuestion}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <span>Siguiente</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      data-testid="quiz-action-tutor-btn"
+                      onClick={() => setIsChatbotOpen(prev => !prev)}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-[#E05615] hover:from-amber-400 hover:to-[#C2410C] text-white font-black text-sm shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer animate-pulse"
+                      title="Preguntar a Camino (Tutor IA) sobre esta respuesta y repasar gramática"
+                    >
+                      <Bot className="w-5 h-5 text-white" />
+                      <span>Preguntar al Tutor</span>
+                    </button>
+                    <button
+                      onClick={handleNextQuestion}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
+                    >
+                      <span>Siguiente</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
                 ) : lives > 0 ? (
-                  <button
-                    onClick={() => {
-                      setHasSubmitted(false);
-                      setIsCorrect(false);
-                    }}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                    <span>Reintentar</span>
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      data-testid="quiz-action-tutor-btn"
+                      onClick={() => setIsChatbotOpen(prev => !prev)}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-[#E05615] hover:from-amber-400 hover:to-[#C2410C] text-white font-black text-sm shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer animate-pulse"
+                      title="Preguntar a Camino (Tutor IA) por qué la respuesta fue incorrecta"
+                    >
+                      <Bot className="w-5 h-5 text-white" />
+                      <span>Preguntar al Tutor</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHasSubmitted(false);
+                        setIsCorrect(false);
+                        setIsChatbotOpen(false);
+                        setActiveQuizState({
+                          isActive: true,
+                          isAnswered: false,
+                          cityId,
+                          levelId: level.id,
+                          levelTitle: level.title,
+                          syllabusTopic: level.syllabusTopic
+                        });
+                      }}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                      <span>Reintentar</span>
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
                     {/* Wait 15m Timer Pill */}
@@ -793,6 +865,15 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                           if (res.success) {
                             setHasSubmitted(false);
                             setIsCorrect(false);
+                            setIsChatbotOpen(false);
+                            setActiveQuizState({
+                              isActive: true,
+                              isAnswered: false,
+                              cityId,
+                              levelId: level.id,
+                              levelTitle: level.title,
+                              syllabusTopic: level.syllabusTopic
+                            });
                           }
                         }}
                         className="px-5 py-3 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center space-x-1.5 cursor-pointer"

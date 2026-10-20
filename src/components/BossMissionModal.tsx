@@ -15,7 +15,8 @@ import {
   Sparkles,
   Lock,
   Play,
-  Lightbulb
+  Lightbulb,
+  Bot
 } from 'lucide-react';
 
 interface BossMissionModalProps {
@@ -31,7 +32,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { recordBossCompleted, progress, purchaseVocabHint, setActiveQuizState } = useGame();
+  const { recordBossCompleted, progress, purchaseVocabHint, setActiveQuizState, isChatbotOpen, setIsChatbotOpen } = useGame();
 
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -102,12 +103,13 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
     }
   }, [currentIndex, currentQuestion?.id, hasStarted, bossMission.cityId, cityName, setActiveQuizState]);
 
-  // Clear quiz state on unmount
+  // Clear quiz state and close tutor on unmount
   useEffect(() => {
     return () => {
       setActiveQuizState(null);
+      setIsChatbotOpen(false);
     };
-  }, [setActiveQuizState]);
+  }, [setActiveQuizState, setIsChatbotOpen]);
 
   // Purchase Vocabulary Hint ("Pista de vocabulario") for Boss question
   const handlePurchaseVocabHint = () => {
@@ -188,6 +190,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   };
 
   const handleNext = () => {
+    setIsChatbotOpen(false);
     if (currentIndex + 1 < bossMission.questions.length) {
       // Tutor immediately locks again for the next unanswered boss question
       setActiveQuizState({
@@ -218,6 +221,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
 
   const handleRetryBoss = () => {
     setActiveQuizState(null);
+    setIsChatbotOpen(false);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIsFinished(false);
@@ -376,19 +380,41 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                     <span className="text-xs font-black text-[#B45309] block">
                       {bossMission.characterName} ({bossMission.characterRole})
                     </span>
-                    {/* Pista de vocabulario button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowVocabHintModal(true);
-                        setVocabHintError(null);
-                      }}
-                      className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs border border-amber-300 shadow-sm transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-                      title="Pista de vocabulario (500 monedas)"
-                    >
-                      <Lightbulb className="w-3.5 h-3.5 text-slate-950 fill-amber-300" />
-                      <span>Pista de vocabulario (500 🪙)</span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      {/* Pista de vocabulario button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowVocabHintModal(true);
+                          setVocabHintError(null);
+                        }}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs border border-amber-300 shadow-sm transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                        title="Pista de vocabulario (500 monedas)"
+                      >
+                        <Lightbulb className="w-3.5 h-3.5 text-slate-950 fill-amber-300" />
+                        <span>Pista de vocabulario (500 🪙)</span>
+                      </button>
+
+                      {/* Tutor IA Button in Boss Modal */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (hasSubmitted) {
+                            setIsChatbotOpen(prev => !prev);
+                          }
+                        }}
+                        disabled={!hasSubmitted}
+                        className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-black border transition-all shadow-sm ${
+                          !hasSubmitted
+                            ? 'bg-amber-100/80 text-amber-900 border-amber-300 opacity-75 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-emerald-300 hover:scale-105 active:scale-95 cursor-pointer animate-pulse'
+                        }`}
+                        title={!hasSubmitted ? '🔒 Tutor bloqueado durante la pregunta' : 'Preguntar a Camino sobre este enigma'}
+                      >
+                        {!hasSubmitted ? <Lock className="w-3 h-3 text-amber-700" /> : <Bot className="w-3 h-3 text-white" />}
+                        <span>{hasSubmitted ? 'Tutor IA' : 'Tutor (🔒)'}</span>
+                      </button>
+                    </div>
                   </div>
                   <p className="text-sm sm:text-base text-[#24140E] mt-1.5 font-bold leading-relaxed font-serif">
                     {currentQuestion.prompt}
@@ -539,7 +565,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
               )}
 
               {/* Submit / Next Buttons */}
-              <div className="pt-3 border-t border-[#EADFCF] flex justify-end">
+              <div className="pt-3 border-t border-[#EADFCF] flex justify-end items-center space-x-2.5">
                 {!hasSubmitted ? (
                   <button
                     onClick={handleCheck}
@@ -548,13 +574,24 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                     Confirmar al Jefe
                   </button>
                 ) : (
-                  <button
-                    onClick={handleNext}
-                    className="flex items-center space-x-1.5 px-7 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-md transition-all"
-                  >
-                    <span>{currentIndex + 1 < bossMission.questions.length ? 'Siguiente Fase' : 'Veredicto Final'}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsChatbotOpen(prev => !prev)}
+                      className="flex items-center space-x-1.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-[#E05615] hover:from-amber-400 hover:to-[#C2410C] text-white font-black text-sm shadow-md transition-all cursor-pointer animate-pulse"
+                      title="Preguntar a Camino (Tutor IA) sobre esta respuesta"
+                    >
+                      <Bot className="w-4 h-4 text-white" />
+                      <span>Preguntar al Tutor</span>
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="flex items-center space-x-1.5 px-7 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-md transition-all"
+                    >
+                      <span>{currentIndex + 1 < bossMission.questions.length ? 'Siguiente Fase' : 'Veredicto Final'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
               </div>
             </div>

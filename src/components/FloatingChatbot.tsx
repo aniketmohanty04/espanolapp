@@ -57,6 +57,8 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
     activeCityId, 
     activeLevelId, 
     activeQuizState: contextQuizState,
+    isChatbotOpen,
+    setIsChatbotOpen,
     progress 
   } = useGame();
 
@@ -72,8 +74,9 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
   const isQuizAnswered = Boolean(activeQuizState?.isAnswered);
   const isLocked = isQuizActive && !isQuizAnswered;
 
-  // Panel state
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  // Panel state (synchronized globally via GameContext)
+  const isOpen = isChatbotOpen;
+  const setIsOpen = setIsChatbotOpen;
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [showLockedToast, setShowLockedToast] = useState<boolean>(false);
 
@@ -117,14 +120,15 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
     }
   }, [messages]);
 
-  // When question becomes active and unanswered, auto-minimize/hide chat and disable input
+  // When question becomes active and unanswered, close/hide chat and disable input
   useEffect(() => {
     if (isLocked) {
-      if (isOpen && !isMinimized) {
-        setIsMinimized(true);
+      if (isOpen) {
+        setIsOpen(false);
+        setIsMinimized(false);
       }
     }
-  }, [isLocked, isOpen, isMinimized]);
+  }, [isLocked, isOpen, setIsOpen]);
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -315,7 +319,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       setIsMinimized(false);
       setTimeout(() => inputRef.current?.focus(), 150);
     } else {
-      setIsMinimized(true);
+      setIsOpen(false);
     }
   };
 
@@ -328,7 +332,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       {showLockedToast && (
         <div 
           data-testid="locked-toast"
-          className="fixed bottom-36 right-6 z-50 bg-[#24140E] text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-amber-500/40 text-xs sm:text-sm font-semibold flex items-center space-x-2 animate-bounce"
+          className="fixed bottom-24 right-5 sm:bottom-24 sm:right-6 z-[90] bg-[#24140E] text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-amber-500/40 text-xs sm:text-sm font-semibold flex items-center space-x-2 animate-bounce"
         >
           <Lock className="w-4 h-4 text-amber-400 shrink-0" />
           <span>🔒 Consulta al tutor bloqueada durante la pregunta activa. ¡Responde primero!</span>
@@ -343,7 +347,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
             transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
             transition: isDragging ? 'none' : 'transform 0.15s ease-out'
           }}
-          className={`fixed bottom-24 right-5 sm:bottom-24 sm:right-6 z-50 w-[92vw] max-w-[390px] sm:max-w-[420px] bg-[#FAF7F2] border-2 ${
+          className={`fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-[80] w-[92vw] max-w-[390px] sm:max-w-[420px] bg-[#FAF7F2] border-2 ${
             isLocked ? 'border-amber-400/80' : isQuizActive && isQuizAnswered ? 'border-emerald-500' : 'border-[#E0D5C7]'
           } rounded-3xl shadow-2xl overflow-hidden flex flex-col font-sans transition-all duration-200 ${
             isMinimized ? 'h-14 overflow-hidden' : 'h-[520px] max-h-[78vh]'
@@ -599,9 +603,13 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
         </div>
       )}
 
-      {/* Floating Chatbot Trigger Button (Fixed near bottom-right) */}
+      {/* Floating Chatbot Trigger Button (Fixed in visible viewport near bottom-right) */}
       <div 
-        className="fixed bottom-20 right-5 sm:bottom-20 sm:right-6 z-40 select-none"
+        className={`fixed z-[70] select-none transition-all duration-300 ${
+          isQuizActive
+            ? 'bottom-5 right-5 sm:bottom-6 sm:right-6'
+            : 'bottom-6 right-6 sm:bottom-8 sm:right-8'
+        }`}
         title={isLocked ? '🔒 Consulta al tutor bloqueada durante la pregunta activa' : 'Pregunta al tutor Camino (IA)'}
       >
         <button

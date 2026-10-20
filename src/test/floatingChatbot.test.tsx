@@ -216,4 +216,44 @@ describe('Floating AI Chatbot (Camino) Verification', () => {
     expect(INITIAL_PROGRESS.stats.coins).toBe(250);
     expect(INITIAL_PROGRESS.stats.lives).toBe(3);
   });
+
+  // Stacking context verification: FloatingChatbot uses z-[70] so it is not hidden behind LevelModal z-50
+  it('ensures FloatingChatbot trigger has higher z-index (z-[70]) than LevelModal backdrop (z-50)', async () => {
+    await authDatabaseService.register('zindex_test@aventura.es', 'pass123', 'Elena');
+
+    const html = renderToString(
+      <GameProvider>
+        <FloatingChatbot />
+      </GameProvider>
+    );
+
+    expect(html).toContain('z-[70]');
+  });
+
+  // LevelModal integration verification
+  it('integrates tutor button directly in LevelModal with lock during active question', async () => {
+    await authDatabaseService.register('level_tutor@aventura.es', 'pass123', 'Elena');
+    const madrid = getCityById('madrid');
+    const level1 = madrid?.levels[0];
+    expect(level1).toBeDefined();
+
+    if (level1) {
+      const { LevelModal } = await import('../components/LevelModal');
+      const html = renderToString(
+        <GameProvider>
+          <LevelModal
+            level={level1}
+            cityId="madrid"
+            onClose={() => {}}
+            onCompleteLevel={() => {}}
+          />
+        </GameProvider>
+      );
+
+      // Verify the integrated quiz tutor button is present
+      expect(html).toContain('quiz-tutor-btn');
+      expect(html).toContain('Tutor (Bloqueado)');
+      expect(html).toContain('Pista de vocabulario');
+    }
+  });
 });

@@ -40,6 +40,8 @@ interface GameContextType {
   soundMuted: boolean;
   activeQuizState: ActiveQuizState | null;
   setActiveQuizState: React.Dispatch<React.SetStateAction<ActiveQuizState | null>>;
+  isChatbotOpen: boolean;
+  setIsChatbotOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentScreen: (screen: GameScreen) => void;
   setActiveCityId: (id: string | null) => void;
   setActiveLevelId: (id: string | null) => void;
@@ -174,6 +176,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isFestivalOpen, setIsFestivalOpen] = useState<boolean>(false);
   const [soundMuted, setSoundMuted] = useState<boolean>(soundService.getIsMuted());
   const [activeQuizState, setActiveQuizState] = useState<ActiveQuizState | null>(null);
+  const [isChatbotOpen, setIsChatbotOpen] = useState<boolean>(false);
 
   // Life Management Constants (3 max lives, 500 coins to refill, 15 minutes per free life)
   const secondsUntilNextLife = calculateSecondsUntilNextLife(
@@ -924,6 +927,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         soundMuted,
         activeQuizState,
         setActiveQuizState,
+        isChatbotOpen,
+        setIsChatbotOpen,
         setCurrentScreen,
         setActiveCityId,
         setActiveLevelId,
