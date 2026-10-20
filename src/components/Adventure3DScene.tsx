@@ -153,7 +153,6 @@ function createFiestaBannerTexture(): THREE.CanvasTexture {
   canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
 
-  // Deep crimson gradient background
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
   grad.addColorStop(0, '#7F1D1D');
   grad.addColorStop(0.5, '#B91C1C');
@@ -161,7 +160,6 @@ function createFiestaBannerTexture(): THREE.CanvasTexture {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 1024, 256);
 
-  // Golden filigree borders
   ctx.strokeStyle = '#F59E0B';
   ctx.lineWidth = 10;
   ctx.strokeRect(10, 10, 1004, 236);
@@ -169,13 +167,11 @@ function createFiestaBannerTexture(): THREE.CanvasTexture {
   ctx.lineWidth = 3;
   ctx.strokeRect(18, 18, 988, 220);
 
-  // Crown / Emblem
   ctx.fillStyle = '#F59E0B';
   ctx.font = 'bold 32px serif';
   ctx.textAlign = 'center';
   ctx.fillText('👑   SEVILLA   👑', 512, 60);
 
-  // "La Gran Fiesta" in bold cream serif
   ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
   ctx.shadowBlur = 14;
   ctx.shadowOffsetY = 6;
@@ -195,21 +191,17 @@ function createTapasBoardTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Slate blackboard
   ctx.fillStyle = '#17251E';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Wooden frame
   ctx.strokeStyle = '#5A381E';
   ctx.lineWidth = 18;
   ctx.strokeRect(9, 9, 494, 494);
 
-  // Chalk border
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
   ctx.lineWidth = 3;
   ctx.strokeRect(26, 26, 460, 460);
 
-  // Chalk cursive "Tapas"
   ctx.fillStyle = '#FFF8E7';
   ctx.font = 'bold 96px "Brush Script MT", "Georgia", cursive';
   ctx.textAlign = 'center';
@@ -237,7 +229,6 @@ function createCobblestoneTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Terracotta mortar background
   ctx.fillStyle = '#782E1A';
   ctx.fillRect(0, 0, 512, 512);
 
@@ -260,7 +251,6 @@ function createCobblestoneTexture(): THREE.CanvasTexture {
       ctx.roundRect ? ctx.roundRect(x, y, w, h, 6) : ctx.rect(x, y, w, h);
       ctx.fill();
 
-      // Subtle light top edge & shadow bottom
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.fillRect(x, y, w, 2.5);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
@@ -327,21 +317,17 @@ function createPersonMesh(
   };
 
   if (accessory === 'flamenco') {
-    // Wide ruffled flamenco dress cone
     const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.95, 16), mat(shirtColor));
     skirt.position.set(0, 0.48, 0);
     g.add(skirt);
 
-    // Black ruffle frills
     const frill = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 6, 16), mat(0x111827));
     frill.position.set(0, 0.22, 0);
     frill.rotation.x = Math.PI / 2;
     g.add(frill);
 
-    // Torso
     addMesh(new THREE.CylinderGeometry(0.2, 0.26, 0.62, 12), shirtColor, 0, 1.22, 0);
   } else {
-    // Legs, knees and shoes
     addLimb([-0.12, 0.82, 0], [-0.14, 0.35, 0], 0.105, 0.085, pantsColor);
     addLimb([0.12, 0.82, 0], [0.14, 0.35, 0], 0.105, 0.085, pantsColor);
     addMesh(new THREE.SphereGeometry(0.09, 12, 10), pantsColor, -0.14, 0.35, 0);
@@ -349,28 +335,22 @@ function createPersonMesh(
     addMesh(new THREE.BoxGeometry(0.19, 0.12, 0.31), 0x221c1a, -0.14, 0.11, 0.07);
     addMesh(new THREE.BoxGeometry(0.19, 0.12, 0.31), 0x221c1a, 0.14, 0.11, 0.07);
 
-    // Hips and torso
     addMesh(new THREE.SphereGeometry(0.2, 14, 12), pantsColor, 0, 0.83, 0, 1, 0.72, 0.78);
     addMesh(new THREE.CylinderGeometry(0.22, 0.29, 0.62, 12), shirtColor, 0, 1.22, 0);
   }
 
-  // Chest and shoulders
   addMesh(new THREE.SphereGeometry(0.235, 14, 12), shirtColor, 0, 1.48, 0, 1, 0.55, 0.8);
   addMesh(new THREE.CylinderGeometry(0.075, 0.08, 0.14, 10), skinColor, 0, 1.62, 0);
 
-  // Head and face
   addMesh(new THREE.SphereGeometry(0.22, 16, 14), skinColor, 0, 1.82, 0);
   addMesh(new THREE.SphereGeometry(0.235, 16, 14), hairColor, 0, 1.88, -0.04, 1, 0.9, 1);
 
-  // Arms and hands
   addLimb([-0.26, 1.45, 0], [-0.34, 1.05, 0], 0.075, 0.065, shirtColor);
   addLimb([0.26, 1.45, 0], [0.34, 1.05, 0], 0.075, 0.065, shirtColor);
   addMesh(new THREE.SphereGeometry(0.065, 8, 8), skinColor, -0.34, 0.98, 0);
   addMesh(new THREE.SphereGeometry(0.065, 8, 8), skinColor, 0.34, 0.98, 0);
 
-  // Accessories
   if (accessory === 'guitar') {
-    // Acoustic Spanish Guitar
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.14), mat(0xCA8A04));
     body.position.set(0.12, 1.15, 0.24);
     body.rotation.z = -0.35;
@@ -380,7 +360,6 @@ function createPersonMesh(
     neck.rotation.z = 0.9;
     g.add(neck);
   } else if (accessory === 'sombrero') {
-    // Andalusian black flat-brimmed sombrero cordobés
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 16), mat(0x111827));
     brim.position.set(0, 1.98, 0);
     g.add(brim);
@@ -388,7 +367,6 @@ function createPersonMesh(
     crown.position.set(0, 2.06, 0);
     g.add(crown);
   } else if (accessory === 'flower' || accessory === 'flamenco') {
-    // Red carnation flower in hair
     const flower = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), mat(0xDC2626));
     flower.position.set(0.18, 1.96, 0.05);
     g.add(flower);
@@ -426,6 +404,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   questStateRef.current = questState;
 
   const [nearestDistance, setNearestDistance] = useState<number>(12);
+  const [nearestStation, setNearestStation] = useState<AdventureStation3D | null>(null);
   const [showInventory, setShowInventory] = useState<boolean>(false);
   const [isMissionsCollapsed, setIsMissionsCollapsed] = useState<boolean>(false);
   const [toastText, setToastText] = useState<string | null>(null);
@@ -438,6 +417,11 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   }, []);
 
   const keysRef = useRef<Record<string, boolean>>({});
+
+  // Mobile pad key press
+  const handleTouchKey = (key: string, pressed: boolean) => {
+    keysRef.current[key] = pressed;
+  };
 
   // Player avatar colors
   const skinHex = {
@@ -459,6 +443,12 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   const shirtHex = 0xe05615; // Orange terracotta jacket matching reference image
   const pantsHex = 0x24355a; // Navy trousers matching reference image
 
+  const stationsRef = useRef(stations);
+  stationsRef.current = stations;
+  const bossStationRef = useRef(bossStation);
+  bossStationRef.current = bossStation;
+  const exitGateRef = useRef(exitGate);
+  exitGateRef.current = exitGate;
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
 
@@ -592,7 +582,6 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       barrel.position.set(bx, 0.48, bz);
       barrel.castShadow = true;
       worldGroup.add(barrel);
-      // Small lantern on barrel
       const lMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
       const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.22, 6), lMat);
       candle.position.set(bx, 1.05, bz);
@@ -715,7 +704,100 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     worldGroup.add(flamencoDancer);
     obstacles.push([6.2, -11.5, 1.2]);
 
-    // 8. Interactive 3D Collectible Decorations (0/3 - Real Quest System!)
+    // ========================================================
+    // 8. 3D SHOPS / MARKET STALLS FOR ALL STATIONS (MERGED!)
+    // ========================================================
+    const tagsContainer = tagsContainerRef.current;
+    if (tagsContainer) tagsContainer.innerHTML = '';
+
+    const stationElements: {
+      id: string;
+      station: AdventureStation3D;
+      pos: { x: number; z: number };
+      tagEl: HTMLDivElement;
+    }[] = [];
+
+    stations.forEach((station) => {
+      const x = station.x;
+      const z = station.z;
+
+      // Stall Group (Market counter with striped awning & vendor)
+      const sg = new THREE.Group();
+      // Counter
+      addBox(3.2, 1.05, 1.2, 0x80502f, x, 0, z, sg);
+      addBox(3.4, 0.16, 1.3, 0xd7b78a, x, 1.05, z, sg);
+      // Posts
+      [-1.3, 1.3].forEach(dx => addBox(0.12, 2.1, 0.12, 0x68452e, x + dx, 0, z - 0.5, sg));
+      // Awning
+      addBox(3.6, 0.18, 1.8, station.color, x, 2.2, z - 0.4, sg);
+      for (let j = 0; j < 5; j++) {
+        addBox(0.65, 0.2, 1.82, j % 2 ? 0xf8e8c9 : station.color, x - 1.3 + j * 0.65, 2.2, z - 0.4, sg);
+      }
+      // Food/goods on counter
+      for (let j = 0; j < 4; j++) {
+        const prod = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(station.goodsColor || 0xffc94a));
+        prod.position.set(x - 0.9 + j * 0.6, 1.38, z - 0.1);
+        prod.castShadow = true;
+        sg.add(prod);
+      }
+      worldGroup.add(sg);
+
+      // 3D NPC Vendor behind stall
+      const vendor = createPersonMesh(station.color, 0x2a1a10, 0x374151, 0xc58c5f);
+      vendor.position.set(x, 0, z - 1.35);
+      vendor.rotation.y = 0;
+      worldGroup.add(vendor);
+
+      obstacles.push([x, z, 2.0]);
+
+      // Floating 2D/3D projected tag element
+      const tagEl = document.createElement('div');
+      tagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-opacity select-none';
+      if (tagsContainer) tagsContainer.appendChild(tagEl);
+
+      stationElements.push({
+        id: station.id,
+        station,
+        pos: { x, z: z + 2.4 }, // interaction spot in front of counter
+        tagEl
+      });
+    });
+
+    // 9. Boss Station / Carpa Real Academia (if present)
+    let bossTagEl: HTMLDivElement | null = null;
+    if (bossStation) {
+      bossTagEl = document.createElement('div');
+      bossTagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-opacity select-none z-20';
+      if (tagsContainer) tagsContainer.appendChild(bossTagEl);
+    }
+
+    // 10. Exit Gate (at x = 22)
+    let gateTagEl: HTMLDivElement | null = null;
+    if (exitGate) {
+      addBox(0.6, 5, 0.6, 0xc8b080, 22, 0, -2.6);
+      addBox(0.6, 5, 0.6, 0xc8b080, 22, 0, 2.6);
+      addBox(0.8, 0.8, 6, 0xc8b080, 22, 5, 0);
+
+      const isGateOpen = Boolean(exitGate.isUnlocked);
+      const gateMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(4.6, 4.8),
+        new THREE.MeshBasicMaterial({
+          color: isGateOpen ? 0x40ff90 : 0xff5050,
+          transparent: true,
+          opacity: 0.4,
+          side: THREE.DoubleSide
+        })
+      );
+      gateMesh.rotation.y = Math.PI / 2;
+      gateMesh.position.set(22, 2.5, 0);
+      worldGroup.add(gateMesh);
+
+      gateTagEl = document.createElement('div');
+      gateTagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-opacity select-none z-20';
+      if (tagsContainer) tagsContainer.appendChild(gateTagEl);
+    }
+
+    // 11. Interactive 3D Collectible Decorations (0/3 - Real Quest System!)
     interface CollectibleItem {
       id: string;
       name: string;
@@ -724,9 +806,6 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       collected: boolean;
       tagEl: HTMLDivElement;
     }
-
-    const tagsContainer = tagsContainerRef.current;
-    if (tagsContainer) tagsContainer.innerHTML = '';
 
     const collectibles: CollectibleItem[] = [
       {
@@ -775,7 +854,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       if (tagsContainer) tagsContainer.appendChild(c.tagEl);
     });
 
-    // 9. Interactive Quest Tags for Musicians, Tapas Stand, and Organizer
+    // 12. Interactive Quest Tags for Musicians, Tapas Stand, and Organizer
     const pacoTagEl = document.createElement('div');
     pacoTagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-all select-none z-20';
     if (tagsContainer) tagsContainer.appendChild(pacoTagEl);
@@ -792,12 +871,12 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     organizerTagEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-all select-none z-20';
     if (tagsContainer) tagsContainer.appendChild(organizerTagEl);
 
-    // 9b. In-World Floating Beacon matching screenshot ("⚠️ Organizadora de la Fiesta • 📍 12 m")
+    // 12b. In-World Floating Beacon matching screenshot ("⚠️ Organizadora de la Fiesta • 📍 12 m")
     const targetBeaconEl = document.createElement('div');
     targetBeaconEl.className = 'absolute transform -translate-x-1/2 -translate-y-full text-center pointer-events-none transition-all select-none z-20';
     if (tagsContainer) tagsContainer.appendChild(targetBeaconEl);
 
-    // 10. Ambient Golden Embers / Fireflies floating in the dusk sky
+    // 13. Ambient Golden Embers / Fireflies floating in the dusk sky
     const emberCount = 35;
     const emberGeo = new THREE.BufferGeometry();
     const emberPositions = new Float32Array(emberCount * 3);
@@ -816,7 +895,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     const embers = new THREE.Points(emberGeo, emberMat);
     worldGroup.add(embers);
 
-    // 11. Walking Pedestrians / Crowd AI
+    // 14. Walking Pedestrians / Crowd AI
     const pedestrians: { mesh: THREE.Group; tx: number; tz: number }[] = [];
     const pColors = [0xec4899, 0xa855f7, 0x3b82f6, 0x10b981, 0xf97316, 0xe11d48];
     for (let k = 0; k < 6; k++) {
@@ -828,7 +907,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       pedestrians.push({ mesh: pm, tx: px, tz: pz });
     }
 
-    // 12. Playable 3D Player Character
+    // 15. Playable 3D Player Character
     const playerMesh = createPersonMesh(shirtHex, hairHex, pantsHex, skinHex);
     scene.add(playerMesh);
 
@@ -861,7 +940,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointermove', onPointerMove);
 
-    // Interaction handler for hotkeys and click triggers
+    // Unified Interaction handler for hotkeys and click triggers
     const triggerInteraction = () => {
       const q = questStateRef.current;
 
@@ -950,6 +1029,36 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
           showToastRef.current('🏆 Carmen: "¡Increíble trabajo! Todas las decoraciones están listas, la música suena y has probado nuestra gastronomía. ¡Completaste La Gran Fiesta!"');
         }
         return;
+      }
+
+      // 6. Check Market Stalls / Station Shops (MERGED FEATURE!)
+      let bestDist = 3.8;
+      let bestStationId: string | null = null;
+      stationElements.forEach(item => {
+        const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
+        const currentSt = stationsRef.current.find(s => s.id === item.id) || item.station;
+        if (d < bestDist && currentSt.status !== 'locked') {
+          bestDist = d;
+          bestStationId = item.id;
+        }
+      });
+
+      if (bestStationId) {
+        const found = stationsRef.current.find(s => s.id === bestStationId);
+        if (found) {
+          found.onInteract();
+          return;
+        }
+      }
+
+      // 7. Check Boss Station
+      const currentBoss = bossStationRef.current;
+      if (currentBoss) {
+        const bossDist = Math.hypot(playerPos.x - 0, playerPos.z - (-18));
+        if (bossDist < 4.2 && (currentBoss.allLevelsDone || currentBoss.isPassed)) {
+          currentBoss.onInteract();
+          return;
+        }
       }
     };
 
@@ -1054,18 +1163,31 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       ctx.lineTo(center + radius - 4, center);
       ctx.stroke();
 
-      // Blips
       const scale = radius / 22;
+
+      // Draw Shop / Station blips on Minimap (MERGED!)
+      stationsRef.current.forEach(st => {
+        const sx = (st.x - playerPos.x) * scale;
+        const sz = (st.z - playerPos.z) * scale;
+        if (Math.hypot(sx, sz) < radius - 8) {
+          ctx.fillStyle = st.status === 'completed' ? '#10B981' : st.status === 'unlocked' ? '#F59E0B' : '#6B7280';
+          ctx.beginPath();
+          ctx.arc(center + sx, center + sz, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Stage & Organizer Blip
       const orgDx = (0 - playerPos.x) * scale;
       const orgDz = (-14 - playerPos.z) * scale;
       if (Math.hypot(orgDx, orgDz) < radius - 8) {
         ctx.fillStyle = '#EF4444';
         ctx.beginPath();
-        ctx.arc(center + orgDx, center + orgDz, 4, 0, Math.PI * 2);
+        ctx.arc(center + orgDx, center + orgDz, 4.5, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Player Arrow
+      // Player Directional Arrow
       ctx.save();
       ctx.translate(center, center);
       ctx.rotate(-playerAngle - Math.PI / 2);
@@ -1121,6 +1243,16 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
         playerPos.x = nx;
         playerPos.z = nz;
+
+        // Check Exit Gate trigger
+        if (playerPos.x > 21.6) {
+          if (exitGateRef.current?.isUnlocked) {
+            exitGateRef.current.onWalkThrough();
+          } else {
+            playerPos.x = 21.0;
+            showToastRef.current('🚪 Completa todos los niveles y el boss para desbloquear el camino');
+          }
+        }
       }
 
       // Jump physics
@@ -1155,6 +1287,96 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       // Animate Guitarist & Singer
       guitarist.rotation.z = Math.sin(totalTime * 5.0) * 0.05;
       singer.position.y = 0.8 + Math.abs(Math.sin(totalTime * 3.0)) * 0.05;
+
+      // ========================================================
+      // Update Shop / Station Floating Tags (MERGED FEATURE!)
+      // ========================================================
+      stationElements.forEach(item => {
+        const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
+        const isNearby = d < 3.8;
+        const st = stationsRef.current.find(s => s.id === item.id) || item.station;
+
+        item.tagEl.innerHTML = `
+          <div class="pointer-events-auto flex flex-col items-center">
+            <div class="px-2.5 py-1 rounded-full text-[11px] font-black shadow-lg border backdrop-blur-md ${
+              st.status === 'completed'
+                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60'
+                : st.status === 'unlocked'
+                ? 'bg-[#1C2133]/90 text-amber-300 border-amber-400/50'
+                : 'bg-slate-900/80 text-slate-400 border-slate-700'
+            }">
+              <span>${st.status === 'completed' ? '✔' : st.status === 'locked' ? '🔒' : '🏪'} ${st.label}</span>
+            </div>
+            ${
+              isNearby
+                ? `<button class="mt-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg border border-white hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                    E · Interactuar
+                  </button>`
+                : ''
+            }
+          </div>
+        `;
+
+        if (isNearby) {
+          const btn = item.tagEl.querySelector('button');
+          if (btn) btn.onclick = () => st.onInteract();
+        }
+
+        projectToScreen(st.x, 3.4, st.z, item.tagEl);
+      });
+
+      // Update Boss Station Tag
+      const currentBoss = bossStationRef.current;
+      if (bossTagEl && currentBoss) {
+        const bd = Math.hypot(playerPos.x - 0, playerPos.z - (-18));
+        const isNearBoss = bd < 4.2;
+        bossTagEl.innerHTML = `
+          <div class="pointer-events-auto flex flex-col items-center">
+            <div class="px-3 py-1 rounded-full text-xs font-black shadow-lg border backdrop-blur-md ${
+              currentBoss.isPassed
+                ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500'
+                : currentBoss.allLevelsDone
+                ? 'bg-rose-950/90 text-rose-300 border-rose-500 glow-red'
+                : 'bg-slate-900/90 text-slate-400 border-slate-700'
+            }">
+              <span>👑 ${currentBoss.label}</span>
+            </div>
+            ${
+              isNearBoss
+                ? (currentBoss.allLevelsDone || currentBoss.isPassed)
+                  ? `<button class="mt-1 px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs rounded-xl shadow-lg border border-white hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                      E · Misión Jefe (Boss)
+                    </button>`
+                  : `<div class="mt-1 px-3 py-1 bg-slate-900/90 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 shadow flex items-center gap-1">
+                      🔒 Completa 10 niveles primero (${currentBoss.completedCount ?? 0}/10)
+                    </div>`
+                : ''
+            }
+          </div>
+        `;
+
+        if (isNearBoss && (currentBoss.allLevelsDone || currentBoss.isPassed)) {
+          const btn = bossTagEl.querySelector('button');
+          if (btn) btn.onclick = () => currentBoss.onInteract();
+        }
+        projectToScreen(0, 4.8, -20, bossTagEl);
+      }
+
+      // Update Exit Gate Tag
+      const currentGate = exitGateRef.current;
+      const isGateOpen = Boolean(currentGate?.isUnlocked);
+      if (gateTagEl && currentGate) {
+        gateTagEl.innerHTML = `
+          <div class="px-2.5 py-1 rounded-full text-xs font-black shadow-lg border backdrop-blur-md ${
+            isGateOpen
+              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-400'
+              : 'bg-rose-950/80 text-rose-300 border-rose-500/60'
+          }">
+            <span>${isGateOpen ? '🚪 ' + (currentGate?.targetCityName || 'Siguiente Ciudad') : '🔒 Camino Cerrado'}</span>
+          </div>
+        `;
+        projectToScreen(22, 5.5, 0, gateTagEl);
+      }
 
       // Animate Collectibles (floating & rotating)
       collectibles.forEach((c, idx) => {
@@ -1256,6 +1478,17 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       `;
       projectToScreen(0, 3.8, -14.0, targetBeaconEl);
 
+      // Track nearest station / shop for HUD readout
+      let minDist = 999;
+      let closestStation: AdventureStation3D | null = null;
+      for (const s of stationsRef.current) {
+        const d = Math.hypot(playerPos.x - s.x, playerPos.z - s.z);
+        if (d < minDist && s.status !== 'locked') {
+          minDist = d;
+          closestStation = s;
+        }
+      }
+
       // Animate Pedestrians
       pedestrians.forEach(ped => {
         const dx = ped.tx - ped.mesh.position.x;
@@ -1285,6 +1518,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       // Update distance readout for HUD
       if (Math.floor(totalTime * 4) !== Math.floor((totalTime - dt) * 4)) {
         setNearestDistance(mDistance);
+        setNearestStation(closestStation);
       }
 
       drawMinimap();
@@ -1305,11 +1539,8 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     };
   }, []);
 
-  // Compute active quest progress dynamically (Starts at 0/20, not fake completed!)
-  const questCompletedCount = 
-    (questState.decorationsCollected === 3 ? 1 : 0) +
-    (questState.musiciansSpoken.length === 2 ? 1 : 0) +
-    (questState.tapaTasted ? 1 : 0);
+  // Compute completed count for shop stations
+  const completedStationsCount = stations.filter(s => s.status === 'completed').length;
 
   return (
     <div className="relative w-full h-[85vh] min-h-[580px] rounded-3xl overflow-hidden shadow-2xl border-3 border-amber-600/80 bg-[#160703] select-none font-sans">
@@ -1363,7 +1594,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-[11px] font-black text-amber-400 font-mono">
-                {questCompletedCount}/20
+                {completedStationsCount}/20
               </span>
               <button
                 onClick={() => setIsMissionsCollapsed(!isMissionsCollapsed)}
@@ -1379,7 +1610,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
           <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-amber-500/30">
             <div 
               className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-300 rounded-full transition-all duration-500"
-              style={{ width: `${Math.round((questCompletedCount / 20) * 100)}%` }}
+              style={{ width: `${Math.round((completedStationsCount / (stations.length || 20)) * 100)}%` }}
             />
           </div>
 
@@ -1394,10 +1625,10 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs font-black leading-tight truncate font-serif">
-                        La Gran Fiesta
+                        {nearestStation?.label || 'La Gran Fiesta'}
                       </h4>
                       <p className="text-[10px] text-[#422A16] font-semibold line-clamp-2 leading-tight mt-0.5">
-                        Habla con la organizadora de la fiesta y ayuda con los preparativos.
+                        {nearestStation?.subLabel || 'Habla con la organizadora de la fiesta y ayuda con los preparativos.'}
                       </p>
                     </div>
                   </div>
@@ -1591,6 +1822,40 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
         <div className="flex items-center space-x-1.5 text-stone-300">
           <span>🖱️</span>
           <span>Rotar Cámara</span>
+        </div>
+      </div>
+
+      {/* Mobile On-Screen D-Pad Controls */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-auto md:hidden flex flex-col items-center">
+        <button
+          onTouchStart={() => handleTouchKey('w', true)}
+          onTouchEnd={() => handleTouchKey('w', false)}
+          className="w-11 h-11 rounded-xl bg-black/60 border border-amber-400/60 text-amber-200 font-bold flex items-center justify-center text-lg active:bg-amber-500 active:text-black mb-1"
+        >
+          ▲
+        </button>
+        <div className="flex space-x-1">
+          <button
+            onTouchStart={() => handleTouchKey('a', true)}
+            onTouchEnd={() => handleTouchKey('a', false)}
+            className="w-11 h-11 rounded-xl bg-black/60 border border-amber-400/60 text-amber-200 font-bold flex items-center justify-center text-lg active:bg-amber-500 active:text-black"
+          >
+            ◀
+          </button>
+          <button
+            onTouchStart={() => handleTouchKey('s', true)}
+            onTouchEnd={() => handleTouchKey('s', false)}
+            className="w-11 h-11 rounded-xl bg-black/60 border border-amber-400/60 text-amber-200 font-bold flex items-center justify-center text-lg active:bg-amber-500 active:text-black"
+          >
+            ▼
+          </button>
+          <button
+            onTouchStart={() => handleTouchKey('d', true)}
+            onTouchEnd={() => handleTouchKey('d', false)}
+            className="w-11 h-11 rounded-xl bg-black/60 border border-amber-400/60 text-amber-200 font-bold flex items-center justify-center text-lg active:bg-amber-500 active:text-black"
+          >
+            ▶
+          </button>
         </div>
       </div>
 
