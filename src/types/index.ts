@@ -1,5 +1,10 @@
 export type DifficultyTier = 'easy' | 'medium' | 'tough' | 'hard' | 'hot';
 
+export interface VocabularyHint {
+  word: string;        // Spanish keyword from the question
+  translation: string; // English meaning of that keyword
+}
+
 export type QuestionType = 'multiple-choice' | 'fill-blank' | 'word-order' | 'dialogue';
 
 export type GameScreen = 
@@ -70,6 +75,7 @@ export interface Question {
   correctAnswer: string | string[]; // Single string or array of acceptable answers
   explanation: string;
   hints: string[];
+  vocabularyHints?: VocabularyHint[]; // 2–4 keyword hints for paid "Pista de vocabulario"
   syllabusRef: string; // e.g. "M1.Alphabet", "M2.SerVsEstar"
   difficulty: DifficultyTier;
   sentencePieces?: string[]; // For word-order questions
@@ -243,6 +249,7 @@ export interface PlayerProgress {
   completedLevels: Record<string, CompletedLevelRecord>;
   completedBosses: Record<string, CompletedBossRecord>;
   purchasedTranslations: string[]; // Question IDs
+  purchasedVocabHints: string[]; // Question IDs for "Pista de vocabulario" (500 coins each)
   rewardedQuestionFirstTries: string[]; // Prevent duplicate 100 coin rewards
   rewardedDialogueIds: string[]; // Prevent duplicate 250 coin rewards
   rewardedCityCompletionIds: string[]; // Prevent duplicate 500 coin rewards

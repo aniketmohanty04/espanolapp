@@ -12,6 +12,7 @@ export const REWARD_CONFIG = {
   COMPLETED_DIALOGUE_COINS: 250,
   CITY_COMPLETION_BONUS_COINS: 500,
   ENGLISH_TRANSLATION_COST_COINS: 1000,
+  VOCAB_HINT_COST_COINS: 500,
   BOSS_MASTERY_THRESHOLD_PERCENT: 80
 };
 
@@ -44,6 +45,7 @@ interface GameContextType {
   ) => { coinsAwarded: number; isDuplicate: boolean };
   recordDialogueCompleted: (dialogueId: string) => { coinsAwarded: number; isDuplicate: boolean };
   purchaseTranslation: (questionId: string) => { success: boolean; reason?: string };
+  purchaseVocabHint: (questionId: string) => { success: boolean; reason?: string; alreadyOwned?: boolean };
   recordLevelCompleted: (
     cityId: string,
     levelId: string,
@@ -576,6 +578,46 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success, reason };
   }, []);
 
+  // Purchase vocabulary hint ("Pista de vocabulario") for 500 coins with anti-duplication
+  const purchaseVocabHint = useCallback((questionId: string): { success: boolean; reason?: string; alreadyOwned?: boolean } => {
+    let success = false;
+    let reason: string | undefined;
+    let alreadyOwned = false;
+
+    setProgress(prev => {
+      // Ensure purchasedVocabHints exists (backward compat)
+      const existingHints = prev.purchasedVocabHints || [];
+
+      // Already purchased? Show hint for free
+      if (existingHints.includes(questionId)) {
+        success = true;
+        alreadyOwned = true;
+        return prev; // No charge
+      }
+
+      // Sufficient balance?
+      if (prev.stats.coins < REWARD_CONFIG.VOCAB_HINT_COST_COINS) {
+        reason = `¡No tienes suficientes monedas! Necesitas ${REWARD_CONFIG.VOCAB_HINT_COST_COINS} 🪙, pero tienes ${prev.stats.coins} 🪙.`;
+        return prev;
+      }
+
+      // Deduct coins safely
+      success = true;
+      const newCoins = prev.stats.coins - REWARD_CONFIG.VOCAB_HINT_COST_COINS;
+
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          coins: newCoins
+        },
+        purchasedVocabHints: [...existingHints, questionId]
+      };
+    });
+
+    return { success, reason, alreadyOwned };
+  }, []);
+
   // Record level completed
   const recordLevelCompleted = useCallback((
     cityId: string,
@@ -876,6 +918,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recordQuestionResult,
         recordDialogueCompleted,
         purchaseTranslation,
+        purchaseVocabHint,
         recordLevelCompleted,
         recordBossCompleted,
         markMistakeMastered,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useGame, useLifeCountdown, REWARD_CONFIG } from '../context/GameContext';
 import { shuffleArray } from '../utils/shuffle';
-import { Level, Question, DialogueChoice } from '../types';
+import { Level, Question, DialogueChoice, VocabularyHint } from '../types';
+import { getQuestionVocabHints } from '../utils/vocabHintHelper';
 import { 
   SpanishWaiterIllustration, 
   SpanishGuideIllustration, 
@@ -43,7 +44,8 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     progress, 
     recordQuestionResult, 
     recordDialogueCompleted, 
-    purchaseTranslation, 
+    purchaseTranslation,
+    purchaseVocabHint,
     recordLevelCompleted,
     refillLivesWithCoins
   } = useGame();
@@ -65,6 +67,11 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const [translationUnlocked, setTranslationUnlocked] = useState<boolean>(false);
   const [showTranslateModal, setShowTranslateModal] = useState<boolean>(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  // Vocab hint state
+  const [vocabHintUnlocked, setVocabHintUnlocked] = useState<boolean>(false);
+  const [showVocabHintModal, setShowVocabHintModal] = useState<boolean>(false);
+  const [vocabHintError, setVocabHintError] = useState<string | null>(null);
+  const [isPurchasingHint, setIsPurchasingHint] = useState<boolean>(false); // Double-click guard
 
   // Lives / hearts synchronized with game state (max 3)
   const lives = typeof progress.stats.lives === 'number' ? progress.stats.lives : 3;
@@ -75,6 +82,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const [finalStars, setFinalStars] = useState<number>(3);
 
   const currentQuestion: Question = level.questions[currentIndex];
+  const currentVocabHints = useMemo(() => getQuestionVocabHints(currentQuestion), [currentQuestion]);
 
   // Decide which character illustration to show
   const isFoodOrCafe = level.syllabusTopic.includes('Comida') || 
@@ -93,9 +101,16 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     setShowTranslateModal(false);
     setTranslateError(null);
     setDialogueChosenChoice(null);
+    setShowVocabHintModal(false);
+    setVocabHintError(null);
+    setIsPurchasingHint(false);
 
     const alreadyPurchased = progress.purchasedTranslations.includes(currentQuestion.id);
     setTranslationUnlocked(alreadyPurchased);
+
+    // Check if vocab hint was already purchased for this question
+    const vocabAlreadyPurchased = (progress.purchasedVocabHints || []).includes(currentQuestion.id);
+    setVocabHintUnlocked(vocabAlreadyPurchased);
 
     if (currentQuestion.type === 'word-order' && currentQuestion.sentencePieces) {
       setConstructedWords([]);
@@ -201,6 +216,24 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     } else {
       setTranslateError(res.reason || 'No tienes suficientes monedas.');
     }
+  };
+
+  // Purchase Vocabulary Hint ("Pista de vocabulario") — 500 coins, with double-click guard
+  const handlePurchaseVocabHint = () => {
+    if (isPurchasingHint) return; // Prevent double-click
+    setIsPurchasingHint(true);
+    setVocabHintError(null);
+
+    const res = purchaseVocabHint(currentQuestion.id);
+    if (res.success) {
+      setVocabHintUnlocked(true);
+      setVocabHintError(null);
+    } else {
+      setVocabHintError(res.reason || '¡No tienes suficientes monedas!');
+    }
+
+    // Re-enable after a brief delay to prevent rapid re-clicks
+    setTimeout(() => setIsPurchasingHint(false), 600);
   };
 
   // Shuffled multiple-choice options so the correct answer is not always Option A
@@ -391,13 +424,17 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                 <SpanishGuideIllustration size={230} />
               )}
 
-              {/* Need Help / Translate Button (Panel 10 trigger) */}
+              {/* Pista de vocabulario (500 🪙) */}
               <button
-                onClick={() => setShowTranslateModal(true)}
-                className="mt-2 flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-[#FFF8EE] hover:bg-[#FFEEDC] text-[#B45309] text-xs font-black border border-amber-300 transition-all hover:scale-105 shadow-xs"
+                onClick={() => {
+                  setShowVocabHintModal(true);
+                  setVocabHintError(null);
+                }}
+                className="mt-2 flex items-center space-x-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black border border-amber-300 transition-all hover:scale-105 shadow-md cursor-pointer"
+                title="Comprar pista de vocabulario por 500 monedas"
               >
-                <Lightbulb className="w-3.5 h-3.5 text-[#E05615]" />
-                <span>¿Necesitas ayuda? (Traducir)</span>
+                <Lightbulb className="w-4 h-4 text-slate-950 fill-amber-300" />
+                <span>Pista de vocabulario (500 🪙)</span>
               </button>
             </div>
 
@@ -745,85 +782,105 @@ export const LevelModal: React.FC<LevelModalProps> = ({
       )}
 
       {/* ========================================================
-          HINT / TRANSLATION MODAL (PANEL 10)
+          PISTA DE VOCABULARIO MODAL (PAID VOCABULARY HINT - 500 COINS)
           ======================================================== */}
-      {showTranslateModal && (
+      {showVocabHintModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
           <div className="relative w-full max-w-md bg-[#FFFBEB] border-4 border-amber-400 rounded-3xl shadow-2xl p-6 sm:p-7 text-center space-y-4 text-slate-900 animate-slideUp">
             
             {/* Close */}
             <button
-              onClick={() => setShowTranslateModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-amber-200/60 hover:bg-amber-300 text-amber-900 transition-colors"
+              onClick={() => {
+                setShowVocabHintModal(false);
+                setVocabHintError(null);
+              }}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-amber-200/60 hover:bg-amber-300 text-amber-900 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            {/* Lightbulb Icon (Panel 10) */}
+            {/* Lightbulb Icon */}
             <div className="w-16 h-16 rounded-full bg-amber-400/30 border-2 border-amber-400 mx-auto flex items-center justify-center text-3xl shadow-inner">
               💡
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-slate-950 font-serif">
-              ¿Necesitas Ayuda? (Need Help?)
-            </h3>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-950 font-serif">
+                Pista de vocabulario
+              </h3>
+              <p className="text-xs text-slate-700 mt-1 font-medium">
+                Descubre el significado de palabras clave esenciales en inglés para resolver la pregunta tú mismo.
+              </p>
+            </div>
 
-            <p className="text-sm font-semibold text-slate-700">
-              ¿Quieres traducir esta frase al inglés para resolverla más fácilmente?
-            </p>
+            {/* Coin balance & Cost preview */}
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-100/80 border border-amber-300 text-xs font-bold text-slate-800">
+              <span>Tu saldo actual:</span>
+              <span className="flex items-center space-x-1 font-mono font-black text-[#B45309]">
+                <Coins className="w-4 h-4 text-[#E05615] fill-amber-400" />
+                <span>{progress.stats.coins.toLocaleString()} 🪙</span>
+              </span>
+            </div>
 
-            {/* Translation Actions */}
-            {!translationUnlocked ? (
-              <div className="space-y-3 pt-2">
+            {/* Hint Actions */}
+            {!vocabHintUnlocked ? (
+              <div className="space-y-3 pt-1">
                 <button
-                  onClick={handlePurchaseTranslation}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-base shadow-lg border-2 border-amber-500 flex items-center justify-center space-x-2 transition-transform hover:scale-102"
+                  disabled={isPurchasingHint}
+                  onClick={handlePurchaseVocabHint}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 disabled:opacity-50 text-slate-950 font-black text-base shadow-lg border-2 border-amber-500 flex items-center justify-center space-x-2 transition-transform hover:scale-102 active:scale-98 cursor-pointer"
                 >
-                  <Coins className="w-5 h-5 text-amber-900 fill-amber-900/30" />
-                  <span>1.000 Monedas</span>
+                  <Coins className="w-5 h-5 text-amber-950 fill-amber-400" />
+                  <span>Desbloquear Pista (500 🪙)</span>
                 </button>
 
-                <button
-                  onClick={handlePurchaseTranslation}
-                  className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-lg transition-transform hover:scale-102"
-                >
-                  Traducir (Translate)
-                </button>
-
-                {translateError && (
-                  <p className="text-xs text-rose-600 font-bold bg-rose-100 p-2 rounded-xl">
-                    {translateError}
-                  </p>
+                {vocabHintError && (
+                  <div className="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold animate-fadeIn">
+                    ⚠️ {vocabHintError}
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-emerald-100 border border-emerald-400 text-emerald-950 text-sm font-bold">
-                ✓ ¡Traducción desbloqueada para esta pregunta!
+              <div className="space-y-3 text-left">
+                {/* Active unlocked banner */}
+                <div className="p-3 rounded-2xl bg-emerald-100/90 border border-emerald-400 text-emerald-950 text-xs font-bold flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <span>✓</span>
+                    <span>¡Pista de vocabulario activa!</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-900 bg-emerald-200/60 px-2 py-0.5 rounded-lg">
+                    Saldo: {progress.stats.coins.toLocaleString()} 🪙
+                  </span>
+                </div>
+
+                {/* Keywords list: ONLY keywords, NEVER complete sentence or answer */}
+                <div className="p-4 rounded-2xl bg-white border-2 border-amber-300/80 shadow-xs space-y-2">
+                  <span className="text-[11px] font-black text-[#B45309] uppercase tracking-wider block">
+                    Palabras clave (Keywords):
+                  </span>
+                  <ul className="divide-y divide-amber-100 text-sm">
+                    {currentVocabHints.map((hint, idx) => (
+                      <li key={idx} className="py-2 flex items-center justify-between">
+                        <span className="font-bold text-slate-950 font-mono text-base">{hint.word}</span>
+                        <span className="text-slate-600 font-medium italic text-sm">= {hint.translation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <p className="text-[11px] text-slate-500 text-center italic">
+                  Las pistas revelan términos clave sin mostrar la respuesta correcta. ¡A resolverla!
+                </p>
               </div>
             )}
 
-            {/* Preview Box at Bottom (Panel 10) */}
-            <div className="p-3.5 rounded-2xl bg-amber-100/70 border border-amber-300 text-xs sm:text-sm text-slate-800 text-left font-medium space-y-1">
-              <span className="font-bold text-amber-900 block text-[11px] uppercase tracking-wider">
-                Frase en español:
-              </span>
-              <p className="font-bold">"{currentQuestion.dialogue?.prompt || currentQuestion.prompt}"</p>
-              {translationUnlocked && (
-                <div className="pt-2 border-t border-amber-200 mt-2">
-                  <span className="font-bold text-emerald-800 block text-[11px] uppercase tracking-wider">
-                    Traducción al inglés:
-                  </span>
-                  <p className="font-bold text-emerald-950 italic">
-                    "{currentQuestion.dialogue?.englishPrompt || currentQuestion.englishPrompt || 'How much does this cost?'}"
-                  </p>
-                </div>
-              )}
-            </div>
-
             <div className="pt-2">
               <button
-                onClick={() => setShowTranslateModal(false)}
-                className="text-xs font-bold text-slate-600 hover:text-slate-900 underline"
+                onClick={() => {
+                  setShowVocabHintModal(false);
+                  setVocabHintError(null);
+                }}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
               >
                 Cerrar y volver a la pregunta
               </button>

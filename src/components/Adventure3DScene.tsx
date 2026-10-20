@@ -417,6 +417,9 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   }, []);
 
   const keysRef = useRef<Record<string, boolean>>({});
+  const triggerInteractionRef = useRef<() => void>(() => {});
+  const lastInteractionTimeRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Mobile pad key press
   const handleTouchKey = (key: string, pressed: boolean) => {
@@ -940,28 +943,47 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointermove', onPointerMove);
 
-    // Unified Interaction handler for hotkeys and click triggers
+    // Unified Interaction handler for hotkeys and click triggers with distance-sorted selection
     const triggerInteraction = () => {
+      const now = Date.now();
+      if (now - lastInteractionTimeRef.current < 400) return; // Debounce rapid triggers
+
+      // Check if a modal is already open
+      if (document.querySelector('.fixed.z-50') || document.querySelector('.fixed.z-60')) {
+        return;
+      }
+
+      // Clear 'e' key state immediately to prevent sticky states
+      keysRef.current['e'] = false;
+      keysRef.current['E'] = false;
+      keysRef.current['Enter'] = false;
+
       const q = questStateRef.current;
+      type Candidate = { dist: number; action: () => void };
+      const candidates: Candidate[] = [];
 
       // 1. Check Collectibles
       for (const item of collectibles) {
         if (!item.collected) {
           const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
-          if (d < 3.0) {
-            item.collected = true;
-            item.group.visible = false;
-            playSfx('chime');
-            confetti({ particleCount: 35, spread: 65, origin: { y: 0.7 } });
-            setQuestState(prev => {
-              const newCount = prev.decorationsCollected + 1;
-              showToastRef.current(`✨ ¡Conseguiste decoraciones! (${newCount}/3)`);
-              if (newCount === 3) {
-                setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: 3/3 decoraciones listas!'), 1400);
+          if (d < 3.2) {
+            candidates.push({
+              dist: d,
+              action: () => {
+                item.collected = true;
+                item.group.visible = false;
+                playSfx('chime');
+                confetti({ particleCount: 35, spread: 65, origin: { y: 0.7 } });
+                setQuestState(prev => {
+                  const newCount = prev.decorationsCollected + 1;
+                  showToastRef.current(`✨ ¡Conseguiste decoraciones! (${newCount}/3)`);
+                  if (newCount === 3) {
+                    setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: 3/3 decoraciones listas!'), 1400);
+                  }
+                  return { ...prev, decorationsCollected: newCount };
+                });
               }
-              return { ...prev, decorationsCollected: newCount };
             });
-            return;
           }
         }
       }
@@ -969,98 +991,130 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       // 2. Check Paco el Guitarrista
       const dPaco = Math.hypot(playerPos.x - (-3.2), playerPos.z - (-17.0));
       if (dPaco < 3.8) {
-        playSfx('guitar');
-        setQuestState(prev => {
-          const already = prev.musiciansSpoken.includes('paco');
-          const next = already ? prev.musiciansSpoken : [...prev.musiciansSpoken, 'paco'];
-          showToastRef.current('🎸 Paco: "¡Olé! La guitarra flamenca marca el compás de La Gran Fiesta. ¡Toma este ritmo!"');
-          if (!already && next.length === 2) {
-            setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Hablaste con los músicos (2/2)!'), 1500);
+        candidates.push({
+          dist: dPaco,
+          action: () => {
+            playSfx('guitar');
+            setQuestState(prev => {
+              const already = prev.musiciansSpoken.includes('paco');
+              const next = already ? prev.musiciansSpoken : [...prev.musiciansSpoken, 'paco'];
+              showToastRef.current('🎸 Paco: "¡Olé! La guitarra flamenca marca el compás de La Gran Fiesta. ¡Toma este ritmo!"');
+              if (!already && next.length === 2) {
+                setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Hablaste con los músicos (2/2)!'), 1500);
+              }
+              return { ...prev, musiciansSpoken: next };
+            });
           }
-          return { ...prev, musiciansSpoken: next };
         });
-        return;
       }
 
       // 3. Check Elena la Cantaora
       const dElena = Math.hypot(playerPos.x - 3.2, playerPos.z - (-17.0));
       if (dElena < 3.8) {
-        playSfx('palmas');
-        setQuestState(prev => {
-          const already = prev.musiciansSpoken.includes('elena');
-          const next = already ? prev.musiciansSpoken : [...prev.musiciansSpoken, 'elena'];
-          showToastRef.current('🎤 Elena: "¡Bienvenido a Sevilla! El cante y la alegría llenan el aire esta noche."');
-          if (!already && next.length === 2) {
-            setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Hablaste con los músicos (2/2)!'), 1500);
+        candidates.push({
+          dist: dElena,
+          action: () => {
+            playSfx('palmas');
+            setQuestState(prev => {
+              const already = prev.musiciansSpoken.includes('elena');
+              const next = already ? prev.musiciansSpoken : [...prev.musiciansSpoken, 'elena'];
+              showToastRef.current('🎤 Elena: "¡Bienvenido a Sevilla! El cante y la alegría llenan el aire esta noche."');
+              if (!already && next.length === 2) {
+                setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Hablaste con los músicos (2/2)!'), 1500);
+              }
+              return { ...prev, musiciansSpoken: next };
+            });
           }
-          return { ...prev, musiciansSpoken: next };
         });
-        return;
       }
 
       // 4. Check Tapas Stand
       const dTapas = Math.hypot(playerPos.x - 10.5, playerPos.z - (-6.5));
-      if (dTapas < 3.5) {
-        playSfx('tapa');
-        setQuestState(prev => {
-          if (!prev.tapaTasted) {
-            confetti({ particleCount: 30, spread: 55, origin: { y: 0.7 } });
-            showToastRef.current('🥘 Manolo: "¡Marchando una de Jamón Ibérico y Tortilla de Patatas de Sevilla! ¡Buen provecho!"');
-            setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Probaste una tapa típica (1/1)!'), 1500);
-          } else {
-            showToastRef.current('🥘 Manolo: "¡Qué aproveche! Las mejores tapas de toda Andalucía están aquí."');
+      if (dTapas < 3.6) {
+        candidates.push({
+          dist: dTapas,
+          action: () => {
+            playSfx('tapa');
+            setQuestState(prev => {
+              if (!prev.tapaTasted) {
+                confetti({ particleCount: 30, spread: 55, origin: { y: 0.7 } });
+                showToastRef.current('🥘 Manolo: "¡Marchando una de Jamón Ibérico y Tortilla de Patatas de Sevilla! ¡Buen provecho!"');
+                setTimeout(() => showToastRef.current('🎉 ¡Objetivo completado: Probaste una tapa típica (1/1)!'), 1500);
+              } else {
+                showToastRef.current('🥘 Manolo: "¡Qué aproveche! Las mejores tapas de toda Andalucía están aquí."');
+              }
+              return { ...prev, tapaTasted: true };
+            });
           }
-          return { ...prev, tapaTasted: true };
         });
-        return;
       }
 
       // 5. Check Fiesta Organizer (Carmen)
       const dOrganizer = Math.hypot(playerPos.x - 0, playerPos.z - (-14.0));
       if (dOrganizer < 3.8) {
-        const allDone = q.decorationsCollected >= 3 && q.musiciansSpoken.length >= 2 && q.tapaTasted;
-        if (!allDone) {
-          playSfx('palmas');
-          showToastRef.current('🌸 Organizadora: "¡Hola! Ayúdanos con los preparativos: consigue 3 decoraciones, habla con los 2 músicos y prueba una tapa."');
-        } else {
-          playSfx('fanfare');
-          confetti({ particleCount: 80, spread: 90, origin: { y: 0.6 } });
-          setQuestState(prev => ({ ...prev, completed: true }));
-          showToastRef.current('🏆 Carmen: "¡Increíble trabajo! Todas las decoraciones están listas, la música suena y has probado nuestra gastronomía. ¡Completaste La Gran Fiesta!"');
-        }
-        return;
+        candidates.push({
+          dist: dOrganizer,
+          action: () => {
+            const allDone = q.decorationsCollected >= 3 && q.musiciansSpoken.length >= 2 && q.tapaTasted;
+            if (!allDone) {
+              playSfx('palmas');
+              showToastRef.current('🌸 Organizadora: "¡Hola! Ayúdanos con los preparativos: consigue 3 decoraciones, habla con los 2 músicos y prueba una tapa."');
+            } else {
+              playSfx('fanfare');
+              confetti({ particleCount: 80, spread: 90, origin: { y: 0.6 } });
+              setQuestState(prev => ({ ...prev, completed: true }));
+              showToastRef.current('🏆 Carmen: "¡Increíble trabajo! Todas las decoraciones están listas, la música suena y has probado nuestra gastronomía. ¡Completaste La Gran Fiesta!"');
+            }
+          }
+        });
       }
 
       // 6. Check Market Stalls / Station Shops (MERGED FEATURE!)
-      let bestDist = 3.8;
-      let bestStationId: string | null = null;
       stationElements.forEach(item => {
         const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
         const currentSt = stationsRef.current.find(s => s.id === item.id) || item.station;
-        if (d < bestDist && currentSt.status !== 'locked') {
-          bestDist = d;
-          bestStationId = item.id;
+        if (d < 4.0 && currentSt.status !== 'locked') {
+          candidates.push({
+            dist: d,
+            action: () => {
+              const found = stationsRef.current.find(s => s.id === item.id) || currentSt;
+              found.onInteract();
+            }
+          });
         }
       });
-
-      if (bestStationId) {
-        const found = stationsRef.current.find(s => s.id === bestStationId);
-        if (found) {
-          found.onInteract();
-          return;
-        }
-      }
 
       // 7. Check Boss Station
       const currentBoss = bossStationRef.current;
       if (currentBoss) {
         const bossDist = Math.hypot(playerPos.x - 0, playerPos.z - (-18));
         if (bossDist < 4.2 && (currentBoss.allLevelsDone || currentBoss.isPassed)) {
-          currentBoss.onInteract();
-          return;
+          candidates.push({
+            dist: bossDist,
+            action: () => currentBoss.onInteract()
+          });
         }
       }
+
+      // Sort by closest distance to player!
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => a.dist - b.dist);
+        lastInteractionTimeRef.current = now;
+        candidates[0].action();
+      }
     };
+
+    triggerInteractionRef.current = triggerInteraction;
+
+    // Delegate clicks on tagsContainer to trigger interaction reliably
+    if (tagsContainer) {
+      tagsContainer.onclick = (e) => {
+        const target = e.target as HTMLElement | null;
+        if (target?.closest('button')) {
+          triggerInteraction();
+        }
+      };
+    }
 
     // Keyboard handlers
     const onKeyDown = (e: KeyboardEvent) => {
@@ -1095,8 +1149,13 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       keysRef.current[e.key] = false;
     };
 
+    const onBlur = () => {
+      keysRef.current = {};
+    };
+
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
 
     // Resize
     const onResize = () => {
@@ -1531,6 +1590,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       cancelAnimationFrame(animId);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       window.removeEventListener('resize', onResize);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
@@ -1543,7 +1603,12 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
   const completedStationsCount = stations.filter(s => s.status === 'completed').length;
 
   return (
-    <div className="relative w-full h-[85vh] min-h-[580px] rounded-3xl overflow-hidden shadow-2xl border-3 border-amber-600/80 bg-[#160703] select-none font-sans">
+    <div 
+      ref={containerRef}
+      tabIndex={0}
+      onClick={() => containerRef.current?.focus()}
+      className="relative w-full h-[85vh] min-h-[580px] rounded-3xl overflow-hidden shadow-2xl border-3 border-amber-600/80 bg-[#160703] select-none font-sans outline-none focus:ring-2 focus:ring-amber-500/50"
+    >
       {/* 3D WebGL Canvas */}
       <div ref={mountRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
 
@@ -1814,10 +1879,15 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
           <span className="font-sans ml-1 text-amber-100">Correr</span>
         </div>
         <span className="text-amber-500">•</span>
-        <div className="flex items-center space-x-1.5">
+        <button
+          type="button"
+          onClick={() => triggerInteractionRef.current()}
+          className="flex items-center space-x-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+          title="Interactuar (Tecla E)"
+        >
           <kbd className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[11px] shadow-sm">E</kbd>
-          <span>Interactuar</span>
-        </div>
+          <span className="hover:underline">Interactuar</span>
+        </button>
         <span className="text-amber-500">•</span>
         <div className="flex items-center space-x-1.5 text-stone-300">
           <span>🖱️</span>
@@ -1825,7 +1895,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
         </div>
       </div>
 
-      {/* Mobile On-Screen D-Pad Controls */}
+      {/* Mobile On-Screen D-Pad Controls & Action Button */}
       <div className="absolute bottom-4 left-4 z-20 pointer-events-auto md:hidden flex flex-col items-center">
         <button
           onTouchStart={() => handleTouchKey('w', true)}
@@ -1857,6 +1927,13 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
             ▶
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => triggerInteractionRef.current()}
+          className="mt-2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-lg border border-white active:scale-95 transition-all cursor-pointer"
+        >
+          E • Interactuar
+        </button>
       </div>
 
       {/* ========================================================

@@ -35,15 +35,15 @@ export const LevelDetailsModal: React.FC<LevelDetailsModalProps> = ({
   const getTierBadge = (tier: DifficultyTier) => {
     switch (tier) {
       case 'easy':
-        return { label: 'Easy', bg: 'bg-emerald-500 text-white' };
+        return { label: 'Fácil (Easy)', bg: 'bg-emerald-500 text-white' };
       case 'medium':
-        return { label: 'Medium', bg: 'bg-sky-500 text-white' };
+        return { label: 'Fácil - Medio (Easy-Medium)', bg: 'bg-sky-500 text-white' };
       case 'tough':
-        return { label: 'Tough', bg: 'bg-amber-500 text-slate-950' };
+        return { label: 'Medio (Medium)', bg: 'bg-amber-500 text-slate-950' };
       case 'hard':
-        return { label: 'Hard', bg: 'bg-orange-500 text-white' };
+        return { label: 'Medio - Difícil (Medium-Hard)', bg: 'bg-orange-500 text-white' };
       case 'hot':
-        return { label: 'Hot', bg: 'bg-rose-500 text-white' };
+        return { label: 'Difícil (Hard)', bg: 'bg-rose-500 text-white' };
     }
   };
 
@@ -65,7 +65,7 @@ export const LevelDetailsModal: React.FC<LevelDetailsModalProps> = ({
         {/* Header with Level Number & 3 Golden Stars (Panel 7) */}
         <div className="pt-6 pb-2 px-6 text-center">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">
-            Level {level.levelNumber}
+            Nivel {level.levelNumber}
           </h2>
 
           {/* 3 Large Stars (Panel 7) */}
@@ -130,7 +130,7 @@ export const LevelDetailsModal: React.FC<LevelDetailsModalProps> = ({
             <div className="flex items-center justify-center space-x-6 text-sm font-black">
               <div className="flex items-center space-x-1.5 text-amber-600">
                 <Coins className="w-5 h-5 text-amber-500 fill-amber-500/30" />
-                <span>+{level.coinReward} coins</span>
+                <span>+{level.coinReward} monedas</span>
               </div>
               <div className="flex items-center space-x-1.5 text-sky-600">
                 <Sparkles className="w-5 h-5 text-sky-500" />
@@ -162,7 +162,7 @@ export const LevelDetailsModal: React.FC<LevelDetailsModalProps> = ({
                 ) : (
                   <>
                     <Play className="w-5 h-5 fill-current" />
-                    <span>{record ? 'Repasar Nivel' : 'Start Level'}</span>
+                    <span>{record ? 'Repasar Nivel' : 'Comenzar Nivel'}</span>
                   </>
                 )}
               </button>

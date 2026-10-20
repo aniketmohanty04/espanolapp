@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useGame, REWARD_CONFIG } from '../context/GameContext';
 import { BossMission, Question } from '../types';
 import { shuffleArray } from '../utils/shuffle';
+import { getQuestionVocabHints } from '../utils/vocabHintHelper';
 import { 
   X, 
   ShieldAlert, 
@@ -13,7 +14,8 @@ import {
   Coins, 
   Sparkles,
   Lock,
-  Play
+  Play,
+  Lightbulb
 } from 'lucide-react';
 
 interface BossMissionModalProps {
@@ -29,7 +31,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { recordBossCompleted, progress } = useGame();
+  const { recordBossCompleted, progress, purchaseVocabHint } = useGame();
 
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -49,7 +51,14 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
     bonusCoins: number;
   } | null>(null);
 
+  // Vocabulary Hint State for Boss Mission
+  const [vocabHintUnlocked, setVocabHintUnlocked] = useState<boolean>(false);
+  const [showVocabHintModal, setShowVocabHintModal] = useState<boolean>(false);
+  const [vocabHintError, setVocabHintError] = useState<string | null>(null);
+  const [isPurchasingHint, setIsPurchasingHint] = useState<boolean>(false);
+
   const currentQuestion: Question = bossMission.questions[currentIndex];
+  const currentVocabHints = useMemo(() => currentQuestion ? getQuestionVocabHints(currentQuestion) : [], [currentQuestion]);
 
   // Safeguard: Boss is only unlocked after completion of all 10 levels of that city
   const isBossPassed = Boolean(progress.completedBosses[bossMission.cityId]?.passed);
@@ -67,12 +76,37 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
     setFillBlankInput('');
     setHasSubmitted(false);
     setIsCorrect(false);
+    setShowVocabHintModal(false);
+    setVocabHintError(null);
+    setIsPurchasingHint(false);
+
+    if (currentQuestion?.id) {
+      const already = (progress.purchasedVocabHints || []).includes(currentQuestion.id);
+      setVocabHintUnlocked(already);
+    }
 
     if (currentQuestion?.type === 'word-order' && currentQuestion?.sentencePieces) {
       setConstructedWords([]);
       setAvailableWords([...currentQuestion.sentencePieces]);
     }
   }, [currentIndex, currentQuestion?.id, hasStarted]);
+
+  // Purchase Vocabulary Hint ("Pista de vocabulario") for Boss question
+  const handlePurchaseVocabHint = () => {
+    if (isPurchasingHint || !currentQuestion) return;
+    setIsPurchasingHint(true);
+    setVocabHintError(null);
+
+    const res = purchaseVocabHint(currentQuestion.id);
+    if (res.success) {
+      setVocabHintUnlocked(true);
+      setVocabHintError(null);
+    } else {
+      setVocabHintError(res.reason || '¡No tienes suficientes monedas!');
+    }
+
+    setTimeout(() => setIsPurchasingHint(false), 600);
+  };
 
   const addWordToConstructed = (word: string, index: number) => {
     if (hasSubmitted) return;
@@ -295,17 +329,27 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                   {bossMission.badgeIcon}
                 </div>
                 <div className="grow">
-                  <span className="text-xs font-black text-[#B45309] block">
-                    {bossMission.characterName} ({bossMission.characterRole})
-                  </span>
-                  <p className="text-sm sm:text-base text-[#24140E] mt-1 font-bold leading-relaxed font-serif">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#B45309] block">
+                      {bossMission.characterName} ({bossMission.characterRole})
+                    </span>
+                    {/* Pista de vocabulario button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowVocabHintModal(true);
+                        setVocabHintError(null);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs border border-amber-300 shadow-sm transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                      title="Pista de vocabulario (500 monedas)"
+                    >
+                      <Lightbulb className="w-3.5 h-3.5 text-slate-950 fill-amber-300" />
+                      <span>Pista de vocabulario (500 🪙)</span>
+                    </button>
+                  </div>
+                  <p className="text-sm sm:text-base text-[#24140E] mt-1.5 font-bold leading-relaxed font-serif">
                     {currentQuestion.prompt}
                   </p>
-                  {currentQuestion.englishPrompt && (
-                    <p className="text-xs text-[#7A6B60] mt-1 italic font-medium">
-                      {currentQuestion.englishPrompt}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -531,6 +575,101 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Vocabulary Hint Modal for Boss Mission */}
+      {showVocabHintModal && currentQuestion && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-[#FFFBEB] border-4 border-amber-400 rounded-3xl shadow-2xl p-6 sm:p-7 text-center space-y-4 text-slate-900 animate-slideUp">
+            <button
+              onClick={() => {
+                setShowVocabHintModal(false);
+                setVocabHintError(null);
+              }}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-amber-200/60 hover:bg-amber-300 text-amber-900 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-amber-400/30 border-2 border-amber-400 mx-auto flex items-center justify-center text-3xl shadow-inner">
+              💡
+            </div>
+
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-950 font-serif">
+                Pista de vocabulario
+              </h3>
+              <p className="text-xs text-slate-700 mt-1 font-medium">
+                Palabras clave esenciales para descifrar el enigma del jefe sin revelar la respuesta.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-100/80 border border-amber-300 text-xs font-bold text-slate-800">
+              <span>Tu saldo actual:</span>
+              <span className="flex items-center space-x-1 font-mono font-black text-[#B45309]">
+                <Coins className="w-4 h-4 text-[#E05615] fill-amber-400" />
+                <span>{progress.stats.coins.toLocaleString()} 🪙</span>
+              </span>
+            </div>
+
+            {!vocabHintUnlocked ? (
+              <div className="space-y-3 pt-1">
+                <button
+                  disabled={isPurchasingHint}
+                  onClick={handlePurchaseVocabHint}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 disabled:opacity-50 text-slate-950 font-black text-base shadow-lg border-2 border-amber-500 flex items-center justify-center space-x-2 transition-transform hover:scale-102 active:scale-98 cursor-pointer"
+                >
+                  <Coins className="w-5 h-5 text-amber-950 fill-amber-400" />
+                  <span>Desbloquear Pista (500 🪙)</span>
+                </button>
+
+                {vocabHintError && (
+                  <div className="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold animate-fadeIn">
+                    ⚠️ {vocabHintError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3 text-left">
+                <div className="p-3 rounded-2xl bg-emerald-100/90 border border-emerald-400 text-emerald-950 text-xs font-bold flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <span>✓</span>
+                    <span>¡Pista de vocabulario activa!</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-900 bg-emerald-200/60 px-2 py-0.5 rounded-lg">
+                    Saldo: {progress.stats.coins.toLocaleString()} 🪙
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white border-2 border-amber-300/80 shadow-xs space-y-2">
+                  <span className="text-[11px] font-black text-[#B45309] uppercase tracking-wider block">
+                    Palabras clave (Keywords):
+                  </span>
+                  <ul className="divide-y divide-amber-100 text-sm">
+                    {currentVocabHints.map((hint, idx) => (
+                      <li key={idx} className="py-2 flex items-center justify-between">
+                        <span className="font-bold text-slate-950 font-mono text-base">{hint.word}</span>
+                        <span className="text-slate-600 font-medium italic text-sm">= {hint.translation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  setShowVocabHintModal(false);
+                  setVocabHintError(null);
+                }}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+              >
+                Cerrar y volver al desafío
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

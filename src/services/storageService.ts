@@ -91,6 +91,7 @@ export const INITIAL_PROGRESS: PlayerProgress = {
   completedLevels: {},
   completedBosses: {},
   purchasedTranslations: [],
+  purchasedVocabHints: [],
   rewardedQuestionFirstTries: [],
   rewardedDialogueIds: [],
   rewardedCityCompletionIds: [],
