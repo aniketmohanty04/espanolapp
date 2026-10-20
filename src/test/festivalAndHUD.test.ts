@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FESTIVAL_STALLS, FESTIVAL_CHARACTERS, CUMULATIVE_FINAL_ASSESSMENT } from '../data/festivalData';
+import { PLAZA_TAPAS, FOUNTAIN_FORTUNES, PLAZA_CHATTER } from '../components/FestivalWorld';
 
 describe('Festival Plaza & NPC Interactive World Tests', () => {
   it('configures exactly 6 festival stalls with 3 on left and 3 on right', () => {
@@ -111,6 +112,49 @@ describe('Festival Plaza & NPC Interactive World Tests', () => {
     expect(announcements.length).toBe(6);
     announcements.forEach(a => {
       expect(a.length).toBeGreaterThan(10);
+    });
+  });
+
+  it('verifies the interactive Tapas tasting table contains authentic Spanish specialties with pronunciations', () => {
+    expect(PLAZA_TAPAS.length).toBe(6);
+    PLAZA_TAPAS.forEach(tapa => {
+      expect(tapa.id).toBeTruthy();
+      expect(tapa.name).toBeTruthy();
+      expect(tapa.emoji).toBeTruthy();
+      expect(tapa.region).toBeTruthy();
+      expect(tapa.description.length).toBeGreaterThan(15);
+      expect(tapa.pronunciation.length).toBeGreaterThan(5);
+      expect(tapa.trivia.length).toBeGreaterThan(15);
+    });
+
+    const tapaNames = PLAZA_TAPAS.map(t => t.name);
+    expect(tapaNames).toContain('Paella Valenciana');
+    expect(tapaNames).toContain('Tortilla de Patatas');
+    expect(tapaNames).toContain('Jamón Ibérico de Bellota');
+    expect(tapaNames).toContain('Bocadillo de Calamares');
+    expect(tapaNames).toContain('Chocolate con Churros');
+    expect(tapaNames).toContain('Pulpo a la Feira');
+  });
+
+  it('verifies the Wishing Fountain (Fuente Mágica) has authentic Spanish refranes and literary wisdom', () => {
+    expect(FOUNTAIN_FORTUNES.length).toBeGreaterThanOrEqual(6);
+    FOUNTAIN_FORTUNES.forEach(fortune => {
+      expect(fortune.saying.length).toBeGreaterThan(10);
+      expect(fortune.author).toBeTruthy();
+      expect(fortune.meaning.length).toBeGreaterThan(15);
+    });
+
+    const authors = FOUNTAIN_FORTUNES.map(f => f.author);
+    expect(authors.some(a => a.includes('Antonio Machado'))).toBe(true);
+    expect(authors.some(a => a.includes('Cervantes'))).toBe(true);
+  });
+
+  it('verifies the live plaza ambient chatter connects with character origins across Spain', () => {
+    expect(PLAZA_CHATTER.length).toBeGreaterThanOrEqual(6);
+    PLAZA_CHATTER.forEach(chatter => {
+      expect(chatter.npc).toBeTruthy();
+      expect(chatter.city).toBeTruthy();
+      expect(chatter.text.length).toBeGreaterThan(10);
     });
   });
 });

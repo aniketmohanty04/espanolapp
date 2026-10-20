@@ -30,8 +30,12 @@ import {
   Gamepad2,
   Moon,
   Sun,
+  Sunset,
   Music,
-  Volume2
+  Volume2,
+  Utensils,
+  BookOpen,
+  Trophy
 } from 'lucide-react';
 
 interface FestivalWorldProps {
@@ -54,18 +58,160 @@ const getCleanNpcDisplayName = (name: string): string => {
     .replace(/\s+del\s+Ebro$/, '');
 };
 
+// Interactive Spanish Tapas Bar data
+export interface PlazaTapa {
+  id: string;
+  name: string;
+  emoji: string;
+  region: string;
+  description: string;
+  pronunciation: string;
+  trivia: string;
+}
+
+export const PLAZA_TAPAS: PlazaTapa[] = [
+  {
+    id: 'tapa-paella',
+    name: 'Paella Valenciana',
+    emoji: '🥘',
+    region: 'Valencia',
+    description: 'Arroz bomba cocinado a fuego lento con azafrán, judías verdes (bajoqueta), garrofó y romero silvestre.',
+    pronunciation: 'pah-EH-yah bah-len-THYAH-nah',
+    trivia: 'En Valencia, la paella auténtica se cocina en caldero plano al aire libre sobre leña de naranjo.'
+  },
+  {
+    id: 'tapa-tortilla',
+    name: 'Tortilla de Patatas',
+    emoji: '🥔',
+    region: 'Toda España',
+    description: 'La mítica tortilla española elaborada con patatas pochadas en aceite de oliva, huevos camperos y punto jugoso.',
+    pronunciation: 'tohr-TEE-yah deh pah-TAH-tahs',
+    trivia: 'El gran debate nacional en España es con o sin cebolla (¡la mayoría de los maestros cocineros la prefiere con cebolla!).'
+  },
+  {
+    id: 'tapa-jamon',
+    name: 'Jamón Ibérico de Bellota',
+    emoji: '🥓',
+    region: 'Andalucía y Extremadura',
+    description: 'Finas lonchas de jamón de cerdo ibérico alimentado con bellotas en dehesas centenarias de encinas.',
+    pronunciation: 'hah-MOHN ee-BEH-ree-koh',
+    trivia: 'El corte del jamón a cuchillo es considerado un arte secular en los mesones y bodegas españolas.'
+  },
+  {
+    id: 'tapa-calamares',
+    name: 'Bocadillo de Calamares',
+    emoji: '🥖',
+    region: 'Madrid (Plaza Mayor)',
+    description: 'Pan crujiente recién horneado relleno de calamares fritos a la andaluza con limón fresco o alioli casero.',
+    pronunciation: 'boh-kah-DEE-yoh deh kah-lah-MAH-rehs',
+    trivia: 'En los soportales de la Plaza Mayor de Madrid se consumen miles de estos bocadillos cada fin de semana.'
+  },
+  {
+    id: 'tapa-churros',
+    name: 'Chocolate con Churros',
+    emoji: '☕',
+    region: 'Madrid y Castilla',
+    description: 'Churros y porras dorados y crujientes servidos con chocolate caliente, negro y bien espeso.',
+    pronunciation: 'choh-koh-LAH-teh kohn CHOO-rrohs',
+    trivia: 'La Chocolatería San Ginés de Madrid lleva sirviendo churros ininterrumpidamente desde 1894.'
+  },
+  {
+    id: 'tapa-pulpo',
+    name: 'Pulpo a la Feira',
+    emoji: '🐙',
+    region: 'Galicia (Santiago)',
+    description: 'Rodajas de pulpo tierno sobre patatas cocidas (cachelos), con sal gorda, aceite de oliva virgen y pimentón de la Vera.',
+    pronunciation: 'POOL-poh ah lah FEH-ee-rah',
+    trivia: 'Se sirve tradicionalmente sobre un plato redondo de madera de pino para absorber el exceso de agua.'
+  }
+];
+
+// Refranes and wisdom for the Wishing Fountain
+export interface FountainFortune {
+  saying: string;
+  author: string;
+  meaning: string;
+}
+
+export const FOUNTAIN_FORTUNES: FountainFortune[] = [
+  {
+    saying: 'Caminante, no hay camino, se hace camino al andar.',
+    author: 'Antonio Machado',
+    meaning: 'Cada paso que das en español va creando tu propio sendero de maestría y libertad.'
+  },
+  {
+    saying: 'Quien lee mucho y anda mucho, ve mucho y sabe mucho.',
+    author: 'Miguel de Cervantes (Don Quijote)',
+    meaning: 'Viajar por las 15 ciudades de España expande tu mente más que cualquier libro.'
+  },
+  {
+    saying: 'El que la sigue, la consigue.',
+    author: 'Refrán popular español',
+    meaning: 'La constancia vence todas las dificultades: ¡tu fluidez en español es imparable!'
+  },
+  {
+    saying: 'A buen entendedor, pocas palabras bastan.',
+    author: 'Refrán tradicional',
+    meaning: 'Tu oído ya capta la esencia del español natural que se habla en las plazas.'
+  },
+  {
+    saying: 'El saber no ocupa lugar.',
+    author: 'Sabiduría popular',
+    meaning: 'Cada nueva palabra y giro coloquial que aprendes enriquece tu vida para siempre.'
+  },
+  {
+    saying: 'No hay mal que por bien no venga.',
+    author: 'Refrán popular',
+    meaning: 'De cada pequeño tropiezo o fallo gramatical nace una comprensión mucho más profunda.'
+  },
+  {
+    saying: 'Año nuevo, vida nueva y más caminos por recorrer.',
+    author: 'Dicho castellano',
+    meaning: '¡El final de tu viaje en La Gran Fiesta es solo el principio de tu aventura con el mundo hispanohablante!'
+  }
+];
+
+// Live ambient banter of NPCs gathered in the square
+export const PLAZA_CHATTER = [
+  { npc: 'Elena', city: 'Madrid', text: '¡Qué emoción verte en la Plaza Mayor! ¡Prueba el bocadillo de calamares!' },
+  { npc: 'Don Alonso', city: 'Toledo', text: '¡El temple de tu español es tan noble como el acero toledano!' },
+  { npc: 'Doña Carmen', city: 'Sevilla', text: '¡Olé con olé! ¡Marca el compás en el tablao flamenco!' },
+  { npc: 'Lucía', city: 'Salamanca', text: '¡La plaza está llena de historia viva y buena conversación!' },
+  { npc: 'Mateo', city: 'Valencia', text: '¡El azafrán de la paella gigante inunda toda la plaza!' },
+  { npc: 'Marc', city: 'Barcelona', text: '¡Bajo estos arcos se respira el arte y el diseño de España!' },
+  { npc: 'Maite', city: 'Bilbao', text: '¡Aupa viajero! ¡Un brindis con txakoli por las 15 ciudades!' },
+  { npc: 'Xoán', city: 'Santiago', text: '¡El esfuerzo del caminante culmina hoy con alegría compartida!' }
+];
+
+// Native Web Speech API for authentic Spanish pronunciation
+const speakSpanish = (text: string) => {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Safe fallback
+    }
+  }
+};
+
 // Authentic Spanish festival announcements
 const FESTIVAL_NEWS = [
   '🥘 ¡La gran paella gigante de Valencia está servida en el puesto gastronómico!',
   '🎡 ¡Gira la Ruleta de la Feria para ganar hasta 500 monedas de oro y vidas extra!',
   '🍅 ¡La batalla de la Tomatina de Buñol está abierta en la plaza! ¡Lanza tomates y bate el récord!',
   '💃 ¡Doña Carmen de Triana y los bailaores encienden el tablao flamenco con sevillanas!',
+  '⛲ ¡Tira una moneda a la Fuente de los Deseos para recibir la sabiduría de Cervantes!',
+  '🥘 ¡Descubre las 6 tapas tradicionales en la Mesa de Degustación!',
   '🎆 ¡Toca en cualquier parte del cielo para lanzar fuegos artificiales!',
   '🎓 ¡Preséntate en la Carpa de la Real Academia para el Diploma Oficial A1!'
 ];
 
 // Web Audio API synthesizer for interactive flamenco rhythms
-const playFiestaSound = (type: 'guitar' | 'palmas' | 'castanets' | 'ole') => {
+const playFiestaSound = (type: 'guitar' | 'palmas' | 'castanets' | 'ole' | 'splash') => {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
@@ -135,6 +281,19 @@ const playFiestaSound = (type: 'guitar' | 'palmas' | 'castanets' | 'ole') => {
         osc.start(ctx.currentTime + i * 0.08);
         osc.stop(ctx.currentTime + i * 0.08 + 0.5);
       });
+    } else if (type === 'splash') {
+      // Water ripple splash for fountain
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.35);
     }
   } catch {
     // Safe audio fallback
@@ -199,7 +358,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
   onBackToMap,
   onStartFinalAssessment
 }) => {
-  const { progress, visitFestivalStall, recordDialogueCompleted } = useGame();
+  const { progress, visitFestivalStall, recordDialogueCompleted, awardCoins } = useGame();
 
   // Active interactive modals
   const [activeNpc, setActiveNpc] = useState<FestivalCharacter | null>(null);
@@ -232,10 +391,44 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
       : [];
   }, [activeStall?.id, activeStall?.miniQuiz?.options]);
 
+  // Atmosphere Mode: 'dia' | 'atardecer' | 'noche'
+  const [atmosphere, setAtmosphere] = useState<'dia' | 'atardecer' | 'noche'>('dia');
+  const isNightMode = atmosphere === 'noche';
+  const isSunset = atmosphere === 'atardecer';
+
+  // Wishing Fountain Interactive State
+  const [showFountainModal, setShowFountainModal] = useState<boolean>(false);
+  const [fountainFortune, setFountainFortune] = useState<FountainFortune | null>(null);
+  const [wishesCount, setWishesCount] = useState<number>(0);
+  const [justMadeWish, setJustMadeWish] = useState<boolean>(false);
+
+  // Tapas Tasting Table Interactive State
+  const [showTapasModal, setShowTapasModal] = useState<boolean>(false);
+  const [selectedTapa, setSelectedTapa] = useState<PlazaTapa>(PLAZA_TAPAS[0]);
+  const [tastedTapas, setTastedTapas] = useState<string[]>(['tapa-paella', 'tapa-tortilla']);
+
+  // Festival Passport / Milestones Modal State
+  const [showPassportModal, setShowPassportModal] = useState<boolean>(false);
+
+  // Flamenco Rhythm & Fiesta Meter State
+  const [fiestaMeter, setFiestaMeter] = useState<number>(45);
+  const [flamencoCombos, setFlamencoCombos] = useState<number>(0);
+  const [totalFiestasTriggered, setTotalFiestasTriggered] = useState<number>(0);
+  const [floatingNotes, setFloatingNotes] = useState<{ id: number; symbol: string; x: number }[]>([]);
+
+  // Rotating live plaza chatter
+  const [chatterIndex, setChatterIndex] = useState<number>(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setChatterIndex(prev => (prev + 1) % PLAZA_CHATTER.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Fun festival features state
   const [showWheel, setShowWheel] = useState<boolean>(false);
   const [showTomatina, setShowTomatina] = useState<boolean>(false);
-  const [isNightMode, setIsNightMode] = useState<boolean>(false);
   const [tickerIndex, setTickerIndex] = useState<number>(0);
   const [activeFlamencoBeat, setActiveFlamencoBeat] = useState<string | null>(null);
 
@@ -246,6 +439,58 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
     }, 4500);
     return () => clearInterval(t);
   }, []);
+
+  // Fountain wish handler
+  const handleMakeFountainWish = () => {
+    setJustMadeWish(true);
+    playFiestaSound('splash');
+    launchFireworks('estrellas', 0.5, 0.4);
+    awardCoins(100);
+    setWishesCount(prev => prev + 1);
+    const randomFortune = FOUNTAIN_FORTUNES[Math.floor(Math.random() * FOUNTAIN_FORTUNES.length)];
+    setFountainFortune(randomFortune);
+  };
+
+  // Tapas tasting handler
+  const handleTasteTapa = (tapa: PlazaTapa) => {
+    setSelectedTapa(tapa);
+    speakSpanish(tapa.name);
+    if (!tastedTapas.includes(tapa.id)) {
+      setTastedTapas(prev => [...prev, tapa.id]);
+      awardCoins(25);
+      launchFireworks('tap', 0.5, 0.5);
+    }
+  };
+
+  // Flamenco beat handler with Fiesta Meter advancement
+  const handleFlamencoBeatTap = (type: 'guitar' | 'palmas' | 'castanets' | 'ole') => {
+    playFiestaSound(type);
+    setActiveFlamencoBeat(type);
+    setTimeout(() => setActiveFlamencoBeat(null), 300);
+
+    // Spawn floating musical note
+    const symbols = ['🎵', '🎶', '🎸', '💃', '👏', '✨'];
+    const newNote = {
+      id: Date.now() + Math.random(),
+      symbol: symbols[Math.floor(Math.random() * symbols.length)],
+      x: 20 + Math.random() * 60
+    };
+    setFloatingNotes(prev => [...prev.slice(-5), newNote]);
+    setTimeout(() => {
+      setFloatingNotes(prev => prev.filter(n => n.id !== newNote.id));
+    }, 1200);
+
+    setFlamencoCombos(prev => prev + 1);
+    setFiestaMeter(prev => {
+      const next = Math.min(100, prev + 15);
+      if (next >= 100 && prev < 100) {
+        setTotalFiestasTriggered(t => t + 1);
+        awardCoins(100);
+        launchFireworks('traca', 0.5, 0.35);
+      }
+      return next;
+    });
+  };
 
   // View mode: 'plaza' (illustrated 2.5D square - default) | '3d' | 'list'
   const [viewMode, setViewMode] = useState<'3d' | 'plaza' | 'list'>('plaza');
@@ -341,6 +586,20 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
   const visitedStallsCount = progress.festivalVisitedStalls.length;
   const rewardedDialoguesCount = progress.rewardedDialogueIds.length;
 
+  const passportMilestones = useMemo(() => [
+    { id: 'stalls', title: '6 Puestos Tradicionales', desc: 'Aprende los secretos de cada tenderete', done: visitedStallsCount >= 6, progress: `${visitedStallsCount}/6` },
+    { id: 'friends', title: '14 Amigos de España', desc: 'Conversa con los viajeros de las 15 ciudades', done: rewardedDialoguesCount >= 14, progress: `${rewardedDialoguesCount}/14` },
+    { id: 'fountain', title: 'Deseo en la Fuente', desc: 'Lanza una moneda y recibe un refrán', done: wishesCount > 0, progress: wishesCount > 0 ? 'Concedido' : '0/1' },
+    { id: 'tapas', title: '6 Tapas Degustadas', desc: 'Saborea la gastronomía típica española', done: tastedTapas.length >= 6, progress: `${tastedTapas.length}/6` },
+    { id: 'tablao', title: 'Fiesta Flamenca (100%)', desc: 'Toca el compás y llena el medidor', done: fiestaMeter >= 100 || totalFiestasTriggered > 0, progress: `${fiestaMeter}%` },
+    { id: 'wheel', title: 'Ruleta de la Feria', desc: 'Gira la ruleta y gana premios', done: Boolean(progress.festivalVisitedStalls.length > 0 || wishesCount > 0), progress: 'Girada' },
+    { id: 'tomatina', title: 'Batalla de la Tomatina', desc: 'Lanza tomates en la gran fiesta de Buñol', done: true, progress: 'Disponible' },
+    { id: 'exam', title: 'Examen Oficial A1', desc: 'Supera las 30 preguntas de la Real Academia', done: Boolean(progress.finalAssessmentCompleted), progress: progress.finalAssessmentCompleted ? 'Aprobado' : 'Pendiente' }
+  ], [visitedStallsCount, rewardedDialoguesCount, wishesCount, tastedTapas.length, fiestaMeter, totalFiestasTriggered, progress.festivalVisitedStalls.length, progress.finalAssessmentCompleted]);
+
+  const completedMilestonesCount = passportMilestones.filter(m => m.done).length;
+  const activeChatter = PLAZA_CHATTER[chatterIndex] || PLAZA_CHATTER[0];
+
   // Check NPC interactive quiz answer
   const handleAnswerNpcQuiz = (option: string) => {
     if (!activeNpc?.interactiveQuestion) return;
@@ -416,24 +675,46 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
           {/* Progress & View Toggle */}
           <div className="flex items-center space-x-2">
             
-            {/* Day / Night Mode Toggle */}
-            <button
-              onClick={() => setIsNightMode(!isNightMode)}
-              className={`px-3 py-1.5 rounded-full border text-xs font-black transition-all flex items-center space-x-1.5 shadow-xs cursor-pointer ${
-                isNightMode
-                  ? 'bg-slate-900 border-amber-400 text-amber-300'
-                  : 'bg-white hover:bg-amber-50 border-[#E0D5C7] text-amber-800'
-              }`}
-              title="Cambiar entre modo día soleado y noche de farolillos encendidos"
-            >
-              {isNightMode ? <Moon className="w-3.5 h-3.5 text-amber-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
-              <span className="hidden sm:inline">{isNightMode ? 'Noche de Farolillos' : 'Día de Fiesta'}</span>
-            </button>
+            {/* 3-Mode Atmosphere Selector (Día / Atardecer / Noche) */}
+            <div className="flex bg-[#EFE7DC] p-1 rounded-full border border-[#E0D5C7] text-xs font-bold" title="Cambiar la iluminación y atmósfera de la Plaza Mayor">
+              <button
+                onClick={() => setAtmosphere('dia')}
+                className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
+                  atmosphere === 'dia' ? 'bg-white text-amber-700 font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
+                }`}
+                title="Día Soleado"
+              >
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden md:inline">Día</span>
+              </button>
+              <button
+                onClick={() => setAtmosphere('atardecer')}
+                className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
+                  atmosphere === 'atardecer' ? 'bg-orange-500 text-white font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
+                }`}
+                title="Atardecer Dorado"
+              >
+                <Sunset className="w-3.5 h-3.5 text-amber-200" />
+                <span className="hidden md:inline">Tarde</span>
+              </button>
+              <button
+                onClick={() => setAtmosphere('noche')}
+                className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
+                  atmosphere === 'noche' ? 'bg-slate-900 text-amber-300 font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
+                }`}
+                title="Noche de Farolillos"
+              >
+                <Moon className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden md:inline">Noche</span>
+              </button>
+            </div>
 
             <div className="hidden lg:flex items-center space-x-2 text-xs font-bold px-3 py-1.5 bg-white rounded-full border border-[#E8DFD5] text-[#524136] shadow-xs">
               <span className="text-[#B45309]">🎪 {visitedStallsCount}/6 Puestos</span>
               <span>•</span>
               <span className="text-[#BE185D]">💬 {rewardedDialoguesCount}/14 Amigos</span>
+              <span>•</span>
+              <span className="text-emerald-700">📜 {completedMilestonesCount}/8 Sellos</span>
             </div>
 
             <div className="flex bg-[#EFE7DC] p-1 rounded-full border border-[#E0D5C7] text-xs font-bold">
@@ -475,7 +756,11 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
 
       {/* Fiesta Live Announcements & Activity Ticker */}
       <div className={`px-4 py-2 border-b text-xs flex items-center justify-between gap-3 transition-colors ${
-        isNightMode ? 'bg-slate-900/95 border-amber-500/30 text-amber-200' : 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-amber-200/80 text-[#78350F]'
+        isNightMode 
+          ? 'bg-slate-900/95 border-amber-500/30 text-amber-200' 
+          : isSunset
+          ? 'bg-gradient-to-r from-orange-950/90 via-amber-950/90 to-rose-950/90 border-orange-500/40 text-amber-100'
+          : 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-amber-200/80 text-[#78350F]'
       }`}>
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
           <div className="flex items-center space-x-2 truncate">
@@ -487,16 +772,37 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+            <button
+              onClick={() => setShowFountainModal(true)}
+              className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-sky-600 hover:bg-sky-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
+              title="Tirar una moneda a la Fuente de los Deseos"
+            >
+              <span>⛲ Deseos</span>
+            </button>
+            <button
+              onClick={() => setShowTapasModal(true)}
+              className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
+              title="Degustar las 6 tapas tradicionales españolas"
+            >
+              <span>🥘 Tapas</span>
+            </button>
+            <button
+              onClick={() => setShowPassportModal(true)}
+              className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
+              title="Abrir el Pasaporte de la Plaza Mayor"
+            >
+              <span>📜 Pasaporte</span>
+            </button>
             <button
               onClick={() => setShowWheel(true)}
-              className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
+              className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
             >
               <span>🎡 Ruleta</span>
             </button>
             <button
               onClick={() => setShowTomatina(true)}
-              className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
+              className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
             >
               <span>🍅 Tomatina</span>
             </button>
@@ -547,6 +853,8 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
               style={{ 
                 backgroundImage: isNightMode
                   ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.90), rgba(30, 41, 59, 0.94)), url(/game-art/madrid-plaza.png)'
+                  : isSunset
+                  ? 'linear-gradient(180deg, rgba(194, 65, 12, 0.65), rgba(124, 45, 18, 0.75)), url(/game-art/madrid-plaza.png)'
                   : 'linear-gradient(180deg, rgba(255, 248, 238, 0.28), rgba(254, 243, 199, 0.38)), url(/game-art/madrid-plaza.png)', 
                 backgroundSize: 'cover', 
                 backgroundPosition: 'center' 
@@ -555,7 +863,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
               
               {/* --- SKY AND FESTIVE BACKDROP --- */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {/* Night Stars or Warm Sun ambient glow */}
+                {/* Night Stars or Warm Sun / Sunset ambient glow */}
                 {isNightMode ? (
                   <div className="absolute inset-0">
                     {[
@@ -572,6 +880,11 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                       </span>
                     ))}
                   </div>
+                ) : isSunset ? (
+                  <>
+                    <div className="absolute top-0 inset-x-0 h-56 bg-gradient-to-b from-orange-600/40 via-rose-500/30 to-amber-400/10" />
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[450px] h-96 bg-gradient-to-t from-orange-500/35 to-rose-500/25 rounded-full blur-3xl animate-pulse" />
+                  </>
                 ) : (
                   <>
                     <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-amber-400/25 via-orange-300/15 to-transparent" />
@@ -835,50 +1148,126 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                   })}
                 </div>
 
-                {/* CENTRAL PLAZA SQUARE (Fountain + Visible Player Avatar + 14 Stationed NPCs) */}
+                {/* CENTRAL PLAZA SQUARE (Fountain + Tapas + Passport + Player Avatar + Rhythm Tablao + 14 Stationed NPCs) */}
                 <div className="lg:col-span-6 flex flex-col items-center justify-center py-2 relative">
                   
-                  {/* Plaza Focal Centerpiece: Compact Fountain + Player Avatar in one balanced row */}
-                  <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 mb-2.5">
-                    {/* Compact Fountain Pill */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 border-2 border-sky-300/80 shadow-xs backdrop-blur-sm">
-                      <span className="text-base animate-bounce">⛲</span>
-                      <span className="text-[11px] font-black text-sky-950">
-                        Fuente de los Viajeros
-                      </span>
-                    </div>
+                  {/* Plaza Focal Landmarks & Activities Row */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-2.5 w-full">
+                    
+                    {/* 1. Interactive Wishing Fountain */}
+                    <button
+                      onClick={() => setShowFountainModal(true)}
+                      className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 hover:bg-sky-50 border-2 border-sky-300 shadow-xs backdrop-blur-sm transition-all hover:scale-105 active:scale-95 cursor-pointer text-left"
+                      title="Lanzar una moneda a la Fuente Mágica de los Deseos"
+                    >
+                      <span className="text-base group-hover:animate-bounce">⛲</span>
+                      <div>
+                        <span className="text-xs font-black text-sky-950 block leading-tight">
+                          Fuente de los Deseos
+                        </span>
+                        <span className="text-[10px] text-sky-700 font-bold block">
+                          {wishesCount > 0 ? `${wishesCount} concedidos ✨` : 'Pedir deseo (+100🪙)'}
+                        </span>
+                      </div>
+                    </button>
 
-                    {/* Player Avatar in Plaza Pill */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 border-2 border-amber-400 shadow-xs backdrop-blur-sm">
+                    {/* 2. Interactive Tapas Tasting Table */}
+                    <button
+                      onClick={() => setShowTapasModal(true)}
+                      className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 hover:bg-orange-50 border-2 border-orange-300 shadow-xs backdrop-blur-sm transition-all hover:scale-105 active:scale-95 cursor-pointer text-left"
+                      title="Saborear las 6 tapas tradicionales de España"
+                    >
+                      <span className="text-base group-hover:scale-110 transition-transform">🥘</span>
+                      <div>
+                        <span className="text-xs font-black text-orange-950 block leading-tight">
+                          Mesa de Tapas
+                        </span>
+                        <span className="text-[10px] text-orange-700 font-bold block">
+                          {tastedTapas.length}/6 probadas (+25🪙)
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* 3. Festival Passport */}
+                    <button
+                      onClick={() => setShowPassportModal(true)}
+                      className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 hover:bg-emerald-50 border-2 border-emerald-300 shadow-xs backdrop-blur-sm transition-all hover:scale-105 active:scale-95 cursor-pointer text-left"
+                      title="Ver tu Pasaporte de la Plaza Mayor y tus sellos"
+                    >
+                      <span className="text-base group-hover:rotate-12 transition-transform">📜</span>
+                      <div>
+                        <span className="text-xs font-black text-emerald-950 block leading-tight">
+                          Pasaporte
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-bold block">
+                          {completedMilestonesCount}/8 sellos
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* 4. Player Avatar in Plaza Pill */}
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 border-2 border-amber-400 shadow-xs backdrop-blur-sm">
                       <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-yellow-400">
-                        <PlayerAvatar character={progress.profile?.character} size={24} />
+                        <PlayerAvatar character={progress.profile?.character} size={22} />
                       </div>
                       <span className="text-xs font-black text-[#24140E]">
                         ¡{playerName} en la fiesta!
                       </span>
                     </div>
+
                   </div>
 
-                  {/* Tablao Flamenco Interactive Rhythm Bar */}
-                  <div className={`w-full mb-3 px-3 py-2 rounded-2xl border-2 transition-all flex flex-wrap items-center justify-between gap-2 shadow-sm backdrop-blur-md ${
+                  {/* Tablao Flamenco Interactive Rhythm Bar & Fiesta Meter */}
+                  <div className={`relative w-full mb-3 px-3.5 py-2.5 rounded-2xl border-2 transition-all flex flex-col gap-2 shadow-sm backdrop-blur-md overflow-hidden ${
                     isNightMode
                       ? 'bg-slate-900/85 border-rose-500/70 text-rose-100'
                       : 'bg-gradient-to-r from-rose-50/95 via-amber-50/95 to-orange-50/95 border-rose-300 text-rose-950'
                   }`}>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xl animate-pulse">💃</span>
-                      <div>
-                        <span className="text-xs font-black block leading-tight">Tablao Flamenco • Ritmos en Vivo</span>
-                        <span className="text-[10px] opacity-75">Toca para marcar el compás de la fiesta</span>
+                    {/* Floating Musical Notes Animation Overlay */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+                      {floatingNotes.map(n => (
+                        <span
+                          key={n.id}
+                          className="absolute text-xl font-bold animate-bounce filter drop-shadow select-none"
+                          style={{ left: `${n.x}%`, bottom: '25%' }}
+                        >
+                          {n.symbol}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Top Row: Title & Fiesta Meter */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 z-10">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl animate-pulse">💃</span>
+                        <div>
+                          <span className="text-xs font-black block leading-tight">Tablao Flamenco • Medidor de Fiesta: {fiestaMeter}%</span>
+                          <span className="text-[10px] opacity-75">
+                            {flamencoCombos > 0 ? `${flamencoCombos} toques al compás` : 'Toca los ritmos para avivar la celebración'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Fiesta Meter Bar */}
+                      <div className="w-36 sm:w-44 bg-white/60 h-2.5 rounded-full overflow-hidden border border-rose-300">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-400 via-rose-500 to-orange-500 transition-all duration-300 rounded-full"
+                          style={{ width: `${fiestaMeter}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1.5 flex-wrap">
+
+                    {/* Celebration Message if 100% */}
+                    {fiestaMeter >= 100 && (
+                      <div className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 text-slate-950 font-black text-xs text-center shadow-xs animate-pulse">
+                        🎉 ¡FIESTA TOTAL ALCANZADA EN LA PLAZA MAYOR! (+100 🪙) 🎉
+                      </div>
+                    )}
+
+                    {/* Rhythm Buttons Row */}
+                    <div className="flex items-center justify-center sm:justify-end space-x-1.5 flex-wrap z-10">
                       <button
-                        onClick={() => {
-                          playFiestaSound('guitar');
-                          setActiveFlamencoBeat('guitar');
-                          setTimeout(() => setActiveFlamencoBeat(null), 300);
-                        }}
+                        onClick={() => handleFlamencoBeatTap('guitar')}
                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
                           activeFlamencoBeat === 'guitar'
                             ? 'bg-amber-500 text-white scale-110 shadow-md'
@@ -890,11 +1279,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                         <span>Guitarra</span>
                       </button>
                       <button
-                        onClick={() => {
-                          playFiestaSound('palmas');
-                          setActiveFlamencoBeat('palmas');
-                          setTimeout(() => setActiveFlamencoBeat(null), 300);
-                        }}
+                        onClick={() => handleFlamencoBeatTap('palmas')}
                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
                           activeFlamencoBeat === 'palmas'
                             ? 'bg-rose-500 text-white scale-110 shadow-md'
@@ -906,11 +1291,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                         <span>Palmas</span>
                       </button>
                       <button
-                        onClick={() => {
-                          playFiestaSound('castanets');
-                          setActiveFlamencoBeat('castanets');
-                          setTimeout(() => setActiveFlamencoBeat(null), 300);
-                        }}
+                        onClick={() => handleFlamencoBeatTap('castanets')}
                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
                           activeFlamencoBeat === 'castanets'
                             ? 'bg-red-500 text-white scale-110 shadow-md'
@@ -922,12 +1303,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                         <span>Castañuelas</span>
                       </button>
                       <button
-                        onClick={() => {
-                          playFiestaSound('ole');
-                          setActiveFlamencoBeat('ole');
-                          launchFireworks('tap', 0.5, 0.4);
-                          setTimeout(() => setActiveFlamencoBeat(null), 400);
-                        }}
+                        onClick={() => handleFlamencoBeatTap('ole')}
                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
                           activeFlamencoBeat === 'ole'
                             ? 'bg-amber-400 text-amber-950 scale-110 shadow-md'
@@ -943,6 +1319,35 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
 
                   {/* 14 Friends Section in Frosted Container */}
                   <div className="w-full bg-white/95 rounded-2xl border-2 border-amber-300/80 shadow-md p-3 backdrop-blur-md">
+                    {/* Live Banter Rotating Speech Bubble */}
+                    <div className="w-full mb-2 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 shadow-xs flex items-center justify-between gap-2.5">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="text-xl shrink-0 animate-bounce">🗣️</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-[10px] uppercase font-black tracking-wider text-[#B45309]">
+                              {activeChatter.npc} ({activeChatter.city}):
+                            </span>
+                            <span className="text-[9px] text-[#A855F7] font-bold hidden sm:inline">
+                              • En vivo en la plaza
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-[#24140E] truncate italic mt-0.5">
+                            "{activeChatter.text}"
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const npc = FESTIVAL_CHARACTERS.find(c => c.name.toLowerCase().includes(activeChatter.npc.toLowerCase()));
+                          if (npc) handleOpenNpc(npc);
+                        }}
+                        className="shrink-0 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-xs shadow-xs transition-transform hover:scale-105 cursor-pointer"
+                      >
+                        Charlar →
+                      </button>
+                    </div>
+
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-amber-100">
                       <span className="text-xs font-black uppercase tracking-wider text-[#78350F] flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-[#E05615]" />
@@ -1280,21 +1685,30 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
               "{activeNpc.dialogue}"
             </div>
 
-            {/* English translation toggle */}
-            <div>
+            {/* Audio pronunciation & English translation toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                onClick={() => speakSpanish(activeNpc.dialogue)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-[#B45309] text-xs font-black border border-amber-300 transition-transform hover:scale-105 active:scale-95 shadow-xs cursor-pointer"
+                title="Escuchar locución en español nativo"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-[#E05615]" />
+                <span>🔊 Escuchar en Español</span>
+              </button>
+
               <button
                 onClick={() => setShowEnglishTranslation(!showEnglishTranslation)}
-                className="text-xs font-bold text-[#E05615] hover:text-[#B45309] transition-colors flex items-center space-x-1"
+                className="text-xs font-bold text-[#E05615] hover:text-[#B45309] transition-colors flex items-center space-x-1 cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>{showEnglishTranslation ? 'Ocultar traducción al inglés' : 'Ver traducción al inglés'}</span>
+                <span>{showEnglishTranslation ? 'Ocultar inglés' : 'Ver en inglés'}</span>
               </button>
-              {showEnglishTranslation && (
-                <div className="mt-2 p-3.5 rounded-2xl bg-white border border-[#EADFCF] text-xs text-[#6B584D] italic animate-fadeIn">
-                  "{activeNpc.englishDialogue}"
-                </div>
-              )}
             </div>
+            {showEnglishTranslation && (
+              <div className="p-3.5 rounded-2xl bg-white border border-[#EADFCF] text-xs text-[#6B584D] italic animate-fadeIn">
+                "{activeNpc.englishDialogue}"
+              </div>
+            )}
 
             {/* Cultural Wisdom / Trivia */}
             <div className="p-4 rounded-2xl bg-[#FFF8EE] border border-amber-300 text-xs text-[#7A4B10] leading-relaxed">
@@ -1508,6 +1922,352 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
         isOpen={showTomatina} 
         onClose={() => setShowTomatina(false)} 
       />
+
+      {/* ========================================================
+          6. WISHING FOUNTAIN MODAL (Fuente Mágica de los Deseos)
+          ======================================================== */}
+      {showFountainModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-gradient-to-b from-sky-50 via-white to-amber-50/50 border-3 border-sky-300 rounded-3xl shadow-2xl p-6 sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto text-[#24140E]">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-sky-200 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-3xl shadow-md border-2 border-white text-white shrink-0">
+                  ⛲
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[10px] font-black uppercase tracking-wider border border-sky-300">
+                      Plaza Mayor
+                    </span>
+                    <span className="text-xs font-bold text-sky-700">
+                      {wishesCount} {wishesCount === 1 ? 'deseo concedido' : 'deseos concedidos'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-[#24140E] font-serif mt-0.5">
+                    Fuente Mágica de los Deseos
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFountainModal(false);
+                  setJustMadeWish(false);
+                }}
+                className="p-2 rounded-xl bg-white hover:bg-sky-100 text-[#6B584D] border border-sky-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Fountain Lore */}
+            <div className="p-4 rounded-2xl bg-sky-100/70 border border-sky-200 text-xs sm:text-sm text-sky-950 leading-relaxed">
+              <p className="font-semibold">
+                La tradición secular dice que arrojar una moneda al agua cristalina de esta fuente atrae la sabiduría de las letras españolas y la fortuna en los caminos.
+              </p>
+            </div>
+
+            {/* Interactive Coin Toss Action */}
+            <div className="text-center py-2">
+              <button
+                onClick={handleMakeFountainWish}
+                className="px-7 py-3 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-sm shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer inline-flex items-center space-x-2"
+              >
+                <span className="text-lg">🪙</span>
+                <span>¡Tirar Moneda a la Fuente! (+100 🪙)</span>
+              </button>
+            </div>
+
+            {/* Revealed Fortune / Refrán */}
+            {fountainFortune && (
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 via-white to-orange-50 border-2 border-amber-300 shadow-md space-y-2.5 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#B45309] flex items-center space-x-1">
+                    <Sparkles className="w-3.5 h-3.5 text-[#E05615]" />
+                    <span>Sabiduría Concedida</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                    +100 Monedas 🪙
+                  </span>
+                </div>
+                <blockquote className="text-sm sm:text-base font-black text-[#24140E] font-serif italic border-l-4 border-amber-500 pl-3">
+                  "{fountainFortune.saying}"
+                </blockquote>
+                <div className="text-xs text-[#78350F] font-bold text-right">
+                  — {fountainFortune.author}
+                </div>
+                <p className="text-xs text-[#524136] bg-white/80 p-2.5 rounded-xl border border-amber-200 leading-relaxed font-medium">
+                  💡 <span className="font-bold">Significado:</span> {fountainFortune.meaning}
+                </p>
+              </div>
+            )}
+
+            {/* Close */}
+            <div className="flex justify-end pt-2 border-t border-sky-200">
+              <button
+                onClick={() => {
+                  setShowFountainModal(false);
+                  setJustMadeWish(false);
+                }}
+                className="px-6 py-2 rounded-full bg-sky-700 hover:bg-sky-800 text-white font-black text-xs shadow transition-all cursor-pointer"
+              >
+                Volver a la Plaza
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          7. TAPAS TASTING TABLE MODAL (Mesa de Tapas de España)
+          ======================================================== */}
+      {showTapasModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-[#FAF7F2] border-3 border-amber-400 rounded-3xl shadow-2xl p-6 sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto text-[#24140E]">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-[#EADFCF] pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 flex items-center justify-center text-3xl shadow-md border-2 border-white text-white shrink-0">
+                  🥘
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-[#B45309] text-[10px] font-black uppercase tracking-wider border border-amber-300">
+                      Gastronomía de España
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700">
+                      {tastedTapas.length} de 6 degustadas
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-[#24140E] font-serif mt-0.5">
+                    Mesa de Tapas Tradicionales
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTapasModal(false)}
+                className="p-2 rounded-xl bg-white hover:bg-[#F2ECE1] text-[#6B584D] border border-[#E0D5C7] transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-[#6B584D] font-medium">
+              El "tapeo" es una de las grandes señas de identidad de España. Selecciona cada tapa para escuchar su pronunciación, aprender su origen y recibir monedas por degustarla.
+            </p>
+
+            {/* 6 Tapas Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
+              {PLAZA_TAPAS.map(tapa => {
+                const isSelected = selectedTapa.id === tapa.id;
+                const isTasted = tastedTapas.includes(tapa.id);
+                return (
+                  <button
+                    key={tapa.id}
+                    onClick={() => handleTasteTapa(tapa)}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between hover:scale-105 active:scale-95 ${
+                      isSelected
+                        ? 'bg-amber-100/90 border-amber-500 shadow-md ring-2 ring-amber-400'
+                        : isTasted
+                        ? 'bg-emerald-50/70 border-emerald-300 hover:border-amber-400'
+                        : 'bg-white border-[#E8DFD5] hover:border-amber-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">{tapa.emoji}</span>
+                      {isTasted && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded-full border border-emerald-300">
+                          ✓ Probada
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <h4 className="text-xs font-black text-[#24140E] leading-tight line-clamp-1">
+                        {tapa.name}
+                      </h4>
+                      <p className="text-[10px] text-[#B45309] font-bold mt-0.5 truncate">
+                        {tapa.region}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Tapa Detail Card */}
+            {selectedTapa && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-amber-300 shadow-sm space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-amber-100 pb-2.5">
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-3xl">{selectedTapa.emoji}</span>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-black text-[#24140E] font-serif">
+                        {selectedTapa.name}
+                      </h4>
+                      <p className="text-xs font-bold text-[#E05615]">
+                        📍 {selectedTapa.region}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => speakSpanish(selectedTapa.name)}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-[#B45309] text-xs font-black border border-amber-300 transition-all hover:scale-105 cursor-pointer shadow-xs"
+                    title="Escuchar pronunciación auténtica"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-[#E05615]" />
+                    <span>Pronunciar: "{selectedTapa.name}"</span>
+                  </button>
+                </div>
+
+                <div className="text-xs text-[#524136] leading-relaxed">
+                  <p className="font-medium">{selectedTapa.description}</p>
+                  <p className="mt-1 text-[11px] text-[#78350F] italic font-semibold">
+                    🗣️ Guía fonética: <span className="font-mono not-italic">{selectedTapa.pronunciation}</span>
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-[#7A4B10] leading-relaxed">
+                  <span className="font-black text-[#B45309] block mb-0.5">
+                    💡 Curiosidad gastronómica:
+                  </span>
+                  <p>{selectedTapa.trivia}</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-bold text-emerald-800">
+                    {tastedTapas.includes(selectedTapa.id) ? '✓ Tapa saboreada (+25 🪙 otorgadas)' : 'Toca para degustar y ganar +25 🪙'}
+                  </span>
+                  <button
+                    onClick={() => handleTasteTapa(selectedTapa)}
+                    className="px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-xs shadow-xs transition-transform hover:scale-105 cursor-pointer"
+                  >
+                    {tastedTapas.includes(selectedTapa.id) ? '¡Degustar de nuevo!' : 'Degustar Tapa (+25🪙)'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex justify-end pt-2 border-t border-[#EADFCF]">
+              <button
+                onClick={() => setShowTapasModal(false)}
+                className="px-6 py-2 rounded-full bg-[#E05615] hover:bg-[#C2410C] text-white font-black text-xs shadow transition-all cursor-pointer"
+              >
+                Volver a la Fiesta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          8. FESTIVAL PASSPORT MODAL (Pasaporte de la Plaza Mayor)
+          ======================================================== */}
+      {showPassportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#FFFDF9] via-[#FAF7F2] to-[#FFF8EE] border-3 border-amber-500 rounded-3xl shadow-2xl p-6 sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto text-[#24140E]">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-amber-200 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-700 flex items-center justify-center text-3xl shadow-md border-2 border-white text-white shrink-0">
+                  📜
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-[#B45309] text-[10px] font-black uppercase tracking-wider border border-amber-300">
+                      Documento de la Fiesta
+                    </span>
+                    <span className="text-xs font-bold text-amber-700">
+                      {completedMilestonesCount}/8 Sellos Obtenidos
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-[#24140E] font-serif mt-0.5">
+                    Pasaporte Oficial de la Plaza Mayor
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPassportModal(false)}
+                className="p-2 rounded-xl bg-white hover:bg-amber-100 text-[#6B584D] border border-amber-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Passport Progress Bar */}
+            <div className="p-3.5 rounded-2xl bg-white border-2 border-amber-300 shadow-xs space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-black">
+                <span className="text-[#B45309]">Progreso de la Celebración</span>
+                <span className="text-[#E05615]">{Math.round((completedMilestonesCount / 8) * 100)}% Completado</span>
+              </div>
+              <div className="w-full bg-[#FAF7F2] h-3 rounded-full overflow-hidden border border-amber-200">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 transition-all duration-500 rounded-full"
+                  style={{ width: `${(completedMilestonesCount / 8) * 100}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-[#7A6B60] text-center font-medium mt-1">
+                {completedMilestonesCount === 8
+                  ? '👑 ¡Enhorabuena! Tienes el Pasaporte Completo de la Gran Fiesta de España.'
+                  : `Completa los ${8 - completedMilestonesCount} sellos restantes para convertirte en Maestro de la Plaza.`}
+              </p>
+            </div>
+
+            {/* 8 Milestones Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {passportMilestones.map(milestone => (
+                <div
+                  key={milestone.id}
+                  className={`p-3.5 rounded-2xl border-2 transition-all flex items-start justify-between gap-2.5 ${
+                    milestone.done
+                      ? 'bg-emerald-50/80 border-emerald-400 shadow-xs'
+                      : 'bg-white border-[#E8DFD5]'
+                  }`}
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-sm">{milestone.done ? '🌟' : '⏳'}</span>
+                      <h4 className="text-xs sm:text-[13px] font-black text-[#24140E] truncate">
+                        {milestone.title}
+                      </h4>
+                    </div>
+                    <p className="text-[10px] text-[#6B584D] line-clamp-1 font-medium">
+                      {milestone.desc}
+                    </p>
+                    <span className="text-[10px] font-black text-[#B45309] block">
+                      Estado: {milestone.progress}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0">
+                    {milestone.done ? (
+                      <span className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-black text-[10px] uppercase tracking-wider shadow-xs border border-emerald-700">
+                        ✓ SELLADO
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-lg bg-[#FAF7F2] text-[#8C7A6B] font-bold text-[10px] border border-[#E0D5C7]">
+                        PENDIENTE
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-2 border-t border-amber-200">
+              <button
+                onClick={() => setShowPassportModal(false)}
+                className="px-6 py-2 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow transition-all cursor-pointer"
+              >
+                Cerrar Pasaporte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
