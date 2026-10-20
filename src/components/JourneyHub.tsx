@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ALL_CITIES, getCityById } from '../data/citiesData';
 import { City, Level } from '../types';
 import { askCaminoGemini } from '../services/geminiService';
+import { speakSpanish as speakSpanishNative, stopSpanishSpeech } from '../services/spanishSpeechService';
 import { 
   Compass, 
   MapPin, 
@@ -242,22 +243,19 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
     }
   };
 
-  const speakSpanish = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      // Speak the primary Spanish sentence/phrase, removing bullets if any
-      const cleanText = text
-        .split('\n')[0]
-        .replace(/^[•\-\*]\s*/, '')
-        .trim();
-      const utterance = new SpeechSynthesisUtterance(cleanText || text);
-      utterance.lang = 'es-ES';
-      utterance.rate = 0.88;
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn('Speech synthesis error:', err);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  const handleSpeak = (id: string, text: string) => {
+    if (speakingMessageId === id) {
+      stopSpanishSpeech();
+      setSpeakingMessageId(null);
+      return;
     }
+    setSpeakingMessageId(id);
+    speakSpanishNative(text, {
+      onEnd: () => setSpeakingMessageId(null),
+      onError: () => setSpeakingMessageId(null)
+    });
   };
 
   const streakDay = Math.min(progress.stats.streak || 1, 36);
@@ -1060,12 +1058,16 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => speakSpanish(msg.spanishText!)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-orange-50 active:bg-orange-100 border border-orange-200 text-xs font-bold text-[#C9470C] transition-all hover:scale-105 active:scale-95 shadow-2xs cursor-pointer"
-                              title="Escuchar en español (Listen in Spanish)"
+                              onClick={() => handleSpeak(msg.id, msg.spanishText!)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                                speakingMessageId === msg.id
+                                  ? 'bg-[#E05615] text-white ring-2 ring-orange-300 scale-105 shadow-md'
+                                  : 'bg-white hover:bg-orange-50 active:bg-orange-100 border border-orange-200 text-[#C9470C] hover:scale-105 active:scale-95'
+                              }`}
+                              title={speakingMessageId === msg.id ? 'Detener pronunciación' : 'Escuchar en español (Listen in Spanish)'}
                             >
-                              <Volume2 className="w-3.5 h-3.5 text-[#E05615]" />
-                              <span>Escuchar</span>
+                              <Volume2 className={`w-3.5 h-3.5 ${speakingMessageId === msg.id ? 'text-white animate-pulse' : 'text-[#E05615]'}`} />
+                              <span>{speakingMessageId === msg.id ? 'Reproduciendo...' : 'Escuchar'}</span>
                             </button>
                           </div>
 

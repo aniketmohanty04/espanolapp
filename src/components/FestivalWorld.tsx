@@ -5,6 +5,7 @@ import { FestivalStall, FestivalCharacter } from '../types';
 import { shuffleArray } from '../utils/shuffle';
 import { PlayerAvatar } from './PlayerAvatar';
 import confetti from 'canvas-confetti';
+import { speakSpanish } from '../services/spanishSpeechService';
 import { Adventure3DScene, AdventureStation3D } from './Adventure3DScene';
 import { FestivalFortuneWheel } from './FestivalFortuneWheel';
 import { TomatinaGameModal } from './TomatinaGameModal';
@@ -182,21 +183,6 @@ export const PLAZA_CHATTER = [
   { npc: 'Maite', city: 'Bilbao', text: '¡Aupa viajero! ¡Un brindis con txakoli por las 15 ciudades!' },
   { npc: 'Xoán', city: 'Santiago', text: '¡El esfuerzo del caminante culmina hoy con alegría compartida!' }
 ];
-
-// Native Web Speech API for authentic Spanish pronunciation
-const speakSpanish = (text: string) => {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'es-ES';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Safe fallback
-    }
-  }
-};
 
 // Authentic Spanish festival announcements
 const FESTIVAL_NEWS = [
