@@ -416,11 +416,42 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           </span>
         </div>
 
-        {/* Error message if any */}
+        {/* Error message or network speech fallback */}
         {errorMessage && (
-          <div className="p-3 mb-2 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{errorMessage}</span>
+          <div className="p-3.5 mb-2.5 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-slate-800 text-xs space-y-2 animate-fadeIn">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-bold text-amber-950 block">{errorMessage}</span>
+                {options && options.length > 0 && (
+                  <span className="text-[11px] text-amber-800 font-medium block mt-1">
+                    👉 Puedes pulsar sobre la opción deseada para responder directamente:
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Answer Option Buttons */}
+            {options && options.length > 0 && (
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {options.map((opt, idx) => {
+                  const letter = String.fromCharCode(65 + idx);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleConfirmAnswer(opt)}
+                      className="p-2.5 rounded-xl bg-white hover:bg-emerald-50 border-2 border-amber-300 hover:border-emerald-500 text-slate-900 font-bold text-xs flex items-center space-x-2 transition shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                        {letter}
+                      </span>
+                      <span className="truncate">{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

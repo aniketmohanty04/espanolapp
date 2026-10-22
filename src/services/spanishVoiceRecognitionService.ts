@@ -599,84 +599,92 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
     return false;
   }
 
-  try {
-    const recognition = new RecognitionClass();
-    recognition.lang = options.lang || 'es-ES'; // Peninsular Spanish standard
-    recognition.continuous = options.continuous ?? true;
-    recognition.interimResults = options.interimResults ?? true;
-    recognition.maxAlternatives = options.maxAlternatives ?? 3;
+  let hasRetriedWithOneShot = false;
 
-    recognition.onstart = () => {
-      isCurrentlyListening = true;
-      options.onStart?.();
-    };
+  const launchRecognition = (useContinuous: boolean) => {
+    try {
+      const recognition = new RecognitionClass();
+      recognition.lang = options.lang || 'es-ES'; // Peninsular Spanish standard
+      recognition.continuous = useContinuous;
+      recognition.interimResults = options.interimResults ?? true;
+      recognition.maxAlternatives = options.maxAlternatives ?? 3;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-      let highestConfidence = 0.9;
+      recognition.onstart = () => {
+        isCurrentlyListening = true;
+        options.onStart?.();
+      };
 
-      for (let i = 0; i < event.results.length; ++i) {
-        const item = event.results[i];
-        const transcriptPart = item[0]?.transcript || '';
-        const confidence = item[0]?.confidence || 0.9;
-        if (confidence > highestConfidence) highestConfidence = confidence;
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        let highestConfidence = 0.9;
 
-        if (item.isFinal) {
-          finalTranscript += (finalTranscript ? ' ' : '') + transcriptPart.trim();
-        } else {
-          interimTranscript += (interimTranscript ? ' ' : '') + transcriptPart.trim();
+        for (let i = 0; i < event.results.length; ++i) {
+          const item = event.results[i];
+          const transcriptPart = item[0]?.transcript || '';
+          const confidence = item[0]?.confidence || 0.9;
+          if (confidence > highestConfidence) highestConfidence = confidence;
+
+          if (item.isFinal) {
+            finalTranscript += (finalTranscript ? ' ' : '') + transcriptPart.trim();
+          } else {
+            interimTranscript += (interimTranscript ? ' ' : '') + transcriptPart.trim();
+          }
         }
-      }
 
-      const deliveredTranscript = (finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
-      const isFinal = Boolean(finalTranscript) && !interimTranscript;
+        const deliveredTranscript = (finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
+        const isFinal = Boolean(finalTranscript) && !interimTranscript;
 
-      options.onResult?.(deliveredTranscript, isFinal, highestConfidence);
-    };
+        options.onResult?.(deliveredTranscript, isFinal, highestConfidence);
+      };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      // In continuous mode, Chrome intermittently emits 'no-speech' if the speaker pauses,
-      // or 'aborted' when stop() is called. Do not treat these as fatal errors.
-      if (event.error === 'no-speech' || event.error === 'aborted') {
-        return;
-      }
-
-      isCurrentlyListening = false;
-      const errorMsg = event.error === 'not-allowed'
-        ? 'Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador y permite el micrófono.'
-        : event.error === 'audio-capture'
-        ? 'No se detectó ningún micrófono. Asegúrate de conectar tu micrófono.'
-        : event.error === 'network'
-        ? 'Error de red en el reconocimiento de voz. Verifica tu conexión a internet o VPN.'
-        : `Error de reconocimiento de voz: ${event.error}`;
-      options.onError?.(errorMsg);
-    };
-
-    recognition.onend = () => {
-      // If still supposed to be listening, attempt seamless resume
-      if (isCurrentlyListening) {
-        try {
-          recognition.start();
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        // In speech mode, Chrome intermittently emits 'no-speech' or 'aborted'. Do not treat as errors.
+        if (event.error === 'no-speech' || event.error === 'aborted') {
           return;
-        } catch {
-          // Already running or terminating
         }
-      }
+
+        // If continuous mode caused a network/websocket timeout, immediately attempt one-shot mode
+        if (event.error === 'network' && !hasRetriedWithOneShot && useContinuous) {
+          hasRetriedWithOneShot = true;
+          try {
+            recognition.abort();
+          } catch {}
+          launchRecognition(false);
+          return;
+        }
+
+        isCurrentlyListening = false;
+        const errorMsg = event.error === 'not-allowed'
+          ? 'Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador y permite el micrófono.'
+          : event.error === 'audio-capture'
+          ? 'No se detectó ningún micrófono. Asegúrate de conectar tu micrófono.'
+          : event.error === 'network'
+          ? 'El servicio de voz en la nube de Google no está disponible en tu navegador o red (común en Brave, Edge, bloqueadores o VPN). Puedes pulsar una opción o escribirla para evaluarla.'
+          : `Error de reconocimiento de voz: ${event.error}`;
+        options.onError?.(errorMsg);
+      };
+
+      recognition.onend = () => {
+        isCurrentlyListening = false;
+        activeRecognition = null;
+        options.onEnd?.();
+      };
+
+      activeRecognition = recognition;
+      recognition.start();
+      return true;
+    } catch (err) {
       isCurrentlyListening = false;
       activeRecognition = null;
-      options.onEnd?.();
-    };
+      options.onError?.(err instanceof Error ? err.message : 'Error desconocido al iniciar micrófono');
+      return false;
+    }
+  };
 
-    activeRecognition = recognition;
-    recognition.start();
-    return true;
-  } catch (err) {
-    isCurrentlyListening = false;
-    activeRecognition = null;
-    options.onError?.(err instanceof Error ? err.message : 'Error desconocido al iniciar micrófono');
-    return false;
-  }
+  // For short phrases and answers, single utterance mode is far less prone to network dropouts
+  const shouldDefaultContinuous = options.continuous ?? false;
+  return launchRecognition(shouldDefaultContinuous);
 }
 
 /**
