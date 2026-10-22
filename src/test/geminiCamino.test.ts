@@ -20,7 +20,7 @@ describe('Gemini Camino AI Service', () => {
   it('provides the default active key configuration and correct model identifier', () => {
     expect(DEFAULT_GEMINI_API_KEY.startsWith('AQ.')).toBe(true);
     expect(DEFAULT_GEMINI_API_KEY.length).toBeGreaterThan(40);
-    expect(['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.8-flash']).toContain(GEMINI_MODEL);
+    expect(['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.8-flash']).toContain(GEMINI_MODEL);
   });
 
   it('masks the API key securely for UI display', () => {

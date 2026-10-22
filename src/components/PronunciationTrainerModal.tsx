@@ -48,6 +48,17 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   // Cadence control: default to slow with distinct inter-word pauses
   const [isSlowMode, setIsSlowMode] = useState<boolean>(true);
 
+  // Audio Mode: True on Edge/Brave/Firefox or if Web Speech fails with network error
+  const [useAudioMode, setUseAudioMode] = useState<boolean>(() => {
+    if (typeof navigator !== 'undefined') {
+      const isEdgeOrBrave = (navigator as any).brave ||
+        navigator.userAgent.includes('Edg/') ||
+        navigator.userAgent.includes('Brave');
+      return Boolean(isEdgeOrBrave);
+    }
+    return false;
+  });
+
   const isAudioSupported = isAnyAudioInputSupported();
   const sessionRef = useRef<AudioRecordingSession | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -149,7 +160,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     if (audioBlob && audioBlob.size > 800) {
       setIsTranscribing(true);
       try {
-        const geminiResult = await transcribeSpanishAudioWithGemini(audioBlob, activeTarget);
+        const geminiResult = await transcribeSpanishAudioWithGemini(audioBlob, activeTarget, options);
         if (geminiResult && geminiResult.transcript) {
           processCapturedTranscript(geminiResult.transcript, geminiResult.confidence);
           setIsTranscribing(false);
@@ -170,60 +181,17 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
       }
     }, 350);
-  }, [activeTarget, stopAudioMonitor, processCapturedTranscript, spokenTranscript]);
+  }, [activeTarget, options, stopAudioMonitor, processCapturedTranscript, spokenTranscript]);
 
-  // Start voice capture session
-  const handleStartRecording = useCallback(async () => {
+  // Start recording audio locally using MediaRecorder
+  const startAudioRecordingFallback = useCallback(async () => {
+    stopSpanishListening();
     setErrorMessage(null);
     setSpokenTranscript('');
     setEvaluation(null);
     setDetectedOption(null);
     lastTranscriptRef.current = '';
 
-    // Branch 1: Native Web Speech API (Chrome, Edge, Safari, Android)
-    // Run single utterance mode for maximum responsiveness & network resilience
-    if (isSpeechRecognitionSupported()) {
-      const started = startSpanishListening({
-        lang: 'es-ES',
-        continuous: false,
-        interimResults: true,
-        onStart: () => {
-          setIsRecording(true);
-        },
-        onResult: (transcript, _isFinal, confidence) => {
-          if (transcript.trim().length > 0) {
-            processCapturedTranscript(transcript, confidence);
-          }
-        },
-        onError: (err) => {
-          console.warn('SpeechRecognition notice:', err);
-          setIsRecording(false);
-          setErrorMessage(err);
-        },
-        onEnd: () => {
-          setIsRecording(false);
-          stopAudioMonitor();
-        }
-      });
-
-      if (started) {
-        setIsRecording(true);
-
-        // Lively waveform pulse & 15s safety auto-stop timer
-        let elapsed = 0;
-        timerRef.current = setInterval(() => {
-          elapsed += 1;
-          setRecordingSeconds(elapsed);
-          setAudioVolumeLevel(Math.round(45 + Math.sin(elapsed * 4) * 30 + Math.cos(elapsed * 7) * 20));
-          if (elapsed >= 15) {
-            handleStopRecording();
-          }
-        }, 1000);
-        return;
-      }
-    }
-
-    // Branch 2: Fallback for browsers without Web Speech (Firefox, Brave, etc.)
     try {
       const audioSession = await startAudioRecordingSession();
       sessionRef.current = audioSession;
@@ -234,11 +202,12 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         elapsed += 1;
         setRecordingSeconds(elapsed);
         setAudioVolumeLevel(audioSession.getVolume());
-        if (elapsed >= 12) {
+        if (elapsed >= 8) {
           handleStopRecording();
         }
       }, 1000);
     } catch (err: unknown) {
+      setIsRecording(false);
       const errorObj = err as { name?: string; message?: string };
       console.warn('MediaRecorder notice:', err);
       if (errorObj?.name === 'NotAllowedError' || errorObj?.name === 'PermissionDeniedError') {
@@ -247,7 +216,63 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         setErrorMessage('No se pudo acceder al micrófono. Verifica que esté conectado y permitido en tu navegador.');
       }
     }
-  }, [handleStopRecording, processCapturedTranscript]);
+  }, [handleStopRecording]);
+
+  // Start voice capture session
+  const handleStartRecording = useCallback(async () => {
+    setErrorMessage(null);
+    setSpokenTranscript('');
+    setEvaluation(null);
+    setDetectedOption(null);
+    lastTranscriptRef.current = '';
+
+    // If Audio Mode is selected or on Edge/Brave, use MediaRecorder directly!
+    if (useAudioMode || !isSpeechRecognitionSupported()) {
+      startAudioRecordingFallback();
+      return;
+    }
+
+    // Otherwise use Web Speech API in Chrome
+    const started = startSpanishListening({
+      lang: 'es-ES',
+      continuous: false,
+      interimResults: true,
+      onStart: () => {
+        setIsRecording(true);
+      },
+      onResult: (transcript, _isFinal, confidence) => {
+        if (transcript.trim().length > 0) {
+          processCapturedTranscript(transcript, confidence);
+        }
+      },
+      onError: (err) => {
+        console.warn('SpeechRecognition notice, auto-switching to Audio Recording mode:', err);
+        setUseAudioMode(true);
+        startAudioRecordingFallback();
+      },
+      onEnd: () => {
+        setIsRecording(false);
+        stopAudioMonitor();
+      }
+    });
+
+    if (started) {
+      setIsRecording(true);
+
+      let elapsed = 0;
+      timerRef.current = setInterval(() => {
+        elapsed += 1;
+        setRecordingSeconds(elapsed);
+        setAudioVolumeLevel(Math.round(45 + Math.sin(elapsed * 4) * 30 + Math.cos(elapsed * 7) * 20));
+        if (elapsed >= 12) {
+          handleStopRecording();
+        }
+      }, 1000);
+    } else {
+      setUseAudioMode(true);
+      startAudioRecordingFallback();
+    }
+  }, [useAudioMode, handleStopRecording, processCapturedTranscript, startAudioRecordingFallback, stopAudioMonitor]);
 
   // Toggle button click
   const handleToggleListening = useCallback(() => {
@@ -369,6 +394,32 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           </div>
         )}
 
+        {/* Mode Selector */}
+        <div className="flex items-center justify-center space-x-2 my-1">
+          <button
+            type="button"
+            onClick={() => setUseAudioMode(false)}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+              !useAudioMode
+                ? 'bg-amber-300 border-amber-500 text-amber-950 font-black shadow-xs'
+                : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
+            }`}
+          >
+            ⚡ Web Speech (Chrome)
+          </button>
+          <button
+            type="button"
+            onClick={() => setUseAudioMode(true)}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+              useAudioMode
+                ? 'bg-amber-400 border-amber-600 text-amber-950 font-black shadow-xs'
+                : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
+            }`}
+          >
+            🎙️ Audio IA (Brave/Edge/Universal)
+          </button>
+        </div>
+
         {/* Recording / Voice Input Controls */}
         <div className="flex flex-col items-center justify-center my-2 space-y-2.5">
           <div className="relative flex items-center justify-center">
@@ -420,8 +471,12 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
             {isTranscribing
               ? '🤖 Procesando tu audio con IA Camino...'
               : isRecording
-              ? '🔴 Escuchando... Di tu frase o respuesta y pulsa el botón al terminar.'
-              : 'Toca el micrófono para hablar en español'}
+              ? (useAudioMode
+                  ? '🔴 Grabando tu audio... Di tu respuesta y toca para finalizar.'
+                  : '🔴 Escuchando... Di tu frase o respuesta.')
+              : (useAudioMode
+                  ? 'Toca el micrófono para grabar tu voz con IA'
+                  : 'Toca el micrófono para hablar en español')}
           </span>
         </div>
 
@@ -438,6 +493,22 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Direct fallback to Audio Recording button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setErrorMessage(null);
+                  setUseAudioMode(true);
+                  startAudioRecordingFallback();
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs flex items-center justify-center space-x-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
+              >
+                <Mic className="w-4 h-4 text-slate-950" />
+                <span>🎙️ Hablar ahora con Grabación de Audio IA</span>
+              </button>
             </div>
 
             {/* Quick Answer Option Buttons */}

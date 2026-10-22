@@ -6,12 +6,12 @@
 // Fallback key assembled dynamically to prevent repository push protection triggers
 const KEY_SEGMENTS = ['AQ', 'Ab8RN6KgvPsYYRtPI1BLEu', 'AcsEyxbyO_vjvDk56UjhUvrheVw'];
 export const DEFAULT_GEMINI_API_KEY = `${KEY_SEGMENTS[0]}.${KEY_SEGMENTS[1]}-${KEY_SEGMENTS[2]}`;
-export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
+export const DEFAULT_GEMINI_MODEL = 'gemini-flash-lite-latest';
 export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
 export const GEMINI_FALLBACK_MODELS = [
-  'gemini-flash-lite-latest',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-flash-latest',
   'gemini-3.8-flash'
 ];
 
@@ -318,7 +318,8 @@ JSON OUTPUT SCHEMA:
  */
 export async function transcribeSpanishAudioWithGemini(
   audioBlob: Blob,
-  targetPhrase?: string
+  targetPhrase?: string,
+  candidateOptions?: string[]
 ): Promise<{ transcript: string; confidence: number } | null> {
   const apiKey = getGeminiApiKey();
   if (!apiKey) return null;
@@ -344,12 +345,16 @@ export async function transcribeSpanishAudioWithGemini(
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6500);
+        const timeoutId = setTimeout(() => controller.abort(), 8500);
 
-        const promptText = `Listen to this Spanish audio recording.${
-          targetPhrase ? ` The student was asked to speak the Spanish phrase: "${targetPhrase}".` : ''
+        let promptText = `You are an expert Spanish speech recognition transcriber. Listen to this Spanish audio recording carefully.`;
+        if (targetPhrase) {
+          promptText += ` Target phrase: "${targetPhrase}".`;
         }
-Transcribe accurately in Spanish what words were spoken.
+        if (candidateOptions && candidateOptions.length > 0) {
+          promptText += ` Possible choices or options: [${candidateOptions.join(', ')}].`;
+        }
+        promptText += `\nTranscribe accurately in Spanish what words were spoken.
 Output ONLY a JSON object:
 {"transcript": "the exact Spanish words spoken", "confidence": 0.95}`;
 
