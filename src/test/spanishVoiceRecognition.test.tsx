@@ -7,6 +7,7 @@ import {
   calculateLevenshteinDistance,
   calculateWordSimilarity,
   evaluateSpanishPronunciation,
+  matchSpokenTextToQuizOptions,
   isSpeechRecognitionSupported,
   startSpanishListening,
   stopSpanishListening,
@@ -63,6 +64,36 @@ describe('Spanish Voice Recognition & Pronunciation Assessment Engine', () => {
       // Partial phonetic variations
       expect(calculateWordSimilarity('gracias', 'gratis')).toBeGreaterThan(0.6);
       expect(calculateWordSimilarity('hola', 'aeropuerto')).toBeLessThan(0.3);
+    });
+
+    it('matches spoken text to quiz options and letter/ordinal aliases', () => {
+      const options = ['Hola', 'Adiós', 'Gracias', 'Por favor'];
+
+      // Letter aliases
+      const matchA = matchSpokenTextToQuizOptions('opción a', options);
+      expect(matchA?.matchedOption).toBe('Hola');
+      expect(matchA?.letter).toBe('A');
+
+      const matchB = matchSpokenTextToQuizOptions('la b', options);
+      expect(matchB?.matchedOption).toBe('Adiós');
+      expect(matchB?.letter).toBe('B');
+
+      const matchC = matchSpokenTextToQuizOptions('tercera', options);
+      expect(matchC?.matchedOption).toBe('Gracias');
+      expect(matchC?.letter).toBe('C');
+
+      // Direct text matching
+      const matchText = matchSpokenTextToQuizOptions('gracias', options);
+      expect(matchText?.matchedOption).toBe('Gracias');
+      expect(matchText?.index).toBe(2);
+
+      // Accent-insensitive matching
+      const matchAccent = matchSpokenTextToQuizOptions('adios', options);
+      expect(matchAccent?.matchedOption).toBe('Adiós');
+
+      // Empty or non-matching input
+      expect(matchSpokenTextToQuizOptions('', options)).toBeNull();
+      expect(matchSpokenTextToQuizOptions('desconocido', options)).toBeNull();
     });
   });
 

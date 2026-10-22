@@ -6,9 +6,14 @@
 // Fallback key assembled dynamically to prevent repository push protection triggers
 const KEY_SEGMENTS = ['AQ', 'Ab8RN6KgvPsYYRtPI1BLEu', 'AcsEyxbyO_vjvDk56UjhUvrheVw'];
 export const DEFAULT_GEMINI_API_KEY = `${KEY_SEGMENTS[0]}.${KEY_SEGMENTS[1]}-${KEY_SEGMENTS[2]}`;
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
 export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
-export const GEMINI_FALLBACK_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+export const GEMINI_FALLBACK_MODELS = [
+  'gemini-flash-lite-latest',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-3.8-flash'
+];
 
 export interface CaminoResponse {
   text: string;
@@ -305,6 +310,98 @@ JSON OUTPUT SCHEMA:
 
   // If all candidate models failed (or completely offline), use intelligent offline Spanish teacher engine
   return getFallbackCaminoResponse(userQuery, context);
+}
+
+/**
+ * Transcribes spoken Spanish audio using Gemini Multimodal AI.
+ * Handles audio blobs from MediaRecorder (audio/webm, audio/ogg, audio/wav, audio/mp4).
+ */
+export async function transcribeSpanishAudioWithGemini(
+  audioBlob: Blob,
+  targetPhrase?: string
+): Promise<{ transcript: string; confidence: number } | null> {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
+
+  try {
+    const base64Data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        const base64 = result?.split(',')[1] || '';
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(audioBlob);
+    });
+
+    if (!base64Data) return null;
+
+    const mimeType = (audioBlob.type || 'audio/webm').split(';')[0];
+    const candidateModels = [DEFAULT_GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+
+    for (const model of candidateModels) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
+
+        const promptText = `Listen to this Spanish audio recording.${
+          targetPhrase ? ` The student was asked to speak the Spanish phrase: "${targetPhrase}".` : ''
+        }
+Transcribe accurately in Spanish what words were spoken.
+Output ONLY a JSON object:
+{"transcript": "the exact Spanish words spoken", "confidence": 0.95}`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType,
+                      data: base64Data
+                    }
+                  },
+                  { text: promptText }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+              maxOutputTokens: 250
+            }
+          })
+        });
+
+        clearTimeout(timeoutId);
+        if (!response.ok) continue;
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        const parsed = JSON.parse(text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim());
+        if (parsed.transcript && typeof parsed.transcript === 'string') {
+          return {
+            transcript: parsed.transcript.trim(),
+            confidence: parsed.confidence || 0.9
+          };
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch (err) {
+    console.warn('Gemini audio transcription fallback error:', err);
+  }
+
+  return null;
 }
 
 // ============================================================================

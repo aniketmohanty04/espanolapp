@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame, ActiveQuizState } from '../context/GameContext';
-import { askCaminoGemini, CaminoResponse, CaminoContext } from '../services/geminiService';
+import { askCaminoGemini, CaminoResponse, CaminoContext, transcribeSpanishAudioWithGemini } from '../services/geminiService';
 import { speakSpanish } from '../services/spanishSpeechService';
 import { getCityById } from '../data/citiesData';
 import { 
@@ -18,11 +18,15 @@ import {
   HelpCircle, 
   GripHorizontal,
   Mic,
-  MicOff
+  MicOff,
+  Loader2
 } from 'lucide-react';
 import { 
   startSpanishListening, 
-  stopSpanishListening 
+  stopSpanishListening,
+  startAudioRecordingSession,
+  AudioRecordingSession,
+  isSpeechRecognitionSupported
 } from '../services/spanishVoiceRecognitionService';
 import { PronunciationTrainerModal } from './PronunciationTrainerModal';
 
@@ -107,6 +111,8 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
 
   // Voice recognition & Pronunciation practice modal
   const [isListeningToVoice, setIsListeningToVoice] = useState<boolean>(false);
+  const [isDictationProcessing, setIsDictationProcessing] = useState<boolean>(false);
+  const chatSessionRef = useRef<AudioRecordingSession | null>(null);
   const [pronunciationModalTarget, setPronunciationModalTarget] = useState<{
     text: string;
     meaning?: string;
@@ -232,6 +238,10 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
   useEffect(() => {
     return () => {
       stopSpanishListening();
+      if (chatSessionRef.current) {
+        chatSessionRef.current.abort();
+        chatSessionRef.current = null;
+      }
     };
   }, []);
 
@@ -239,42 +249,71 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
     if (!isOpen || isMinimized) {
       stopSpanishListening();
       setIsListeningToVoice(false);
+      if (chatSessionRef.current) {
+        chatSessionRef.current.abort();
+        chatSessionRef.current = null;
+      }
     }
   }, [isOpen, isMinimized]);
 
   // Voice dictation toggle for chat input
-  const handleToggleVoiceDictation = () => {
-    if (isLocked || isLoading) return;
+  const handleToggleVoiceDictation = async () => {
+    if (isLocked || isLoading || isDictationProcessing) return;
 
     if (isListeningToVoice) {
-      stopSpanishListening();
       setIsListeningToVoice(false);
+      stopSpanishListening();
+      const session = chatSessionRef.current;
+      chatSessionRef.current = null;
+
+      if (session) {
+        setIsDictationProcessing(true);
+        try {
+          const blob = await session.stop();
+          if (!inputValue.trim() && blob.size > 1000) {
+            const geminiRes = await transcribeSpanishAudioWithGemini(blob);
+            if (geminiRes?.transcript) {
+              setInputValue(geminiRes.transcript);
+            }
+          }
+        } catch (err) {
+          console.warn('Audio dictation error:', err);
+        }
+        setIsDictationProcessing(false);
+      }
       return;
     }
 
-    const started = startSpanishListening({
-      lang: 'es-ES',
-      continuous: false,
-      interimResults: true,
-      onStart: () => {
-        setIsListeningToVoice(true);
-      },
-      onResult: (transcript, isFinal) => {
-        setInputValue(transcript);
-        if (isFinal) {
-          setIsListeningToVoice(false);
-        }
-      },
-      onError: () => {
-        setIsListeningToVoice(false);
-      },
-      onEnd: () => {
-        setIsListeningToVoice(false);
-      }
-    });
+    // Start audio recording session
+    try {
+      const session = await startAudioRecordingSession();
+      chatSessionRef.current = session;
+    } catch {
+      // Audio capture failed
+    }
 
-    if (!started) {
-      setIsListeningToVoice(false);
+    setIsListeningToVoice(true);
+
+    if (isSpeechRecognitionSupported()) {
+      startSpanishListening({
+        lang: 'es-ES',
+        continuous: true,
+        interimResults: true,
+        onStart: () => {
+          setIsListeningToVoice(true);
+        },
+        onResult: (transcript) => {
+          if (transcript.trim()) {
+            setInputValue(transcript);
+          }
+        },
+        onError: (err) => {
+          console.warn('SpeechRecognition dictation notice:', err);
+        },
+        onEnd: () => {
+          // Allow player to pause without prematurely killing dictation session
+        }
+      });
     }
   };
 
@@ -669,11 +708,13 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                 <button
                   type="button"
                   data-testid="chatbot-mic-btn"
-                  disabled={isLocked || isLoading}
+                  disabled={isLocked || isLoading || isDictationProcessing}
                   onClick={handleToggleVoiceDictation}
                   className={`p-2.5 rounded-xl border transition hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${
                     isListeningToVoice
                       ? 'bg-red-500 border-red-300 text-white animate-pulse shadow-md shadow-red-500/30'
+                      : isDictationProcessing
+                      ? 'bg-amber-300 text-slate-900 border-amber-500'
                       : 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 shadow-xs'
                   }`}
                   title={
@@ -684,7 +725,13 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                       : 'Hablar en español con el micrófono'
                   }
                 >
-                  {isListeningToVoice ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {isDictationProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-950" />
+                  ) : isListeningToVoice ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   data-testid="chatbot-send-btn"

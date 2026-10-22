@@ -83,6 +83,179 @@ export function isSpeechRecognitionSupported(): boolean {
   return getSpeechRecognitionClass() !== null;
 }
 
+export function isMediaRecorderSupported(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return typeof MediaRecorder !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
+}
+
+export function isAnyAudioInputSupported(): boolean {
+  return isSpeechRecognitionSupported() || isMediaRecorderSupported();
+}
+
+export interface AudioRecordingSession {
+  stop: () => Promise<Blob>;
+  abort: () => void;
+  getVolume: () => number;
+}
+
+export interface MatchedQuizOption {
+  matchedOption: string;
+  index: number;
+  letter: string;
+  confidence: number;
+}
+
+/**
+ * Matches spoken input against multiple-choice options or option letters/ordinals.
+ */
+export function matchSpokenTextToQuizOptions(
+  spokenText: string,
+  options: string[]
+): MatchedQuizOption | null {
+  if (!spokenText || !options || options.length === 0) return null;
+
+  const normSpoken = normalizeSpanishForComparison(spokenText);
+  const strippedSpoken = stripAccents(normSpoken);
+
+  // Letter & ordinal alias dictionary for A, B, C, D
+  const letterAliases: Record<number, string[]> = {
+    0: ['a', 'la a', 'letra a', 'opcion a', 'opción a', 'primera', 'primero', 'uno', 'first'],
+    1: ['b', 'la b', 'letra b', 'opcion b', 'opción b', 'segunda', 'segundo', 'dos', 'second'],
+    2: ['c', 'la c', 'letra c', 'opcion c', 'opción c', 'tercera', 'tercero', 'tres', 'third'],
+    3: ['d', 'la d', 'letra d', 'opcion d', 'opción d', 'cuarta', 'cuarto', 'cuatro', 'fourth']
+  };
+
+  // 1. Check letter/ordinal alias match
+  for (const [idxStr, aliases] of Object.entries(letterAliases)) {
+    const idx = Number(idxStr);
+    if (idx < options.length && aliases.includes(strippedSpoken)) {
+      return {
+        matchedOption: options[idx],
+        index: idx,
+        letter: String.fromCharCode(65 + idx),
+        confidence: 0.98
+      };
+    }
+  }
+
+  // 2. Direct exact or accent-stripped match against option text
+  for (let idx = 0; idx < options.length; idx++) {
+    const opt = options[idx];
+    const normOpt = normalizeSpanishForComparison(opt);
+    const strippedOpt = stripAccents(normOpt);
+
+    if (normSpoken === normOpt || strippedSpoken === strippedOpt) {
+      return {
+        matchedOption: opt,
+        index: idx,
+        letter: String.fromCharCode(65 + idx),
+        confidence: 1.0
+      };
+    }
+  }
+
+  // 3. Substring containment or high word similarity
+  let bestMatch: MatchedQuizOption | null = null;
+  let highestScore = 0;
+
+  for (let idx = 0; idx < options.length; idx++) {
+    const opt = options[idx];
+    const normOpt = normalizeSpanishForComparison(opt);
+    const strippedOpt = stripAccents(normOpt);
+
+    const sim = calculateWordSimilarity(normOpt, normSpoken);
+
+    const isContained =
+      (normSpoken.length >= 3 && normOpt.includes(normSpoken)) ||
+      (normOpt.length >= 3 && normSpoken.includes(normOpt)) ||
+      (strippedSpoken.length >= 3 && strippedOpt.includes(strippedSpoken)) ||
+      (strippedOpt.length >= 3 && strippedSpoken.includes(strippedOpt));
+
+    const score = isContained ? Math.max(sim, 0.85) : sim;
+
+    if (score >= 0.65 && score > highestScore) {
+      highestScore = score;
+      bestMatch = {
+        matchedOption: opt,
+        index: idx,
+        letter: String.fromCharCode(65 + idx),
+        confidence: score
+      };
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Starts recording audio via MediaRecorder.
+ * Uses clean audio stream without locking Windows WASAPI from Web Speech.
+ */
+export async function startAudioRecordingSession(): Promise<AudioRecordingSession> {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: true
+  });
+
+  let mimeType = '';
+  if (typeof MediaRecorder !== 'undefined') {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      mimeType = 'audio/webm;codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+      mimeType = 'audio/webm';
+    } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+      mimeType = 'audio/ogg;codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4';
+    }
+  }
+
+  const recorderOptions = mimeType ? { mimeType } : undefined;
+  const recorder = new MediaRecorder(stream, recorderOptions);
+  const audioChunks: Blob[] = [];
+
+  recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) {
+      audioChunks.push(e.data);
+    }
+  };
+
+  recorder.start(100);
+
+  const startTime = Date.now();
+
+  return {
+    getVolume: () => {
+      // Dynamic simulated volume oscillation between 30 and 85 while recording
+      const elapsed = (Date.now() - startTime) / 1000;
+      return Math.round(40 + Math.sin(elapsed * 6) * 25 + Math.cos(elapsed * 10) * 15);
+    },
+    stop: () => {
+      return new Promise<Blob>((resolve) => {
+        recorder.onstop = () => {
+          const finalBlob = new Blob(audioChunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          stream.getTracks().forEach(t => t.stop());
+          resolve(finalBlob);
+        };
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        } else {
+          const finalBlob = new Blob(audioChunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          stream.getTracks().forEach(t => t.stop());
+          resolve(finalBlob);
+        }
+      });
+    },
+    abort: () => {
+      try {
+        if (recorder.state !== 'inactive') recorder.stop();
+        stream.getTracks().forEach(t => t.stop());
+      } catch {
+        // ignore
+      }
+    }
+  };
+}
+
 /**
  * Explicitly requests microphone permissions via getUserMedia.
  * This ensures the browser displays the prompt and confirms hardware availability.
@@ -503,7 +676,15 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
 export function stopSpanishListening(): void {
   if (activeRecognition) {
     try {
-      activeRecognition.stop();
+      activeRecognition.onend = null;
+      activeRecognition.onerror = null;
+      activeRecognition.onresult = null;
+      if (typeof activeRecognition.abort === 'function') {
+        activeRecognition.abort();
+      }
+      if (typeof activeRecognition.stop === 'function') {
+        activeRecognition.stop();
+      }
     } catch {
       // safe fallback
     }

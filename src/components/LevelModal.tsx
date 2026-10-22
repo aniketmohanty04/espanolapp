@@ -1247,7 +1247,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
               ? (Array.isArray(currentQuestion.correctAnswer)
                   ? currentQuestion.correctAnswer.join(' ')
                   : (currentQuestion.correctAnswer || currentQuestion.prompt))
-              : (selectedOption || currentQuestion.prompt)
+              : (selectedOption || currentQuestion.options?.[0] || currentQuestion.prompt)
           }
           englishMeaning={
             hasSubmitted
@@ -1259,6 +1259,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
               ? 'Práctica de Pronunciación (Respuesta)'
               : 'Práctica Oral en Español'
           }
+          options={!hasSubmitted ? currentQuestion.options : undefined}
           onClose={() => setShowPronunciationTrainer(false)}
           onApplySpokenAnswer={handleApplySpokenAnswer}
         />

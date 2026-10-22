@@ -970,7 +970,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
               ? (Array.isArray(currentQuestion.correctAnswer)
                   ? currentQuestion.correctAnswer.join(' ')
                   : (currentQuestion.correctAnswer || currentQuestion.prompt))
-              : (selectedOption || currentQuestion.prompt)
+              : (selectedOption || currentQuestion.options?.[0] || currentQuestion.prompt)
           }
           englishMeaning={
             hasSubmitted
@@ -982,6 +982,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
               ? 'Práctica de Pronunciación (Desafío del Jefe)'
               : 'Desafío Oral en Español'
           }
+          options={!hasSubmitted ? currentQuestion.options : undefined}
           onClose={() => setShowPronunciationTrainer(false)}
           onApplySpokenAnswer={handleApplySpokenAnswer}
         />
