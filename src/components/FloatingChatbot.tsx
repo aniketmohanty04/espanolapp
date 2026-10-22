@@ -13,11 +13,18 @@ import {
   Lock, 
   CheckCircle2, 
   AlertCircle, 
-  RotateCcw,
-  BookOpen,
-  HelpCircle,
-  GripHorizontal
+  RotateCcw, 
+  BookOpen, 
+  HelpCircle, 
+  GripHorizontal,
+  Mic,
+  MicOff
 } from 'lucide-react';
+import { 
+  startSpanishListening, 
+  stopSpanishListening 
+} from '../services/spanishVoiceRecognitionService';
+import { PronunciationTrainerModal } from './PronunciationTrainerModal';
 
 export interface ChatMessage {
   id: string;
@@ -97,6 +104,13 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
   const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastFailedQuery, setLastFailedQuery] = useState<string | null>(null);
+
+  // Voice recognition & Pronunciation practice modal
+  const [isListeningToVoice, setIsListeningToVoice] = useState<boolean>(false);
+  const [pronunciationModalTarget, setPronunciationModalTarget] = useState<{
+    text: string;
+    meaning?: string;
+  } | null>(null);
 
   // Dragging state for Picture-in-Picture window
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -213,6 +227,56 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging]);
+
+  // Stop voice recognition on unmount or when chat closes
+  useEffect(() => {
+    return () => {
+      stopSpanishListening();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || isMinimized) {
+      stopSpanishListening();
+      setIsListeningToVoice(false);
+    }
+  }, [isOpen, isMinimized]);
+
+  // Voice dictation toggle for chat input
+  const handleToggleVoiceDictation = () => {
+    if (isLocked || isLoading) return;
+
+    if (isListeningToVoice) {
+      stopSpanishListening();
+      setIsListeningToVoice(false);
+      return;
+    }
+
+    const started = startSpanishListening({
+      lang: 'es-ES',
+      continuous: false,
+      interimResults: true,
+      onStart: () => {
+        setIsListeningToVoice(true);
+      },
+      onResult: (transcript, isFinal) => {
+        setInputValue(transcript);
+        if (isFinal) {
+          setIsListeningToVoice(false);
+        }
+      },
+      onError: () => {
+        setIsListeningToVoice(false);
+      },
+      onEnd: () => {
+        setIsListeningToVoice(false);
+      }
+    });
+
+    if (!started) {
+      setIsListeningToVoice(false);
+    }
+  };
 
   // Send message
   const handleSendMessage = async (customText?: string) => {
@@ -458,13 +522,25 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                               <p className="text-[10px] text-[#7A6B60] italic">🗣 {msg.pronunciation}</p>
                             )}
                           </div>
-                          <button
-                            onClick={() => msg.spanishText && speakSpanish(msg.spanishText)}
-                            title="Escuchar pronunciación en español"
-                            className="p-1.5 rounded-lg bg-white hover:bg-amber-100 text-[#C2410C] shadow-xs transition hover:scale-110 cursor-pointer shrink-0"
-                          >
-                            <Volume2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center space-x-1 shrink-0">
+                            <button
+                              onClick={() => msg.spanishText && speakSpanish(msg.spanishText)}
+                              title="Escuchar pronunciación en español"
+                              className="p-1.5 rounded-lg bg-white hover:bg-amber-100 text-[#C2410C] shadow-xs transition hover:scale-110 cursor-pointer"
+                            >
+                              <Volume2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setPronunciationModalTarget({
+                                text: msg.spanishText!,
+                                meaning: msg.englishText
+                              })}
+                              title="Practicar pronunciación de esta frase"
+                              className="p-1.5 rounded-lg bg-white hover:bg-purple-100 text-purple-700 shadow-xs transition hover:scale-110 cursor-pointer"
+                            >
+                              <Mic className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -584,10 +660,32 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                   placeholder={
                     isLocked 
                       ? '🔒 Responde la pregunta para consultar...' 
+                      : isListeningToVoice
+                      ? '🎧 Escuchando tu voz en español...'
                       : 'Pregunta sobre vocabulario o gramática...'
                   }
                   className="flex-1 bg-[#FAF7F2] border border-[#E0D5C7] rounded-xl px-3 py-2 text-xs sm:text-sm text-[#24140E] placeholder:text-[#94877D] focus:outline-hidden focus:border-[#E05615] focus:ring-1 focus:ring-[#E05615] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                 />
+                <button
+                  type="button"
+                  data-testid="chatbot-mic-btn"
+                  disabled={isLocked || isLoading}
+                  onClick={handleToggleVoiceDictation}
+                  className={`p-2.5 rounded-xl border transition hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${
+                    isListeningToVoice
+                      ? 'bg-red-500 border-red-300 text-white animate-pulse shadow-md shadow-red-500/30'
+                      : 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 shadow-xs'
+                  }`}
+                  title={
+                    isLocked
+                      ? 'Bloqueado durante pregunta activa'
+                      : isListeningToVoice
+                      ? 'Detener escucha'
+                      : 'Hablar en español con el micrófono'
+                  }
+                >
+                  {isListeningToVoice ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
                 <button
                   data-testid="chatbot-send-btn"
                   disabled={isLocked || isLoading || !inputValue.trim()}
@@ -659,6 +757,16 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
           </div>
         </button>
       </div>
+
+      {/* Pronunciation Practice Modal from Camino */}
+      {pronunciationModalTarget && (
+        <PronunciationTrainerModal
+          targetText={pronunciationModalTarget.text}
+          englishMeaning={pronunciationModalTarget.meaning}
+          title="Práctica de Pronunciación con Camino"
+          onClose={() => setPronunciationModalTarget(null)}
+        />
+      )}
     </>
   );
 };

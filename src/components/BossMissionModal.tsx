@@ -17,8 +17,11 @@ import {
   Play,
   Lightbulb,
   Bot,
-  Languages
+  Languages,
+  Mic
 } from 'lucide-react';
+import { PronunciationTrainerModal } from './PronunciationTrainerModal';
+import { normalizeSpanishForComparison, calculateWordSimilarity } from '../services/spanishVoiceRecognitionService';
 
 interface BossMissionModalProps {
   bossMission: BossMission;
@@ -62,6 +65,9 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   // Post-answer Full Question Translation state (0 coins)
   const [showFullTranslation, setShowFullTranslation] = useState<boolean>(false);
 
+  // Pronunciation & Voice Recognition modal state
+  const [showPronunciationTrainer, setShowPronunciationTrainer] = useState<boolean>(false);
+
   const currentQuestion: Question = bossMission.questions[currentIndex];
   const currentVocabHints = useMemo(() => currentQuestion ? getQuestionVocabHints(currentQuestion) : [], [currentQuestion]);
 
@@ -85,6 +91,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
     setVocabHintError(null);
     setIsPurchasingHint(false);
     setShowFullTranslation(false);
+    setShowPronunciationTrainer(false);
 
     if (currentQuestion?.id) {
       const already = (progress.purchasedVocabHints || []).includes(currentQuestion.id);
@@ -165,6 +172,49 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
   const handleToggleFullTranslation = () => {
     if (!hasSubmitted) return;
     setShowFullTranslation(prev => !prev);
+  };
+
+  // Apply Spoken Answer from Voice Recognition
+  const handleApplySpokenAnswer = (spokenAnswer: string) => {
+    if (hasSubmitted || !currentQuestion) {
+      setShowPronunciationTrainer(false);
+      return;
+    }
+
+    // Match MCQ
+    if (currentQuestion.type === 'multiple-choice' && currentQuestion.options) {
+      const matched = currentQuestion.options.find(opt =>
+        normalizeSpanishForComparison(opt) === normalizeSpanishForComparison(spokenAnswer) ||
+        calculateWordSimilarity(opt, spokenAnswer) >= 0.72
+      );
+      if (matched) {
+        setSelectedOption(matched);
+        setShowPronunciationTrainer(false);
+        return;
+      }
+    }
+
+    // Match Dialogue
+    if (currentQuestion.type === 'dialogue' && currentQuestion.dialogue?.choices) {
+      const matched = currentQuestion.dialogue.choices.find(c =>
+        normalizeSpanishForComparison(c.text) === normalizeSpanishForComparison(spokenAnswer) ||
+        calculateWordSimilarity(c.text, spokenAnswer) >= 0.72
+      );
+      if (matched) {
+        setSelectedOption(matched.text);
+        setShowPronunciationTrainer(false);
+        return;
+      }
+    }
+
+    // Match Fill in the blank
+    if (currentQuestion.type === 'fill-blank') {
+      setFillBlankInput(spokenAnswer.trim());
+      setShowPronunciationTrainer(false);
+      return;
+    }
+
+    setShowPronunciationTrainer(false);
   };
 
   const handleCheck = () => {
@@ -418,6 +468,18 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                       >
                         <Lightbulb className="w-3.5 h-3.5 text-slate-950 fill-amber-300" />
                         <span>Pista de vocabulario (500 🪙)</span>
+                      </button>
+
+                      {/* Voice Pronunciation Button */}
+                      <button
+                        type="button"
+                        data-testid="boss-pronunciation-btn"
+                        onClick={() => setShowPronunciationTrainer(true)}
+                        className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-black border transition-all shadow-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-purple-300 hover:scale-105 active:scale-95 cursor-pointer shadow-purple-500/20"
+                        title="Practicar pronunciación o responder con la voz"
+                      >
+                        <Mic className="w-3.5 h-3.5 text-white animate-pulse" />
+                        <span>🎤 Voz</span>
                       </button>
 
                       {/* Tutor IA Button in Boss Modal */}
@@ -859,6 +921,33 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================
+          PRONUNCIATION TRAINER MODAL FOR BOSS CHALLENGE
+          ======================================================== */}
+      {showPronunciationTrainer && currentQuestion && (
+        <PronunciationTrainerModal
+          targetText={
+            hasSubmitted
+              ? (Array.isArray(currentQuestion.correctAnswer)
+                  ? currentQuestion.correctAnswer.join(' ')
+                  : (currentQuestion.correctAnswer || currentQuestion.prompt))
+              : (selectedOption || currentQuestion.prompt)
+          }
+          englishMeaning={
+            hasSubmitted
+              ? (questionEnglishText || currentQuestion.explanation)
+              : (questionEnglishText ? questionEnglishText : undefined)
+          }
+          title={
+            hasSubmitted
+              ? 'Práctica de Pronunciación (Desafío del Jefe)'
+              : 'Desafío Oral en Español'
+          }
+          onClose={() => setShowPronunciationTrainer(false)}
+          onApplySpokenAnswer={handleApplySpokenAnswer}
+        />
       )}
     </div>
   );

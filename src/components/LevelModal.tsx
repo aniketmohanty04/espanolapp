@@ -25,10 +25,13 @@ import {
   Clock,
   Bot,
   Lock,
-  Languages
+  Languages,
+  Mic
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatLifeTimer } from './OutOfLivesModal';
+import { PronunciationTrainerModal } from './PronunciationTrainerModal';
+import { normalizeSpanishForComparison, calculateWordSimilarity } from '../services/spanishVoiceRecognitionService';
 
 interface LevelModalProps {
   level: Level;
@@ -82,6 +85,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   // Post-answer Full Question Translation state (0 coins, accessible after answer submission)
   const [showFullTranslation, setShowFullTranslation] = useState<boolean>(false);
 
+  // Pronunciation & Voice Recognition modal state
+  const [showPronunciationTrainer, setShowPronunciationTrainer] = useState<boolean>(false);
+
   // Lives / hearts synchronized with game state (max 3)
   const lives = typeof progress.stats.lives === 'number' ? progress.stats.lives : 3;
 
@@ -114,6 +120,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     setVocabHintError(null);
     setIsPurchasingHint(false);
     setShowFullTranslation(false);
+    setShowPronunciationTrainer(false);
 
     const alreadyPurchased = progress.purchasedTranslations.includes(currentQuestion.id);
     setTranslationUnlocked(alreadyPurchased);
@@ -333,6 +340,55 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     return shuffleArray(currentQuestion.options || ['en', 'a', 'de', 'con']);
   }, [currentQuestion.id, currentQuestion.options]);
 
+  // Open Pronunciation Trainer Modal
+  const handleOpenPronunciation = () => {
+    setShowPronunciationTrainer(true);
+  };
+
+  // Apply Spoken Answer from Voice Recognition
+  const handleApplySpokenAnswer = (spokenAnswer: string) => {
+    if (hasSubmitted) {
+      setShowPronunciationTrainer(false);
+      return;
+    }
+
+    // Match MCQ
+    if (currentQuestion.type === 'multiple-choice' && currentQuestion.options) {
+      const matched = currentQuestion.options.find(opt =>
+        normalizeSpanishForComparison(opt) === normalizeSpanishForComparison(spokenAnswer) ||
+        calculateWordSimilarity(opt, spokenAnswer) >= 0.72
+      );
+      if (matched) {
+        setSelectedOption(matched);
+        setShowPronunciationTrainer(false);
+        return;
+      }
+    }
+
+    // Match Dialogue
+    if (currentQuestion.type === 'dialogue' && currentQuestion.dialogue?.choices) {
+      const matched = currentQuestion.dialogue.choices.find(c =>
+        normalizeSpanishForComparison(c.text) === normalizeSpanishForComparison(spokenAnswer) ||
+        calculateWordSimilarity(c.text, spokenAnswer) >= 0.72
+      );
+      if (matched) {
+        setDialogueChosenChoice(matched);
+        setSelectedOption(matched.text);
+        setShowPronunciationTrainer(false);
+        return;
+      }
+    }
+
+    // Match Fill in the blank
+    if (currentQuestion.type === 'fill-blank') {
+      setFillBlankInput(spokenAnswer.trim());
+      setShowPronunciationTrainer(false);
+      return;
+    }
+
+    setShowPronunciationTrainer(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
       
@@ -511,6 +567,18 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                 >
                   <Lightbulb className="w-4 h-4 text-slate-950 fill-amber-300" />
                   <span>Pista de vocabulario (500 🪙)</span>
+                </button>
+
+                {/* Voice Pronunciation Trainer Button */}
+                <button
+                  type="button"
+                  data-testid="pronunciation-trainer-btn"
+                  onClick={handleOpenPronunciation}
+                  className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition-all shadow-md bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-600 text-white border-purple-300 hover:scale-105 active:scale-95 cursor-pointer shadow-purple-500/20"
+                  title="Practicar pronunciación española o responder por voz"
+                >
+                  <Mic className="w-3.5 h-3.5 text-white animate-pulse" />
+                  <span>🎤 Pronunciación (Voz)</span>
                 </button>
 
                 {/* Tutor IA Chatbot Button */}
@@ -1127,6 +1195,33 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
           </div>
         </div>
+      )}
+
+      {/* ========================================================
+          PRONUNCIATION TRAINER MODAL (VOICE SPEECH & SCORING)
+          ======================================================== */}
+      {showPronunciationTrainer && (
+        <PronunciationTrainerModal
+          targetText={
+            hasSubmitted
+              ? (Array.isArray(currentQuestion.correctAnswer)
+                  ? currentQuestion.correctAnswer.join(' ')
+                  : (currentQuestion.correctAnswer || currentQuestion.prompt))
+              : (selectedOption || currentQuestion.prompt)
+          }
+          englishMeaning={
+            hasSubmitted
+              ? (questionEnglishText || currentQuestion.explanation)
+              : (questionEnglishText ? questionEnglishText : undefined)
+          }
+          title={
+            hasSubmitted
+              ? 'Práctica de Pronunciación (Respuesta)'
+              : 'Práctica Oral en Español'
+          }
+          onClose={() => setShowPronunciationTrainer(false)}
+          onApplySpokenAnswer={handleApplySpokenAnswer}
+        />
       )}
 
     </div>
