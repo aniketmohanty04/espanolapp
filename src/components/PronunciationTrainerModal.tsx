@@ -7,6 +7,7 @@ import {
   isSpeechRecognitionSupported,
   startSpanishListening,
   stopSpanishListening,
+  abortSpanishListening,
   startAudioRecordingSession,
   AudioRecordingSession,
   evaluateSpanishPronunciation,
@@ -74,7 +75,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopSpanishListening();
+      abortSpanishListening();
       stopSpanishSpeech();
       stopAudioMonitor();
       if (sessionRef.current) {
@@ -128,6 +129,13 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     const activeSession = sessionRef.current;
     sessionRef.current = null;
 
+    // Check immediately if recognized text is already available
+    const liveTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
+    if (liveTranscript.length > 0) {
+      processCapturedTranscript(liveTranscript);
+      return;
+    }
+
     let audioBlob: Blob | null = null;
     if (activeSession) {
       try {
@@ -135,13 +143,6 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       } catch (err) {
         console.warn('Error stopping audio recorder:', err);
       }
-    }
-
-    // If Web Speech API already delivered recognized text, process it
-    const liveTranscript = lastTranscriptRef.current.trim();
-    if (liveTranscript.length > 0) {
-      processCapturedTranscript(liveTranscript);
-      return;
     }
 
     // Fallback: If Web Speech produced no text, use Gemini Multimodal Audio transcription
@@ -160,9 +161,16 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       setIsTranscribing(false);
     }
 
-    // If still no speech detected
-    setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
-  }, [activeTarget, stopAudioMonitor, processCapturedTranscript]);
+    // Allow 350ms for speech recognizer to deliver final flushed utterance before showing notice
+    setTimeout(() => {
+      const finalTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
+      if (finalTranscript.length > 0) {
+        processCapturedTranscript(finalTranscript);
+      } else {
+        setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
+      }
+    }, 350);
+  }, [activeTarget, stopAudioMonitor, processCapturedTranscript, spokenTranscript]);
 
   // Start voice capture session
   const handleStartRecording = useCallback(async () => {
@@ -173,11 +181,11 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     lastTranscriptRef.current = '';
 
     // Branch 1: Native Web Speech API (Chrome, Edge, Safari, Android)
-    // Run cleanly WITHOUT parallel MediaRecorder so Chrome does not lock audio hardware
+    // Run single utterance mode for maximum responsiveness & network resilience
     if (isSpeechRecognitionSupported()) {
       const started = startSpanishListening({
         lang: 'es-ES',
-        continuous: true,
+        continuous: false,
         interimResults: true,
         onStart: () => {
           setIsRecording(true);
@@ -193,7 +201,8 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           setErrorMessage(err);
         },
         onEnd: () => {
-          // Continuous session managed by user stop button
+          setIsRecording(false);
+          stopAudioMonitor();
         }
       });
 

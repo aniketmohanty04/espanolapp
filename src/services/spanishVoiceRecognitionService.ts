@@ -688,9 +688,25 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
 }
 
 /**
- * Stops any active speech recognition session.
+ * Stops active speech recognition gracefully so final audio results are delivered.
  */
 export function stopSpanishListening(): void {
+  if (activeRecognition) {
+    try {
+      if (typeof activeRecognition.stop === 'function') {
+        activeRecognition.stop();
+      }
+    } catch {
+      // safe fallback
+    }
+  }
+  isCurrentlyListening = false;
+}
+
+/**
+ * Immediately cancels and tears down speech recognition (e.g., when closing modal or unmounting).
+ */
+export function abortSpanishListening(): void {
   if (activeRecognition) {
     try {
       activeRecognition.onend = null;
@@ -698,8 +714,7 @@ export function stopSpanishListening(): void {
       activeRecognition.onresult = null;
       if (typeof activeRecognition.abort === 'function') {
         activeRecognition.abort();
-      }
-      if (typeof activeRecognition.stop === 'function') {
+      } else if (typeof activeRecognition.stop === 'function') {
         activeRecognition.stop();
       }
     } catch {
