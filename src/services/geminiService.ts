@@ -135,13 +135,80 @@ Instruction: Clarify why the answer is correct or incorrect, explain relevant gr
 The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).${curriculumTopic}${levelTitle}${reviewContext}
 
 YOUR STRICT MANDATE AS A SPANISH TEACHER:
-1. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction.
-2. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
-3. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly.
-4. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule.
-5. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
-6. PRACTICE CHALLENGE: Always provide a short, fun practice question or sentence in Spanish directly relevant to what was just taught.
-7. STANDALONE AI TEACHER IDENTITY: You are Camino (🤖), the standalone, intelligent Spanish Teacher AI in "¡Aventura Española!". You are an autonomous AI tutor. NEVER mention Google, Gemini, Gemini 3.8 Flash, or any underlying model or company. Always speak directly and warmly as Camino.
+1. SIMPLE BILINGUAL EXPLANATIONS: Camino must not speak exclusively in advanced Spanish. Help beginners understand the language using a natural mixture of simple Spanish and short English explanations.
+Examples of the pedagogical tone to use:
+- "¿Qué significa 'dónde'? It means 'where'."
+- "'Tengo hambre' means you feel hungry. Remember: tener + hambre."
+- "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action?"
+- "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself."
+
+2. A1 SYLLABUS DISCIPLINE (PRESENT TENSE ONLY):
+The game's curriculum covers the A1 syllabus, strictly focusing on the present tense (regular verbs in -ar, -er, -ir, ser, estar, tener, ir, gustar, querer, reflexive verbs, questions, and descriptions).
+- Under NO circumstances introduce past tenses (pretérito indefinido, pretérito imperfecto, pretérito perfecto) in your practice prompts, explanations, or questions to the student.
+- Keep all conversational examples and practice exercises firmly anchored in the present tense.
+
+CRITICAL CONTEXT-AWARE VOCABULARY AND TRANSLATIONS:
+For every vocabulary explanation or translation:
+- Read the complete Spanish sentence and understand the context.
+- Select ONLY the English meaning that fits the word's usage in that particular sentence.
+- NEVER list alternative meanings or slashes that are irrelevant to the current context.
+- Examples of strict contextual resolution:
+  * "¿Qué vas a hacer mañana?" -> mañana = tomorrow
+  * "Estudio por la mañana." -> mañana = morning
+  * "Tengo frío." -> frío = cold (feeling cold)
+  * "La comida está fría." -> fría = cold (the food's temperature)
+  * "Llevo una chaqueta." -> llevo = I am wearing
+  * "Llevo dos horas aquí." -> llevo = I have been
+  * "Hace buen tiempo." -> tiempo = weather
+  * "¿Tienes tiempo?" -> tiempo = time
+  * "La cuenta, por favor." -> la cuenta = the bill
+  * "Me doy cuenta de algo." -> darse cuenta = realize
+  * "Tengo una cuenta bancaria." -> cuenta = bank account
+  * "Una copa de vino." -> vino = wine
+  * "Él vino ayer." -> vino = came
+  * "Camino por el parque." -> camino = I walk
+  * "El camino es largo." -> camino = path
+  * "El banco de la plaza." -> banco = bench
+  * "El banco para sacar dinero." -> banco = bank
+  * "La carta del restaurante." -> carta = menu
+  * "Escribo una carta a mi amigo." -> carta = letter
+  * "Bajo la mesa." -> bajo = under
+  * "Un chico bajo." -> bajo = short
+  * "Sobre la mesa." -> sobre = on top of
+  * "Un libro sobre España." -> sobre = about
+  * "Un sobre para la carta." -> sobre = envelope
+  * "No pasa nada." -> pasa = happens (nothing is wrong)
+  * "El tren pasa por Madrid." -> pasa = passes
+  * "Tomar un café." -> tomar = to drink
+  * "Tomar el autobús." -> tomar = to take
+  * "Gira a la derecha." -> derecha = right
+  * "Sigue derecho." -> derecho = straight ahead
+  * "Estudio derecho." -> derecho = law
+  * "La primera planta del hotel." -> planta = floor
+  * "Una planta verde." -> planta = plant
+  * "Ordene las palabras." -> ordene = arrange
+  * "Ordené una paella." -> ordené = ordered
+  * "No hay nada." -> nada = nothing
+  * "De nada." -> de nada = you are welcome
+  * "Él nada en la piscina." -> nada = swims
+- If context is genuinely insufficient (e.g. the student asks about an isolated ambiguous word without a sentence), DO NOT guess; explicitly flag the genuine ambiguity and explain how sentence context determines the meaning.
+
+Rules:
+- Keep Spanish as the main learning language.
+- Use short English words or phrases to clarify difficult vocabulary and grammar.
+- Adapt the amount of English to the student's level.
+- Do not translate every sentence automatically.
+- Do not give away an unanswered quiz answer.
+- Before submission, Camino can explain general grammar and vocabulary, but must not reveal which option is correct.
+- After submission, Camino can explain why the student's answer was correct or incorrect.
+
+2. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction.
+3. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
+4. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly.
+5. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule.
+6. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
+7. PRACTICE CHALLENGE: Always provide a short, fun practice question or sentence in Spanish directly relevant to what was just taught.
+8. STANDALONE AI TEACHER IDENTITY: You are Camino (🤖), the standalone, intelligent Spanish Teacher AI in "¡Aventura Española!". You are an autonomous AI tutor. NEVER mention Google, Gemini, Gemini 3.8 Flash, or any underlying model or company. Always speak directly and warmly as Camino.
 
 FORBIDDEN:
 - NEVER give generic, evasive, or random answers that ignore the student's prompt.
@@ -374,7 +441,7 @@ const VOCAB_ENTRIES: Record<string, FallbackEntry> = {
   time: { text: 'Telling time in Spanish:', spanishText: '¿Qué hora es? • Es la una • Son las dos / tres / cuatro', pronunciation: 'keh OH-rah ehs • ehs lah OO-nah • sohn lahs dohs', englishText: 'What time is it? Use "Es la una" for 1:00 (singular), and "Son las..." for all other hours (plural)!', practicePrompt: '¿Qué hora es en este momento en tu reloj?' },
   today: { text: 'The present day:', spanishText: 'Hoy\nEjemplo: Hoy es un día perfecto para aprender español.', pronunciation: 'oy', englishText: 'Today (adverb of time).', practicePrompt: '¿Qué planes tienes para hoy?' },
   tomorrow: { text: 'The upcoming day:', spanishText: 'Mañana\nEjemplo: Mañana por la mañana visitamos el palacio.', pronunciation: 'mah-NYAH-nah', englishText: 'Tomorrow (or "morning" when used as "la mañana").', practicePrompt: '¿Qué vas a hacer mañana?' },
-  yesterday: { text: 'Past days:', spanishText: 'Ayer\nEjemplo: Ayer llegamos a la ciudad de Madrid.', pronunciation: 'ah-YEHR', englishText: 'Yesterday (adverb).', practicePrompt: '¿Qué hiciste ayer en el juego?' },
+  yesterday: { text: 'Past days:', spanishText: 'Ayer\nEjemplo: En el calendario, ayer es el día anterior a hoy.', pronunciation: 'ah-YEHR', englishText: 'Yesterday (adverb of time).', practicePrompt: 'Si hoy es martes, ¿qué día es ayer?' },
 
   // Emergency & Health
   pharmacy: { text: 'Spanish pharmacies (Farmacias) are ubiquitous and helpful:', spanishText: 'La farmacia\nEjemplo: ¿Hay una farmacia de guardia cerca de aquí?', pronunciation: 'lah fahr-MAH-syah', englishText: 'The pharmacy. Look for the illuminated green cross! "Farmacia de guardia" = 24-hour on-duty pharmacy.', practicePrompt: '¿Para qué sirve una farmacia de guardia?' },
@@ -390,32 +457,860 @@ function getFallbackCaminoResponse(
   context?: CaminoContext
 ): CaminoResponse {
   const lower = userQuery.toLowerCase().trim();
+  const cleanLower = lower.replace(/['"¿?¡!]/g, ' ').replace(/\s+/g, ' ').trim();
   const cityName = context?.cityName || 'Madrid';
 
   // 0. REVIEW CONTEXT: Student asks about their submitted answer or question explanation
-  if (context?.questionPrompt && (
-    lower.includes('por qué') ||
-    lower.includes('why') ||
-    lower.includes('wrong') ||
-    lower.includes('error') ||
-    lower.includes('right') ||
-    lower.includes('correct') ||
-    lower.includes('explic') ||
-    lower.includes('pregunta') ||
-    lower.includes('answer') ||
-    lower.includes('respuesta') ||
-    lower.includes('duda')
+  if (context?.questionPrompt && context?.submittedAnswer && (
+    cleanLower.includes('por que') ||
+    cleanLower.includes('por qué') ||
+    cleanLower.includes('why') ||
+    cleanLower.includes('wrong') ||
+    cleanLower.includes('error') ||
+    cleanLower.includes('right') ||
+    cleanLower.includes('correct') ||
+    cleanLower.includes('explic') ||
+    cleanLower.includes('pregunta') ||
+    cleanLower.includes('answer') ||
+    cleanLower.includes('respuesta') ||
+    cleanLower.includes('duda')
   )) {
     const isCorrect = Boolean(context.isCorrect);
     return {
       text: isCorrect
-        ? `¡Buen trabajo! Tu respuesta "${context.submittedAnswer || ''}" es correcta.`
-        : `Analicemos tu respuesta "${context.submittedAnswer || ''}":`,
+        ? `¡Buen trabajo! Tu respuesta "${context.submittedAnswer || ''}" es correcta. ${context.explanation || 'You applied the right grammar rule!'}`
+        : `Analicemos tu respuesta "${context.submittedAnswer || ''}": ${context.explanation || 'Notice the verb conjugation and agreement.'} ¡No te preocupes, los errores nos ayudan a aprender!`,
       spanishText: context.explanation || context.questionPrompt,
       englishText: isCorrect
         ? `You answered correctly. ${context.explanation || 'You applied the right grammar rule!'}`
         : `Explanation: ${context.explanation || 'Notice the correct grammatical agreement and verb tense.'}`,
       practicePrompt: '¿Te gustaría repasar otro ejemplo de este tema?',
+      source: 'fallback'
+    };
+  }
+
+  // 0B. STRICT SAFETY: If question prompt is passed without submitted answer, NEVER reveal the correct option
+  if (context?.questionPrompt && !context?.submittedAnswer) {
+    return {
+      text: "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action? Pista: Check the gender and number agreement, then try to choose the answer yourself!",
+      spanishText: "Pista de gramática: Observa la terminación del verbo y los artículos.",
+      englishText: "Camino does not reveal answers to active questions before submission. Analyze the grammar clues and give it your best try!",
+      practicePrompt: "¿Qué palabra te genera dudas en esta pregunta?",
+      source: 'fallback'
+    };
+  }
+
+  // 0C. SIMPLE BILINGUAL EXPLANATIONS (Examples from user specification)
+  // Example 1: "¿Qué significa 'dónde'? It means 'where'."
+  if (
+    (cleanLower.includes('significa') || cleanLower.includes('mean') || cleanLower === 'donde' || cleanLower === 'dónde') &&
+    (cleanLower.includes('donde') || cleanLower.includes('dónde'))
+  ) {
+    return {
+      text: "¿Qué significa 'dónde'? It means 'where'.",
+      spanishText: "¿Dónde está la estación de tren? / ¿Dónde está el restaurante?",
+      pronunciation: "DOHN-deh ehs-TAH",
+      englishText: "¿Qué significa 'dónde'? It means 'where'. In Spanish, remember: '¿Dónde está...?' asks for locations using the verb ESTAR.",
+      practicePrompt: "¿Cómo preguntas dónde está la plaza mayor en español?",
+      source: 'fallback'
+    };
+  }
+
+  // Example 2: "'Tengo hambre' means you feel hungry. Remember: tener + hambre."
+  if (lower.includes('hambre') || (lower.includes('hungry') && !lower.includes('how to order'))) {
+    return {
+      text: "'Tengo hambre' means you feel hungry. Remember: tener + hambre.",
+      spanishText: "Tengo hambre. / ¿Tienes hambre tú también?",
+      pronunciation: "TEHN-goh AHM-breh",
+      englishText: "'Tengo hambre' means you feel hungry. Remember: tener + hambre. In Spanish, physical sensations like hunger (hambre), thirst (sed), and cold (frío) use TENER, not SER!",
+      correctionNotice: lower.includes('soy hambre') || lower.includes('estoy hambre') ? "Changed to 'Tengo hambre'. In Spanish we say 'I have hunger' (tener + hambre), never 'soy/estoy hambre'." : undefined,
+      practicePrompt: "¿Cómo dices en español 'We are hungry'? (Hint: nosotros tenemos...)",
+      source: 'fallback'
+    };
+  }
+
+  // Example 3: "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action?"
+  if (
+    lower.includes('verb ending') || 
+    lower.includes('verb endings') || 
+    lower.includes('terminacion') || 
+    lower.includes('terminación') || 
+    lower.includes('quién realiza') || 
+    lower.includes('quien realiza')
+  ) {
+    return {
+      text: "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action?",
+      spanishText: "Yo hablo (-o) • Tú hablas (-as) • Él/Ella habla (-a) • Nosotros hablamos (-amos)",
+      pronunciation: "yoh AH-bloh, too AH-blahs, nos-OH-tros ah-BLAH-mos",
+      englishText: "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action? In Spanish, the ending directly identifies the subject.",
+      practicePrompt: "Si el verbo termina en '-amos' (estudiamos), ¿quién realiza la acción?",
+      source: 'fallback'
+    };
+  }
+
+  // Example 4: "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself."
+  if (
+    lower.includes('comprar') || 
+    lower.includes('to buy') || 
+    (lower.includes('buy') && !lower.includes('bill'))
+  ) {
+    return {
+      text: "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself.",
+      spanishText: "Quiero comprar pan fresco. • ¿Dónde puedo comprar un billete?",
+      pronunciation: "kohm-PRAHR",
+      englishText: "Pista: 'comprar' means 'to buy'. It is a regular -AR verb: yo compro, tú compras, él compra, nosotros compramos.",
+      practicePrompt: "¿Cómo dirías en español: 'I want to buy a ticket'? (Quiero comprar un billete)",
+      source: 'fallback'
+    };
+  }
+
+  // 0D. CONTEXT-AWARE VOCABULARY AND AMBIGUITY RESOLUTION
+  const fullContextText = `${userQuery} ${context?.questionPrompt || ''}`.trim();
+  const lowerCtx = fullContextText.toLowerCase();
+
+  // 1. MAÑANA
+  if (lowerCtx.includes('mañana') || lowerCtx.includes('manana') || (lower.includes('tomorrow') && lower.includes('morning'))) {
+    const isIsolatedQuery = (
+      cleanLower === 'manana' ||
+      cleanLower === 'mañana' ||
+      cleanLower.includes('what does mañana mean') ||
+      cleanLower.includes('what does manana mean') ||
+      cleanLower.includes('que significa mañana') ||
+      cleanLower.includes('qué significa mañana') ||
+      cleanLower.includes('que significa manana') ||
+      cleanLower.includes('significado de mañana') ||
+      cleanLower.includes('meaning of mañana') ||
+      cleanLower.includes('meaning of manana') ||
+      (cleanLower.includes('mean') && (cleanLower.includes('mañana') || cleanLower.includes('manana')) && !cleanLower.includes('hacer') && !cleanLower.includes('estudio') && !cleanLower.includes('vas'))
+    );
+    if (isIsolatedQuery && !context?.questionPrompt) {
+      return {
+        text: "En español, 'mañana' tiene dos significados según el contexto: como sustantivo femenino ('la mañana') significa 'morning', y como adverbio temporal significa 'tomorrow'.",
+        spanishText: "La mañana (morning) • Mañana (tomorrow)",
+        pronunciation: "mah-NYAH-nah",
+        englishText: "Ambiguous without context: 'la mañana' means morning, while 'mañana' alone means tomorrow. Sentence context determines the meaning!",
+        practicePrompt: "¿En qué frase necesitas entender la palabra 'mañana'?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('por la mañana') || lowerCtx.includes('la mañana')) {
+      return {
+        text: "In this sentence, 'mañana' means 'morning'.",
+        spanishText: "Estudio por la mañana.",
+        pronunciation: "mah-NYAH-nah",
+        englishText: "mañana = morning. When preceded by 'la' or 'por la', 'la mañana' is a feminine noun meaning the morning.",
+        practicePrompt: "¿Qué sueles hacer por la mañana?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('vas a hacer mañana') ||
+      lowerCtx.includes('hacer mañana') ||
+      lowerCtx.includes('hasta mañana') ||
+      lowerCtx.includes('para mañana') ||
+      lower.includes('tomorrow') ||
+      (lowerCtx.includes('mañana') && !lowerCtx.includes('la mañana'))
+    ) {
+      return {
+        text: "In this sentence, 'mañana' means 'tomorrow'.",
+        spanishText: "¿Qué vas a hacer mañana?",
+        pronunciation: "mah-NYAH-nah",
+        englishText: "mañana = tomorrow. Used as a time adverb without 'la', 'mañana' means tomorrow.",
+        practicePrompt: "¿Qué vas a hacer mañana?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'mañana' tiene dos significados según el contexto: como sustantivo femenino ('la mañana') significa 'morning', y como adverbio temporal significa 'tomorrow'.",
+      spanishText: "La mañana (morning) • Mañana (tomorrow)",
+      pronunciation: "mah-NYAH-nah",
+      englishText: "Ambiguous without context: 'la mañana' means morning, while 'mañana' alone means tomorrow. Sentence context determines the meaning!",
+      practicePrompt: "¿En qué frase necesitas entender la palabra 'mañana'?",
+      source: 'fallback'
+    };
+  }
+
+  // 2. FRÍO / FRÍA
+  if (lowerCtx.includes('frío') || lowerCtx.includes('frio') || lowerCtx.includes('fría') || lowerCtx.includes('fria')) {
+    if (
+      lowerCtx.includes('tengo frío') ||
+      lowerCtx.includes('tienes frío') ||
+      lowerCtx.includes('tiene frío') ||
+      lowerCtx.includes('tenemos frío') ||
+      (lowerCtx.includes('tener') && lowerCtx.includes('frío'))
+    ) {
+      return {
+        text: "'Tengo frío' means you feel cold. In Spanish, physical sensations use tener + frío.",
+        spanishText: "Tengo frío.",
+        pronunciation: "TEHN-goh FREE-oh",
+        englishText: "frío = cold (feeling cold). Remember: bodily feelings like cold or heat use TENER, not SER.",
+        practicePrompt: "¿Tienes frío cuando paseas de noche en invierno?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('comida') ||
+      lowerCtx.includes('sopa') ||
+      lowerCtx.includes('agua') ||
+      lowerCtx.includes('está fría') ||
+      lowerCtx.includes('está frío') ||
+      lowerCtx.includes('café') ||
+      lowerCtx.includes('cerveza')
+    ) {
+      return {
+        text: "'La comida está fría' means the food is cold, referring to the physical temperature of the food.",
+        spanishText: "La comida está fría.",
+        pronunciation: "lah koh-MEE-dah ehs-TAH FREE-ah",
+        englishText: "fría = cold (the food's temperature). For temperatures of items, Spanish uses the verb ESTAR.",
+        practicePrompt: "¿Prefieres tomar la comida caliente o fría?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('hace frío')) {
+      return {
+        text: "'Hace frío' means 'It is cold', referring to the weather.",
+        spanishText: "Hace frío.",
+        pronunciation: "AH-theh FREE-oh",
+        englishText: "frío = cold (weather). Weather in Spanish uses HACER impersonal.",
+        practicePrompt: "¿Hace frío hoy en tu ciudad?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, el significado de 'frío/a' depende del contexto: 'hace frío' (el clima), 'tengo frío' (sensación corporal con tener), o 'la comida está fría' (temperatura con estar).",
+      spanishText: "Hace frío (weather) • Tengo frío (feeling cold) • La comida está fría (food temperature)",
+      pronunciation: "FREE-oh / FREE-ah",
+      englishText: "Ambiguous without context: 'frío' can describe the weather (hacer), a person's sensation (tener), or food/object temperature (estar).",
+      practicePrompt: "¿Tu frase se refiere al clima, a cómo te sientes o a la comida?",
+      source: 'fallback'
+    };
+  }
+
+  // 3. LLEVO / LLEVAR
+  if (lowerCtx.includes('llevo') || lowerCtx.includes('lleva') || lowerCtx.includes('llevas') || lowerCtx.includes('llevar')) {
+    if (
+      lowerCtx.includes('chaqueta') ||
+      lowerCtx.includes('ropa') ||
+      lowerCtx.includes('camisa') ||
+      lowerCtx.includes('pantalón') ||
+      lowerCtx.includes('vestido') ||
+      lowerCtx.includes('gafas') ||
+      lowerCtx.includes('sombrero') ||
+      lowerCtx.includes('zapatos') ||
+      lowerCtx.includes('abrigo')
+    ) {
+      return {
+        text: "'Llevo una chaqueta' means 'I am wearing a jacket'.",
+        spanishText: "Llevo una chaqueta.",
+        pronunciation: "YEH-boh OO-nah chah-KEH-tah",
+        englishText: "llevo = I am wearing. When used with clothing or accessories, 'llevar' means to wear.",
+        practicePrompt: "¿Qué ropa llevas cuando hace frío?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('horas') ||
+      lowerCtx.includes('días') ||
+      lowerCtx.includes('meses') ||
+      lowerCtx.includes('años') ||
+      lowerCtx.includes('aquí') ||
+      lowerCtx.includes('dos horas') ||
+      lowerCtx.includes('tiempo aquí')
+    ) {
+      return {
+        text: "'Llevo dos horas aquí' means 'I have been here for two hours'.",
+        spanishText: "Llevo dos horas aquí.",
+        pronunciation: "YEH-boh dohs OH-rahs ah-KEE",
+        englishText: "llevo = I have been. In Spanish, 'llevar + duration' expresses how long an action has been ongoing.",
+        practicePrompt: "¿Cuánto tiempo llevas en esta ciudad?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('para llevar')) {
+      return {
+        text: "'Para llevar' means 'for takeaway / to go'.",
+        spanishText: "Un café con leche para llevar, por favor.",
+        pronunciation: "PAH-rah yeh-BAHR",
+        englishText: "para llevar = for takeaway / to go.",
+        practicePrompt: "¿Pides el café para tomar aquí o para llevar?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('maleta') || lowerCtx.includes('equipaje') || lowerCtx.includes('bolsa')) {
+      return {
+        text: "'Llevo la maleta' means 'I carry the suitcase'.",
+        spanishText: "Llevo la maleta al hotel.",
+        pronunciation: "YEH-boh lah mah-LEH-tah",
+        englishText: "llevo = I carry. 'Llevar' means to transport or carry objects.",
+        practicePrompt: "¿Cuántas maletas llevas en tu viaje?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'llevo' (del verbo llevar) cambia según el contexto: con ropa significa 'I am wearing' ('llevo una chaqueta'), con tiempo significa 'I have been' ('llevo dos horas aquí'), y con objetos significa 'I carry' ('llevo la maleta').",
+      spanishText: "Llevo una chaqueta (wearing) • Llevo dos horas aquí (have been) • Llevo la maleta (carry)",
+      pronunciation: "YEH-boh",
+      englishText: "Ambiguous without context: 'llevar' means wearing clothes, ongoing duration of time, or carrying an object.",
+      practicePrompt: "¿En qué frase necesitas interpretar el verbo 'llevar'?",
+      source: 'fallback'
+    };
+  }
+
+  // 4. TIEMPO
+  if (lowerCtx.includes('tiempo')) {
+    if (
+      lowerCtx.includes('buen tiempo') ||
+      lowerCtx.includes('mal tiempo') ||
+      lowerCtx.includes('hace buen') ||
+      lowerCtx.includes('hace mal') ||
+      lowerCtx.includes('qué tiempo hace') ||
+      lowerCtx.includes('clima') ||
+      lowerCtx.includes('soleado')
+    ) {
+      return {
+        text: "'Hace buen tiempo' means 'The weather is good'.",
+        spanishText: "Hace buen tiempo.",
+        pronunciation: "AH-theh bwehn TYEHM-poh",
+        englishText: "tiempo = weather. When speaking of meteorological conditions with 'hacer', tiempo means weather.",
+        practicePrompt: "¿Qué tiempo hace hoy en Madrid?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('tienes tiempo') ||
+      lowerCtx.includes('no tengo tiempo') ||
+      lowerCtx.includes('a tiempo') ||
+      lowerCtx.includes('cuánto tiempo') ||
+      lowerCtx.includes('mucho tiempo')
+    ) {
+      return {
+        text: "'¿Tienes tiempo?' means 'Do you have time?' (availability or clock duration).",
+        spanishText: "¿Tienes tiempo?",
+        pronunciation: "TYEH-nehs TYEHM-poh",
+        englishText: "tiempo = time. In the sense of duration, clock hours, or availability, tiempo means time.",
+        practicePrompt: "¿Tienes tiempo para repasar un ejercicio más?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'tiempo' tiene dos significados principales: 'weather' (el clima: '¿Qué tiempo hace?') o 'time' (duración o disponibilidad: 'No tengo tiempo'). El contexto lo define.",
+      spanishText: "¿Qué tiempo hace? (weather) • No tengo tiempo (time)",
+      pronunciation: "TYEHM-poh",
+      englishText: "Ambiguous without context: 'tiempo' can mean weather or time depending on the sentence.",
+      practicePrompt: "¿Tu frase habla del clima o del tiempo del reloj?",
+      source: 'fallback'
+    };
+  }
+
+  // 5. CUENTA
+  if (lowerCtx.includes('cuenta')) {
+    if (
+      lowerCtx.includes('la cuenta, por favor') ||
+      lowerCtx.includes('la cuenta por favor') ||
+      lowerCtx.includes('pedir la cuenta') ||
+      lowerCtx.includes('trae la cuenta') ||
+      lowerCtx.includes('pagar la cuenta')
+    ) {
+      return {
+        text: "'La cuenta, por favor' means 'The bill, please'.",
+        spanishText: "La cuenta, por favor.",
+        pronunciation: "lah KWEHN-tah, pohr fah-BOHR",
+        englishText: "la cuenta = the bill. At a restaurant or café, 'la cuenta' is the dining check.",
+        practicePrompt: "¿Cómo pides la cuenta al camarero?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('doy cuenta') ||
+      lowerCtx.includes('da cuenta') ||
+      lowerCtx.includes('darse cuenta') ||
+      lowerCtx.includes('me di cuenta') ||
+      lowerCtx.includes('te das cuenta')
+    ) {
+      return {
+        text: "'Me doy cuenta de algo' means 'I realize something'.",
+        spanishText: "Me doy cuenta de algo.",
+        pronunciation: "meh doy KWEHN-tah",
+        englishText: "darse cuenta = realize. The reflexive idiom 'darse cuenta' means to notice or become aware of something.",
+        practicePrompt: "¿Te das cuenta de tu gran progreso en español?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('cuenta bancaria') ||
+      lowerCtx.includes('banco') ||
+      lowerCtx.includes('bancaria') ||
+      lowerCtx.includes('ahorros')
+    ) {
+      return {
+        text: "'Tengo una cuenta bancaria' means 'I have a bank account'.",
+        spanishText: "Tengo una cuenta bancaria.",
+        pronunciation: "TEHN-goh OO-nah KWEHN-tah bahn-KAH-ryah",
+        englishText: "cuenta = bank account. In financial contexts, 'cuenta' refers to an account.",
+        practicePrompt: "¿Cómo se dice 'open an account' en español? (abrir una cuenta)",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'cuenta' varía según el contexto: en un restaurante significa 'the bill' ('la cuenta, por favor'), en finanzas 'bank account' ('cuenta bancaria'), y en 'darse cuenta' significa 'to realize'.",
+      spanishText: "La cuenta (bill) • Cuenta bancaria (account) • Darse cuenta (realize)",
+      pronunciation: "KWEHN-tah",
+      englishText: "Ambiguous without context: 'cuenta' can mean dining bill, financial account, or realization in 'darse cuenta'.",
+      practicePrompt: "¿En qué situación aparece la palabra 'cuenta'?",
+      source: 'fallback'
+    };
+  }
+
+  // 6. VINO
+  if (lowerCtx.includes('vino')) {
+    if (
+      lowerCtx.includes('copa de vino') ||
+      lowerCtx.includes('vino tinto') ||
+      lowerCtx.includes('vino blanco') ||
+      lowerCtx.includes('beber vino') ||
+      lowerCtx.includes('botella de vino')
+    ) {
+      return {
+        text: "'Una copa de vino' means 'A glass of wine'.",
+        spanishText: "Una copa de vino.",
+        pronunciation: "OO-nah KOH-pah deh BEE-noh",
+        englishText: "vino = wine. As a masculine noun ('el vino'), it refers to the grape beverage.",
+        practicePrompt: "¿Prefieres vino tinto o blanco?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('vino ayer') ||
+      lowerCtx.includes('él vino') ||
+      lowerCtx.includes('ella vino') ||
+      lowerCtx.includes('vino a') ||
+      lowerCtx.includes('vino tarde')
+    ) {
+      return {
+        text: "'Él vino ayer' means 'He came yesterday'.",
+        spanishText: "Él vino ayer.",
+        pronunciation: "ehl BEE-noh ah-YEHR",
+        englishText: "vino = came. As a verb form, 'vino' is the third-person preterite past of 'venir' (to come).",
+        practicePrompt: "¿Quién vino a la fiesta ayer?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'vino' puede ser el sustantivo 'wine' ('una copa de vino') o el verbo en pasado 'came' ('él vino ayer').",
+      spanishText: "El vino (wine) • Él vino (he came)",
+      pronunciation: "BEE-noh",
+      englishText: "Ambiguous without context: 'vino' is either the beverage wine or the preterite past form came.",
+      practicePrompt: "¿Tu frase se refiere a una bebida o a alguien que llegó?",
+      source: 'fallback'
+    };
+  }
+
+  // 7. CAMINO
+  if (lowerCtx.includes('camino')) {
+    if (
+      lowerCtx.includes('camino por el parque') ||
+      lowerCtx.includes('yo camino') ||
+      lowerCtx.includes('camino a') ||
+      lowerCtx.includes('camino por')
+    ) {
+      return {
+        text: "'Camino por el parque' means 'I walk through the park'.",
+        spanishText: "Camino por el parque.",
+        pronunciation: "kah-MEE-noh pohr ehl PAHR-keh",
+        englishText: "camino = I walk. As a verb form, 'camino' is the first-person present indicative of 'caminar' (to walk).",
+        practicePrompt: "¿Por dónde caminas todos los días?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('el camino es largo') ||
+      lowerCtx.includes('este camino') ||
+      lowerCtx.includes('buen camino') ||
+      lowerCtx.includes('camino de santiago')
+    ) {
+      return {
+        text: "'El camino es largo' means 'The path is long'.",
+        spanishText: "El camino es largo.",
+        pronunciation: "ehl kah-MEE-noh ehs LAHR-goh",
+        englishText: "camino = path. As a masculine noun ('el camino'), it refers to a path, trail, or way.",
+        practicePrompt: "¿Conoces la famosa ruta del Camino de Santiago?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'camino' puede ser el sustantivo 'path' ('el camino es largo') o la acción verbal 'I walk' ('yo camino por el parque').",
+      spanishText: "El camino (path) • Yo camino (I walk)",
+      pronunciation: "kah-MEE-noh",
+      englishText: "Ambiguous without context: 'camino' is either the noun path/trail or the verb form I walk.",
+      practicePrompt: "¿Es un sendero físico o la acción de caminar?",
+      source: 'fallback'
+    };
+  }
+
+  // 8. BANCO
+  if (lowerCtx.includes('banco')) {
+    if (
+      lowerCtx.includes('banco de la plaza') ||
+      lowerCtx.includes('banco del parque') ||
+      lowerCtx.includes('sentarse') ||
+      lowerCtx.includes('descansar en el banco')
+    ) {
+      return {
+        text: "'El banco de la plaza' means 'The bench in the square'.",
+        spanishText: "El banco de la plaza.",
+        pronunciation: "ehl BAHN-koh deh lah PLAH-zah",
+        englishText: "banco = bench. In parks and squares, 'un banco' is a public seat for resting.",
+        practicePrompt: "¿Te gusta sentarte en el banco de la plaza a leer?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('banco para sacar dinero') ||
+      lowerCtx.includes('sacar dinero') ||
+      lowerCtx.includes('cajero') ||
+      lowerCtx.includes('sucursal')
+    ) {
+      return {
+        text: "'El banco para sacar dinero' means 'The bank to withdraw money'.",
+        spanishText: "El banco para sacar dinero.",
+        pronunciation: "ehl BAHN-koh PAH-rah sah-KAHR dee-NEH-roh",
+        englishText: "banco = bank. In financial contexts, 'el banco' is the financial bank.",
+        practicePrompt: "¿A qué hora abre el banco por las mañanas?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'banco' tiene dos significados: el asiento público ('bench') o la entidad financiera ('bank').",
+      spanishText: "Banco de la plaza (bench) • Banco financiero (bank)",
+      pronunciation: "BAHN-koh",
+      englishText: "Ambiguous without context: 'banco' means either a park bench or a financial bank.",
+      practicePrompt: "¿Tu frase se refiere a sentarse o a trámites con dinero?",
+      source: 'fallback'
+    };
+  }
+
+  // 9. CARTA
+  if (lowerCtx.includes('carta')) {
+    if (
+      lowerCtx.includes('la carta del restaurante') ||
+      lowerCtx.includes('pedir la carta') ||
+      lowerCtx.includes('ver la carta')
+    ) {
+      return {
+        text: "'La carta del restaurante' means 'The restaurant menu'.",
+        spanishText: "La carta del restaurante.",
+        pronunciation: "lah KAHR-tah dehl rehs-tow-RAHN-teh",
+        englishText: "carta = menu. In dining, 'la carta' is the menu listing available food and dishes.",
+        practicePrompt: "¿Qué plato eliges de la carta?",
+        source: 'fallback'
+      };
+    }
+    if (
+      lowerCtx.includes('escribo una carta') ||
+      lowerCtx.includes('carta a mi amigo') ||
+      lowerCtx.includes('enviar una carta')
+    ) {
+      return {
+        text: "'Escribo una carta a mi amigo' means 'I write a letter to my friend'.",
+        spanishText: "Escribo una carta a mi amigo.",
+        pronunciation: "ehs-KREE-boh OO-nah KAHR-tah ah mee ah-MEE-goh",
+        englishText: "carta = letter. In correspondence, 'una carta' is a written postal letter.",
+        practicePrompt: "¿Prefieres escribir una carta o enviar un mensaje digital?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'carta' significa 'menu' en un restaurante ('la carta del restaurante') o 'letter' en el correo ('escribir una carta').",
+      spanishText: "La carta del restaurante (menu) • Escribir una carta (letter)",
+      pronunciation: "KAHR-tah",
+      englishText: "Ambiguous without context: 'carta' means a dining menu or a written letter.",
+      practicePrompt: "¿Pides platos en un restaurante o escribes una correspondencia?",
+      source: 'fallback'
+    };
+  }
+
+  // 10. BAJO / BAJA
+  if (lowerCtx.includes('bajo') || lowerCtx.includes('baja')) {
+    if (lowerCtx.includes('bajo la mesa') || lowerCtx.includes('bajo el')) {
+      return {
+        text: "'Bajo la mesa' means 'Under the table'.",
+        spanishText: "Bajo la mesa.",
+        pronunciation: "BAH-hoh lah MEH-sah",
+        englishText: "bajo = under. As a preposition of position, 'bajo' indicates underneath or below.",
+        practicePrompt: "¿Qué hay bajo la mesa?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('chico bajo') || lowerCtx.includes('hombre bajo')) {
+      return {
+        text: "'Un chico bajo' means 'A short boy'.",
+        spanishText: "Un chico bajo.",
+        pronunciation: "oon CHEE-koh BAH-hoh",
+        englishText: "bajo = short. As an adjective of physical height, 'bajo' describes someone short in stature.",
+        practicePrompt: "¿Cómo se dice 'tall' en español? (alto)",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'bajo' puede ser la preposición 'under' ('bajo la mesa') o el adjetivo 'short' ('un chico bajo').",
+      spanishText: "Bajo la mesa (under) • Un chico bajo (short)",
+      pronunciation: "BAH-hoh",
+      englishText: "Ambiguous without context: 'bajo' means under as a preposition or short as an adjective.",
+      practicePrompt: "¿Indica la posición debajo de algo o describe la estatura?",
+      source: 'fallback'
+    };
+  }
+
+  // 11. SOBRE
+  if (lowerCtx.includes('sobre')) {
+    if (lowerCtx.includes('sobre la mesa') || lowerCtx.includes('sobre el')) {
+      return {
+        text: "'Sobre la mesa' means 'On top of the table'.",
+        spanishText: "Sobre la mesa.",
+        pronunciation: "SOH-breh lah MEH-sah",
+        englishText: "sobre = on top of. As a preposition of location, 'sobre' means on or upon.",
+        practicePrompt: "¿Qué has dejado sobre la mesa?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('un libro sobre españa') || lowerCtx.includes('sobre españa')) {
+      return {
+        text: "'Un libro sobre España' means 'A book about Spain'.",
+        spanishText: "Un libro sobre España.",
+        pronunciation: "oon LEE-broh SOH-breh ehs-PAH-nyah",
+        englishText: "sobre = about. As a preposition of topic or subject matter, 'sobre' means about.",
+        practicePrompt: "¿De qué trata tu libro favorito?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('un sobre para la carta') || lowerCtx.includes('sobre para la carta')) {
+      return {
+        text: "'Un sobre para la carta' means 'An envelope for the letter'.",
+        spanishText: "Un sobre para la carta.",
+        pronunciation: "oon SOH-breh PAH-rah lah KAHR-tah",
+        englishText: "sobre = envelope. As a masculine noun ('un sobre'), it is an envelope.",
+        practicePrompt: "¿Tienes un sobre con sello para la carta?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'sobre' puede significar 'on top of' ('sobre la mesa'), 'about' ('un libro sobre España'), o el sustantivo 'envelope' ('un sobre para la carta').",
+      spanishText: "Sobre la mesa (on) • Sobre España (about) • Un sobre (envelope)",
+      pronunciation: "SOH-breh",
+      englishText: "Ambiguous without context: 'sobre' can mean on top of, about, or an envelope.",
+      practicePrompt: "¿En qué oración aparece la palabra 'sobre'?",
+      source: 'fallback'
+    };
+  }
+
+  // 12. PASA / PASAR
+  if (lowerCtx.includes('pasa') || lowerCtx.includes('pasar')) {
+    if (lowerCtx.includes('no pasa nada')) {
+      return {
+        text: "'No pasa nada' means 'Nothing is wrong / don't worry'.",
+        spanishText: "No pasa nada.",
+        pronunciation: "noh PAH-sah NAH-dah",
+        englishText: "pasa = happens (no pasa nada = nothing is wrong / it's all right).",
+        practicePrompt: "¿Qué le dices a alguien que comete un pequeño error amablemente?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('el tren pasa por madrid') || lowerCtx.includes('pasa por')) {
+      return {
+        text: "'El tren pasa por Madrid' means 'The train passes through Madrid'.",
+        spanishText: "El tren pasa por Madrid.",
+        pronunciation: "ehl trehn PAH-sah pohr mah-DREED",
+        englishText: "pasa = passes. The verb phrase 'pasar por' means to pass or travel through a location.",
+        practicePrompt: "¿Por qué ciudades pasa tu viaje en tren?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'pasa' puede significar 'happens' ('no pasa nada') o 'passes' ('el tren pasa por Madrid').",
+      spanishText: "No pasa nada (happens) • El tren pasa (passes)",
+      pronunciation: "PAH-sah",
+      englishText: "Ambiguous without context: 'pasa' means happens or passes depending on context.",
+      practicePrompt: "¿Hablas de un suceso imprevisto o del paso de un transporte?",
+      source: 'fallback'
+    };
+  }
+
+  // 13. TOMAR
+  if (lowerCtx.includes('tomar') || lowerCtx.includes('tomo') || lowerCtx.includes('tomas')) {
+    if (lowerCtx.includes('tomar un café') || lowerCtx.includes('tomar café') || lowerCtx.includes('tomar algo')) {
+      return {
+        text: "'Tomar un café' means 'To drink a coffee'.",
+        spanishText: "Tomar un café.",
+        pronunciation: "toh-MAHR oon kah-FEH",
+        englishText: "tomar = to drink. When used with drinks or food, 'tomar' means to drink or have.",
+        practicePrompt: "¿Tomamos un café con leche en la terraza?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('tomar el autobús') || lowerCtx.includes('tomar el tren') || lowerCtx.includes('tomar un taxi')) {
+      return {
+        text: "'Tomar el autobús' means 'To take the bus'.",
+        spanishText: "Tomar el autobús.",
+        pronunciation: "toh-MAHR ehl ow-toh-BOOS",
+        englishText: "tomar = to take. When used with transport, 'tomar' means to catch public transit.",
+        practicePrompt: "¿Qué línea de autobús tienes que tomar?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'tomar' significa 'to drink' con bebidas ('tomar un café') o 'to take' con transportes ('tomar el autobús').",
+      spanishText: "Tomar un café (drink) • Tomar el autobús (take transport)",
+      pronunciation: "toh-MAHR",
+      englishText: "Ambiguous without context: 'tomar' means to drink/consume or to catch transport.",
+      practicePrompt: "¿Se trata de una consumición o de un vehículo?",
+      source: 'fallback'
+    };
+  }
+
+  // 14. DERECHO / DERECHA
+  if (lowerCtx.includes('derecho') || lowerCtx.includes('derecha')) {
+    if (lowerCtx.includes('gira a la derecha') || lowerCtx.includes('a la derecha')) {
+      return {
+        text: "'Gira a la derecha' means 'Turn to the right'.",
+        spanishText: "Gira a la derecha.",
+        pronunciation: "HEE-rah ah lah deh-REH-chah",
+        englishText: "derecha = right. As a direction, 'la derecha' is the right side.",
+        practicePrompt: "¿El restaurante está a la derecha o a la izquierda?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('sigue derecho') || lowerCtx.includes('todo derecho')) {
+      return {
+        text: "'Sigue derecho' means 'Keep going straight ahead'.",
+        spanishText: "Sigue derecho.",
+        pronunciation: "SEE-geh deh-REH-choh",
+        englishText: "derecho = straight ahead. As an adverb of direction, 'derecho' means straight forward.",
+        practicePrompt: "¿Cómo le dices a alguien que siga todo recto?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('estudio derecho') || lowerCtx.includes('carrera de derecho')) {
+      return {
+        text: "'Estudio derecho' means 'I study law'.",
+        spanishText: "Estudio derecho.",
+        pronunciation: "ehs-TOO-dyoh deh-REH-choh",
+        englishText: "derecho = law. As an academic subject, 'el derecho' refers to the study of law.",
+        practicePrompt: "¿Conoces a alguien que estudie derecho en la universidad?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'derecho' puede significar 'straight ahead' ('sigue derecho') o 'law' ('estudio derecho'), mientras que 'derecha' es el lado derecho ('a la derecha').",
+      spanishText: "A la derecha (right) • Sigue derecho (straight ahead) • Estudio derecho (law)",
+      pronunciation: "deh-REH-choh / deh-REH-chah",
+      englishText: "Ambiguous without context: right direction, straight ahead, or the academic study of law.",
+      practicePrompt: "¿Estás dando indicaciones de ruta o hablando de leyes?",
+      source: 'fallback'
+    };
+  }
+
+  // 15. PLANTA
+  if (lowerCtx.includes('planta')) {
+    if (lowerCtx.includes('primera planta') || lowerCtx.includes('planta del hotel')) {
+      return {
+        text: "'La primera planta del hotel' means 'The first floor of the hotel'.",
+        spanishText: "La primera planta del hotel.",
+        pronunciation: "lah pree-MEH-rah PLAHN-tah dehl oh-TEHL",
+        englishText: "planta = floor. In building architecture, 'la planta' refers to a storey or floor.",
+        practicePrompt: "¿En qué planta del hotel se encuentra tu habitación?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('planta verde') || lowerCtx.includes('regar la planta')) {
+      return {
+        text: "'Una planta verde' means 'A green plant'.",
+        spanishText: "Una planta verde.",
+        pronunciation: "OO-nah PLAHN-tah BEHR-deh",
+        englishText: "planta = plant. In botany, 'una planta' is a living botanical plant.",
+        practicePrompt: "¿Te gusta tener plantas verdes en tu casa?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'planta' significa 'floor' en un edificio ('primera planta') o 'plant' en botánica ('una planta verde').",
+      spanishText: "Primera planta (floor) • Planta verde (plant)",
+      pronunciation: "PLAHN-tah",
+      englishText: "Ambiguous without context: 'planta' means a building floor or a living botanical plant.",
+      practicePrompt: "¿Tu frase se refiere a un piso del edificio o a la botánica?",
+      source: 'fallback'
+    };
+  }
+
+  // 16. ORDENAR / ORDENA / ORDENE / ORDENÉ
+  if (lowerCtx.includes('ordena') || lowerCtx.includes('ordene') || lowerCtx.includes('ordenar')) {
+    if (lowerCtx.includes('palabras') || lowerCtx.includes('frases') || lowerCtx.includes('ordene las palabras')) {
+      return {
+        text: "'Ordene las palabras' means 'Arrange the words in order'.",
+        spanishText: "Ordene las palabras.",
+        pronunciation: "ohr-DEH-neh lahs pah-LAH-brahs",
+        englishText: "ordene = arrange. In language learning, 'ordenar' means to arrange or sequence elements.",
+        practicePrompt: "¿Puedes ordenar estas tres palabras en español?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('paella') || lowerCtx.includes('comida') || lowerCtx.includes('ordené una paella')) {
+      return {
+        text: "'Ordené una paella' means 'I ordered a paella'.",
+        spanishText: "Ordené una paella.",
+        pronunciation: "ohr-deh-NEH OO-nah pah-EH-yah",
+        englishText: "ordené = ordered. At a restaurant or café, 'ordenar' means to order food or drinks.",
+        practicePrompt: "¿Qué te gustaría ordenar para cenar?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'ordenar' significa 'to arrange' ('ordenar palabras') o 'to order food' en un restaurante ('ordenar una paella').",
+      spanishText: "Ordenar palabras (arrange) • Ordenar comida (order food)",
+      pronunciation: "ohr-deh-NAHR",
+      englishText: "Ambiguous without context: 'ordenar' means to arrange in sequence or to order food.",
+      practicePrompt: "¿Estás ordenando elementos gramaticales o pidiendo comida?",
+      source: 'fallback'
+    };
+  }
+
+  // 17. NADA
+  if (lowerCtx.includes('nada')) {
+    if (lowerCtx.includes('de nada')) {
+      return {
+        text: "'De nada' means 'You are welcome'.",
+        spanishText: "De nada.",
+        pronunciation: "deh NAH-dah",
+        englishText: "de nada = you are welcome. The standard courteous response to 'gracias'.",
+        practicePrompt: "¿Qué dices cuando alguien te da las gracias?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('no hay nada') || lowerCtx.includes('nada más') || lowerCtx.includes('para nada')) {
+      return {
+        text: "'No hay nada' means 'There is nothing'.",
+        spanishText: "No hay nada.",
+        pronunciation: "noh eye NAH-dah",
+        englishText: "nada = nothing. As an indefinite pronoun, 'nada' means nothing.",
+        practicePrompt: "¿Tienes algo en el bolsillo o no hay nada?",
+        source: 'fallback'
+      };
+    }
+    if (lowerCtx.includes('nada en la piscina') || lowerCtx.includes('él nada') || lowerCtx.includes('ella nada')) {
+      return {
+        text: "'Él nada en la piscina' means 'He swims in the pool'.",
+        spanishText: "Él nada en la piscina.",
+        pronunciation: "ehl NAH-dah ehn lah pee-SEE-nah",
+        englishText: "nada = swims. Third-person singular present of 'nadar' (to swim).",
+        practicePrompt: "¿Te gusta nadar en la piscina o en el mar?",
+        source: 'fallback'
+      };
+    }
+    return {
+      text: "En español, 'nada' puede ser 'nothing' ('no hay nada'), la cortesía 'you are welcome' ('de nada'), o el verbo 'swims' ('él nada en la piscina').",
+      spanishText: "No hay nada (nothing) • De nada (you are welcome) • Él nada (he swims)",
+      pronunciation: "NAH-dah",
+      englishText: "Ambiguous without context: 'nada' can mean nothing, you are welcome, or swims.",
+      practicePrompt: "¿Es una fórmula de cortesía, una cantidad vacía o la acción de nadar?",
       source: 'fallback'
     };
   }

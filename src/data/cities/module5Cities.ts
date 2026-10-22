@@ -183,7 +183,7 @@ export const MODULE5_CITIES: City[] = [
         cityId: 'bilbao',
         levelNumber: 5,
         title: 'Pedir Pintxos en la Barra del Bar',
-        subtitle: 'Fórmulas comunicativas en el mostrador: Para mí, ponme, quería...',
+        subtitle: 'Fórmulas comunicativas en el mostrador: Para mí, ponme, quiero...',
         tier: 'tough',
         syllabusTopic: 'M5.Restaurante',
         description: 'El mostrador rebosa de delicias: gulas, bacalao al pil-pil y croquetas.',
@@ -214,7 +214,7 @@ export const MODULE5_CITIES: City[] = [
             prompt: 'Para señalar que quieres consumir allí y no llevarte la comida: "Para tomar ______."',
             englishPrompt: 'To indicate you want to consume inside and not takeout: "Para tomar aquí."',
             audioText: 'aquí',
-            options: ['llevar', 'lejos', 'ayer', 'aquí'],
+            options: ['llevar', 'lejos', 'después', 'aquí'],
             correctAnswer: 'aquí',
             explanation: 'La distinción en hostelería es: "¿Para tomar aquí o para llevar?".',
             hints: ['Palabra que significa en este lugar: a-q-u-í.'],
@@ -299,7 +299,7 @@ export const MODULE5_CITIES: City[] = [
             type: 'dialogue',
             prompt: 'En la taberna de Iñaki:',
             englishPrompt: 'At Iñaki\'s tavern:',
-            audioText: '¡Aupa viajero! Hoy el bacalao al pil-pil ha salido insuperable. ¿Te pongo una cazuelita con un vaso de agua o de zumo?',
+            audioText: '¡Aupa viajero! Hoy el bacalao al pil-pil está insuperable. ¿Te pongo una cazuelita con un vaso de agua o de zumo?',
             correctAnswer: 'Buenas tardes, Iñaki. Sí, por favor, póngame una cazuelita y un vaso de agua sin gas.',
             explanation: 'Fórmula comunicativa educada con elección precisa de bebida y plato.',
             hints: ['Acepta la recomendación y pide tu bebida preferida.'],
@@ -308,7 +308,7 @@ export const MODULE5_CITIES: City[] = [
             dialogue: {
               npcName: 'Iñaki de Bilbao',
               npcRole: 'Tabernero Mayor del Casco Viejo',
-              prompt: '¡Aupa viajero! Hoy el bacalao al pil-pil ha salido insuperable. ¿Te pongo una cazuelita con un vaso de agua o de zumo?',
+              prompt: '¡Aupa viajero! Hoy el bacalao al pil-pil está insuperable. ¿Te pongo una cazuelita con un vaso de agua o de zumo?',
               englishPrompt: 'Welcome! Today the pil-pil cod is outstanding. Shall I serve you a dish with a glass of water or juice?',
               choices: [
                 {
@@ -321,10 +321,10 @@ export const MODULE5_CITIES: City[] = [
                 },
                 {
                   id: 'c2',
-                  text: 'Ayer hacía mucho frío en el jardín.',
-                  englishHint: 'Yesterday it was very cold in the garden.',
+                  text: 'Ahora hace mucho calor en la calle.',
+                  englishHint: 'Now it is very hot in the street.',
                   isCorrect: false,
-                  npcResponse: 'Vaya por Dios, ¡pero aquí dentro el bacalao está bien caliente!',
+                  npcResponse: '¡Pues aquí dentro el aire refresca y el bacalao está riquísimo!',
                   explanation: 'No responde a la comanda.'
                 }
               ]
@@ -532,7 +532,7 @@ export const MODULE5_CITIES: City[] = [
             prompt: '¿Cuál es la primera persona singular (yo) del verbo QUERER en presente?',
             englishPrompt: 'What is the first person singular (yo) of the verb QUERER in present?',
             audioText: 'yo quiero',
-            options: ['quero', 'quieres', 'quise', 'quiero'],
+            options: ['quero', 'quieres', 'quiere', 'quiero'],
             correctAnswer: 'quiero',
             explanation: 'QUERER diptonga la e de la raíz en "ie": yo quiero, tú quieres, él quiere, ellos quieren (pero nosotros queremos, vosotros queréis).',
             hints: ['Diptonga en ie: q-u-i-e-r-o.'],
@@ -768,17 +768,17 @@ export const MODULE5_CITIES: City[] = [
             type: 'dialogue',
             prompt: 'En el comedor con la chef Maite:',
             englishPrompt: 'In the dining room with chef Maite:',
-            audioText: '¡Buenas noches! Soy Maite, la jefa de cocina. ¿Qué tal ha estado el txangurro al horno y la tarta de queso?',
-            correctAnswer: 'Buenas noches, Maite. Todo ha estado absolutamente delicioso y exquisito, ¡muchas felicidades!',
-            explanation: 'Elogio culinario entusiasta y perfectamente construido con adjetivos gastronómicos.',
-            hints: ['Felicita a la chef y destaca que la comida ha estado deliciosa.'],
+            audioText: '¡Buenas noches! Soy Maite, la jefa de cocina. ¿Qué tal está el txangurro al horno y la tarta de queso?',
+            correctAnswer: 'Buenas noches, Maite. Todo está absolutamente delicioso y exquisito, ¡muchas felicidades!',
+            explanation: 'Elogio culinario entusiasta y perfectamente construido con adjetivos gastronómicos en presente.',
+            hints: ['Felicita a la chef y destaca que la comida está deliciosa.'],
             syllabusRef: 'M5-OPINIONES',
             difficulty: 'hard',
             dialogue: {
               npcName: 'Chef Maite de Donostia',
               npcRole: 'Cocinera Mayor de la Parte Vieja',
-              prompt: '¡Buenas noches! Soy Maite, la jefa de cocina. ¿Qué tal ha estado el txangurro al horno y la tarta de queso?',
-              englishPrompt: 'Good evening! I am Maite, head chef. How were the baked spider crab and the cheesecake?',
+              prompt: '¡Buenas noches! Soy Maite, la jefa de cocina. ¿Qué tal está el txangurro al horno y la tarta de queso?',
+              englishPrompt: 'Good evening! I am Maite, head chef. How are the baked spider crab and the cheesecake?',
               choices: [
                 {
                   id: 'c2',
@@ -790,8 +790,8 @@ export const MODULE5_CITIES: City[] = [
                 },
                 {
                   id: 'c1',
-                  text: 'Buenas noches, Maite. Todo ha estado absolutamente delicioso y exquisito, ¡muchas felicidades!',
-                  englishHint: 'Good evening, Maite. Everything was absolutely delicious and exquisite, congratulations!',
+                  text: 'Buenas noches, Maite. Todo está absolutamente delicioso y exquisito, ¡muchas felicidades!',
+                  englishHint: 'Good evening, Maite. Everything is absolutely delicious and exquisite, congratulations!',
                   isCorrect: true,
                   npcResponse: '¡Eskerrik asko, de todo corazón! Saber que disfrutan nuestros platos es la mejor recompensa.',
                   explanation: 'Excelente fórmula comunicativa y cortesía de comensal.'
@@ -1206,24 +1206,24 @@ export const MODULE5_CITIES: City[] = [
             type: 'dialogue',
             prompt: 'En el corazón de la Rúa do Franco:',
             englishPrompt: 'In the heart of Rúa do Franco:',
-            audioText: '¡Parabéns, peregrino! Has recorrido quince ciudades desde Madrid. ¿Puedes sentir la magia del Obradoiro ante la catedral?',
+            audioText: '¡Parabéns, peregrino! Conoces quince ciudades desde Madrid. ¿Puedes sentir la magia del Obradoiro ante la catedral?',
             correctAnswer: '¡Muchísimas gracias, Xoán! Sí, puedo sentir una emoción enorme y estoy muy orgulloso.',
-            explanation: 'Respuesta comunicativa emotiva y de celebración con el verbo PODER y concordancia con ESTAR.',
+            explanation: 'Respuesta comunicativa emotiva y de celebración con el verbo PODER y concordancia con ESTAR en presente.',
             hints: ['Agradece y afirma con emoción que puedes sentir la magia.'],
             syllabusRef: 'M5-COMUNICACION',
             difficulty: 'hard',
             dialogue: {
               npcName: 'Xoán de Compostela',
               npcRole: 'Hospitalero Mayor del Camino',
-              prompt: '¡Parabéns, peregrino! Has recorrido quince ciudades desde Madrid. ¿Puedes sentir la magia del Obradoiro ante la catedral?',
-              englishPrompt: 'Congratulations, pilgrim! You traversed 15 cities from Madrid. Can you feel the magic of Obradoiro before the cathedral?',
+              prompt: '¡Parabéns, peregrino! Conoces quince ciudades desde Madrid. ¿Puedes sentir la magia del Obradoiro ante la catedral?',
+              englishPrompt: 'Congratulations, pilgrim! You know 15 cities from Madrid. Can you feel the magic of Obradoiro before the cathedral?',
               choices: [
                 {
                   id: 'c1',
                   text: '¡Muchísimas gracias, Xoán! Sí, puedo sentir una emoción enorme y estoy muy orgulloso.',
                   englishHint: 'Thank you very much, Xoán! Yes, I can feel huge emotion and I am very proud.',
                   isCorrect: true,
-                  npcResponse: '¡Te has ganado el abrazo al Apóstol y la entrada a La Gran Fiesta final!',
+                  npcResponse: '¡Ganas el abrazo de honor al Apóstol y la entrada a La Gran Fiesta final!',
                   explanation: 'Respuesta conmovedora que sella el éxito del periplo.'
                 },
                 {

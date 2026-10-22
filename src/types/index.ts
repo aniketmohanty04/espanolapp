@@ -162,6 +162,7 @@ export interface FestivalCharacter {
   yPercent?: number; // 0-100 in plaza
   interactiveQuestion?: {
     prompt: string;
+    englishPrompt?: string;
     options: string[];
     correctAnswer: string;
     reactionCorrect: string;

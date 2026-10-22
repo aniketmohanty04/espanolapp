@@ -194,7 +194,7 @@ export const MODULE2_CITIES: City[] = [
             options: [
               'SER solo se usa para personas; ESTAR solo para cosas',
               'Son sinónimos intercambiables en cualquier frase',
-              'ESTAR es para el pasado y SER para el presente',
+              'ESTAR es para profesiones y SER para estados temporales',
               'SER para características intrínsecas; ESTAR para ubicación'
             ],
             correctAnswer: 'SER para características intrínsecas; ESTAR para ubicación',
@@ -632,7 +632,7 @@ export const MODULE2_CITIES: City[] = [
               '-o, -es, -e, -emos, -éis, -en',
               '-o, -es, -e, -imos, -ís, -en',
               '-o, -as, -a, -amos, -áis, -an',
-              '-i, -iste, -ió, -imos, -isteis, -ieron'
+              '-o, -as, -e, -amos, -áis, -en'
             ],
             correctAnswer: '-o, -as, -a, -amos, -áis, -an',
             explanation: 'Ejemplo con cantar: yo canto, tú cantas, él canta, nosotros cantamos, vosotros cantáis, ellos cantan.',
@@ -999,8 +999,8 @@ export const MODULE2_CITIES: City[] = [
           {
             id: 'm2-gra-3',
             type: 'multiple-choice',
-            prompt: '¿Qué preposición compuesta significa "next to / beside"?',
-            englishPrompt: 'Which compound preposition means "next to / beside"?',
+            prompt: '¿Qué preposición compuesta significa "next to"?',
+            englishPrompt: 'Which compound preposition means "next to"?',
             audioText: 'al lado de',
             options: ['debajo de', 'delante de', 'al lado de', 'lejos de'],
             correctAnswer: 'al lado de',
@@ -1355,7 +1355,7 @@ export const MODULE2_CITIES: City[] = [
           prompt: 'Tariq: "Los artesanos nazaríes ______ poemas en las paredes de yeso (escribir)."',
           englishPrompt: 'Tariq: "Nasrid artisans write poems on the plaster walls (escribir)."',
           audioText: 'escriben',
-          options: ['escriban', 'escribieron', 'escriben', 'escribe'],
+          options: ['escriban', 'escribís', 'escriben', 'escribe'],
           correctAnswer: 'escriben',
           explanation: 'Tercera persona plural del verbo escribir en presente: ellos escriben.',
           hints: ['Tercera persona plural termina en -en para verbos en -IR.'],

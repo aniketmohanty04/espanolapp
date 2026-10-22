@@ -393,7 +393,7 @@ export const MODULE3_CITIES: City[] = [
       title: 'El Reloj Astrológico de la Mezquita',
       characterName: 'Maestro Astrónomo Rafael de Córdoba',
       characterRole: 'Guardián del Tiempo Califal y las Efemérides',
-      scenario: 'El antiguo reloj astrológico del minarete se ha descalibrado. Para restablecer las campanas y recibir el mapa hacia la Costa del Sol en Málaga, debes sincronizar las horas, los meses y las fechas históricas sin margen de error.',
+      scenario: 'El antiguo reloj astrológico del minarete necesita ajuste. Para restablecer las campanas y recibir el mapa hacia la Costa del Sol en Málaga, debes sincronizar las horas, los meses y las fechas de fiesta sin margen de error.',
       objectives: [
         { id: 'cor-obj1', description: 'Expresar horas exactas en singular y plural con fracciones', syllabusTopic: 'M3.Hora' },
         { id: 'cor-obj2', description: 'Formular fechas completas con preposiciones obligatorias', syllabusTopic: 'M3.Fechas' },
@@ -426,8 +426,8 @@ export const MODULE3_CITIES: City[] = [
         {
           id: 'b-cor-2',
           type: 'fill-blank',
-          prompt: 'Rafael: "El primer califa de Córdoba proclamó el califato el dieciséis ______ enero del año 929."',
-          englishPrompt: 'Rafael: "The first caliph proclaimed the caliphate on the sixteenth of January in 929."',
+          prompt: 'Rafael: "La gran fiesta histórica de Córdoba es el dieciséis ______ enero en la mezquita."',
+          englishPrompt: 'Rafael: "The great historical festival of Córdoba is on the sixteenth of January in the mosque."',
           audioText: 'de',
           options: ['en', 'de', 'a', 'por'],
           correctAnswer: 'de',
@@ -943,7 +943,7 @@ export const MODULE3_CITIES: City[] = [
             audioText: 'encanta',
             options: ['encantan', 'encanto', 'encanta', 'encante'],
             correctAnswer: 'encanta',
-            explanation: '"El mar gaditano" es singular, por tanto se usa "me encanta". Si fueran "las playas" diríamos "me encantan".',
+            explanation: '"El mar gaditano" es singular, por tanto se usa "me encanta". Si son "las playas", usamos "me encantan".',
             hints: ['Singular concordante con "el mar".'],
             syllabusRef: 'M3-GUSTOS',
             difficulty: 'easy'

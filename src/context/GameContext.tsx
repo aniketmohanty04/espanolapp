@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerProgress, PlayerCharacter, PlayerProfile, GameScreen, Question, City, Level } from '../types';
 import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from '../services/storageService';
 import { authDatabaseService } from '../services/authDatabaseService';
@@ -126,6 +126,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return storageService.loadProgress();
   });
+  
+  const progressRef = useRef<PlayerProgress>(progress);
+  progressRef.current = progress;
   
   // Track whether remote authoritative progress has finished loading from Supabase cloud
   const [isRemoteSyncReady, setIsRemoteSyncReady] = useState<boolean>(() => {
@@ -600,42 +603,37 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Purchase vocabulary hint ("Pista de vocabulario") for 500 coins with anti-duplication
   const purchaseVocabHint = useCallback((questionId: string): { success: boolean; reason?: string; alreadyOwned?: boolean } => {
-    let success = false;
-    let reason: string | undefined;
-    let alreadyOwned = false;
+    const currentProg = progressRef.current;
+    const existingHints = currentProg.purchasedVocabHints || [];
 
+    // Already purchased? Show hint for free
+    if (existingHints.includes(questionId)) {
+      return { success: true, alreadyOwned: true };
+    }
+
+    // Sufficient balance?
+    if (currentProg.stats.coins < REWARD_CONFIG.VOCAB_HINT_COST_COINS) {
+      return {
+        success: false,
+        reason: `¡No tienes suficientes monedas! Necesitas ${REWARD_CONFIG.VOCAB_HINT_COST_COINS} 🪙, pero tienes ${currentProg.stats.coins} 🪙.`
+      };
+    }
+
+    // Deduct coins safely
     setProgress(prev => {
-      // Ensure purchasedVocabHints exists (backward compat)
-      const existingHints = prev.purchasedVocabHints || [];
-
-      // Already purchased? Show hint for free
-      if (existingHints.includes(questionId)) {
-        success = true;
-        alreadyOwned = true;
-        return prev; // No charge
-      }
-
-      // Sufficient balance?
-      if (prev.stats.coins < REWARD_CONFIG.VOCAB_HINT_COST_COINS) {
-        reason = `¡No tienes suficientes monedas! Necesitas ${REWARD_CONFIG.VOCAB_HINT_COST_COINS} 🪙, pero tienes ${prev.stats.coins} 🪙.`;
-        return prev;
-      }
-
-      // Deduct coins safely
-      success = true;
-      const newCoins = prev.stats.coins - REWARD_CONFIG.VOCAB_HINT_COST_COINS;
-
+      const existing = prev.purchasedVocabHints || [];
+      if (existing.includes(questionId)) return prev;
       return {
         ...prev,
         stats: {
           ...prev.stats,
-          coins: newCoins
+          coins: prev.stats.coins - REWARD_CONFIG.VOCAB_HINT_COST_COINS
         },
-        purchasedVocabHints: [...existingHints, questionId]
+        purchasedVocabHints: [...existing, questionId]
       };
     });
 
-    return { success, reason, alreadyOwned };
+    return { success: true };
   }, []);
 
   // Record level completed

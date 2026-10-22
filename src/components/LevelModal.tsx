@@ -24,7 +24,8 @@ import {
   MessageCircle,
   Clock,
   Bot,
-  Lock
+  Lock,
+  Languages
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatLifeTimer } from './OutOfLivesModal';
@@ -78,6 +79,9 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const [vocabHintError, setVocabHintError] = useState<string | null>(null);
   const [isPurchasingHint, setIsPurchasingHint] = useState<boolean>(false); // Double-click guard
 
+  // Post-answer Full Question Translation state (0 coins, accessible after answer submission)
+  const [showFullTranslation, setShowFullTranslation] = useState<boolean>(false);
+
   // Lives / hearts synchronized with game state (max 3)
   const lives = typeof progress.stats.lives === 'number' ? progress.stats.lives : 3;
 
@@ -109,6 +113,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     setShowVocabHintModal(false);
     setVocabHintError(null);
     setIsPurchasingHint(false);
+    setShowFullTranslation(false);
 
     const alreadyPurchased = progress.purchasedTranslations.includes(currentQuestion.id);
     setTranslationUnlocked(alreadyPurchased);
@@ -223,6 +228,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const handleNextQuestion = () => {
     // Immediately close/minimize chat window and re-lock for the new question
     setIsChatbotOpen(false);
+    setShowFullTranslation(false);
 
     if (currentIndex + 1 < level.questions.length) {
       // Immediately re-lock tutor for the new question
@@ -286,6 +292,23 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
     // Re-enable after a brief delay to prevent rapid re-clicks
     setTimeout(() => setIsPurchasingHint(false), 600);
+  };
+
+  // Extract English Translation of the question prompt / instructions
+  const questionEnglishText = useMemo(() => {
+    if (currentQuestion.type === 'dialogue' && currentQuestion.dialogue?.englishPrompt) {
+      return currentQuestion.dialogue.englishPrompt;
+    }
+    if (currentQuestion.englishPrompt) {
+      return currentQuestion.englishPrompt;
+    }
+    return currentQuestion.dialogue?.englishPrompt || currentQuestion.prompt;
+  }, [currentQuestion]);
+
+  // Toggle post-answer full question translation (0 coins, strictly blocked before submission)
+  const handleToggleFullTranslation = () => {
+    if (!hasSubmitted) return;
+    setShowFullTranslation(prev => !prev);
   };
 
   // Shuffled multiple-choice options so the correct answer is not always Option A
@@ -517,6 +540,41 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                     <Bot className="w-3.5 h-3.5 text-white" />
                   )}
                   <span>{hasSubmitted ? 'Preguntar al Tutor IA' : 'Tutor (Bloqueado)'}</span>
+                </button>
+
+                {/* Full Question Translation Button ("Traducir pregunta al inglés") */}
+                <button
+                  type="button"
+                  data-testid="full-translation-btn"
+                  onClick={handleToggleFullTranslation}
+                  disabled={!hasSubmitted}
+                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition-all shadow-md ${
+                    !hasSubmitted
+                      ? 'bg-slate-100 text-slate-500 border-slate-300 opacity-70 cursor-not-allowed'
+                      : showFullTranslation
+                      ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-amber-400 hover:scale-105 active:scale-95 cursor-pointer shadow-amber-500/20'
+                      : 'bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-blue-600 text-white border-sky-300 hover:scale-105 active:scale-95 cursor-pointer shadow-blue-500/20'
+                  }`}
+                  title={
+                    !hasSubmitted
+                      ? '🔒 Traducción bloqueada durante la pregunta activa. Responde para desbloquear (0 monedas).'
+                      : showFullTranslation
+                      ? 'Ocultar traducción al inglés'
+                      : 'Traducir pregunta al inglés (0 monedas)'
+                  }
+                >
+                  {!hasSubmitted ? (
+                    <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  ) : (
+                    <Languages className="w-3.5 h-3.5 text-white" />
+                  )}
+                  <span>
+                    {!hasSubmitted
+                      ? 'Traducir pregunta al inglés'
+                      : showFullTranslation
+                      ? 'Ocultar traducción'
+                      : 'Traducir pregunta al inglés'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -778,6 +836,52 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                   <p className="mt-1 text-[#4A3B32] leading-relaxed">
                     {currentQuestion.explanation}
                   </p>
+
+                  {/* Quick Translation Toggle in Feedback */}
+                  <div className="mt-3 pt-2.5 border-t border-black/10 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      data-testid="quiz-feedback-translate-btn"
+                      onClick={handleToggleFullTranslation}
+                      className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 px-3.5 py-1.5 rounded-full border border-amber-300 transition-colors cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <Languages className="w-3.5 h-3.5 text-[#E05615]" />
+                      <span>{showFullTranslation ? 'Ocultar traducción' : 'Traducir pregunta al inglés'}</span>
+                    </button>
+                    <span className="text-[11px] font-semibold text-[#7A6B60]">0 🪙 (Gratuito tras responder)</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Full English Translation Card (Panel) */}
+              {hasSubmitted && showFullTranslation && (
+                <div 
+                  data-testid="full-translation-panel"
+                  className="p-4 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-[#24140E] shadow-sm animate-fadeIn"
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-amber-200/80">
+                    <div className="flex items-center space-x-2 text-amber-950 font-black text-xs sm:text-sm">
+                      <Languages className="w-4 h-4 text-[#E05615]" />
+                      <span>Traducción al inglés de la pregunta:</span>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid="hide-translation-btn"
+                      onClick={() => setShowFullTranslation(false)}
+                      className="text-xs font-bold text-amber-800 hover:text-amber-950 px-2 py-0.5 rounded-lg hover:bg-amber-200/60 transition cursor-pointer"
+                    >
+                      Ocultar traducción
+                    </button>
+                  </div>
+
+                  <p className="text-sm sm:text-base font-bold text-[#24140E] leading-relaxed">
+                    "{questionEnglishText}"
+                  </p>
+
+                  <div className="mt-2.5 text-[11px] text-[#7A6B60] font-medium flex items-center justify-between">
+                    <span>💡 Comprensión de la consigna en inglés. No revela la clave de respuestas.</span>
+                    <span className="text-emerald-700 font-bold">✓ Costo: 0 monedas</span>
+                  </div>
                 </div>
               )}
 
@@ -833,6 +937,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                         setHasSubmitted(false);
                         setIsCorrect(false);
                         setIsChatbotOpen(false);
+                        setShowFullTranslation(false);
                         setActiveQuizState({
                           isActive: true,
                           isAnswered: false,
@@ -866,6 +971,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                             setHasSubmitted(false);
                             setIsCorrect(false);
                             setIsChatbotOpen(false);
+                            setShowFullTranslation(false);
                             setActiveQuizState({
                               isActive: true,
                               isAnswered: false,
@@ -984,12 +1090,20 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                     Palabras clave (Keywords):
                   </span>
                   <ul className="divide-y divide-amber-100 text-sm">
-                    {currentVocabHints.map((hint, idx) => (
-                      <li key={idx} className="py-2 flex items-center justify-between">
-                        <span className="font-bold text-slate-950 font-mono text-base">{hint.word}</span>
-                        <span className="text-slate-600 font-medium italic text-sm">= {hint.translation}</span>
-                      </li>
-                    ))}
+                    {currentVocabHints.map((hint, idx) => {
+                      const cleanTranslation = hint.translation?.includes('/')
+                        ? (hint.word.toLowerCase().includes('mañana') && currentQuestion.prompt.toLowerCase().includes('por la')
+                            ? 'morning'
+                            : hint.translation.split('/')[0].trim())
+                        : hint.translation;
+
+                      return (
+                        <li key={idx} className="py-2 flex items-center justify-between">
+                          <span className="font-bold text-slate-950 font-mono text-base">{hint.word}</span>
+                          <span className="text-slate-600 font-medium italic text-sm">= {cleanTranslation}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
 

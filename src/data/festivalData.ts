@@ -66,12 +66,12 @@ export const FESTIVAL_STALLS: FestivalStall[] = [
     miniQuiz: {
       id: 'fest-q3',
       type: 'multiple-choice',
-      prompt: '¿Quién redactó la primera gramática de la lengua castellana en 1492?',
-      englishPrompt: 'Who wrote the first Spanish grammar book in 1492 in Salamanca?',
+      prompt: '¿Quién es el autor de la primera gramática de la lengua castellana de 1492?',
+      englishPrompt: 'Who is the author of the first Spanish grammar book of 1492 in Salamanca?',
       audioText: 'Antonio de Nebrija',
       options: ['Miguel de Cervantes', 'Antonio de Nebrija', 'Federico García Lorca', 'Diego Velázquez'],
       correctAnswer: 'Antonio de Nebrija',
-      explanation: 'Antonio de Nebrija publicó en Salamanca la "Gramática de la lengua castellana", hito fundacional del español.',
+      explanation: 'Antonio de Nebrija es el autor de la "Gramática de la lengua castellana", hito fundacional del español.',
       hints: ['Catedrático de la Universidad de Salamanca.'],
       syllabusRef: 'M1-ALPHA',
       difficulty: 'medium'
@@ -179,6 +179,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'Madrid alberga el restaurante más antiguo del mundo en funcionamiento continuo: Sobrino de Botín, fundado en 1725.',
     interactiveQuestion: {
       prompt: 'Elena te pregunta con una sonrisa: "Para brindar por tu aventura en Madrid, ¿qué solemos exclamar en España al chocar los vasos?"',
+      englishPrompt: 'Elena asks you with a smile: "To toast to your adventure in Madrid, what do we usually exclaim in Spain when clinking glasses?"',
       options: ['¡Por favor!', '¡Salud!', '¡Buen provecho!'],
       correctAnswer: '¡Salud!',
       reactionCorrect: '¡Exacto! ¡Salud y viva tu aventura en España!',
@@ -195,11 +196,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#D97706',
     xPercent: 18,
     yPercent: 62,
-    dialogue: 'Has templado tu conocimiento del español con la misma paciencia y nobleza con que forjamos el acero toledano. ¡Eres un auténtico maestro!',
-    englishDialogue: 'You tempered your knowledge of Spanish with the same patience and nobility we forge Toledan steel. You are a true master!',
+    dialogue: 'Templas tu conocimiento del español con la misma paciencia y nobleza con que forjamos el acero toledano. ¡Eres un auténtico maestro!',
+    englishDialogue: 'You temper your knowledge of Spanish with the same patience and nobility we forge Toledan steel. You are a true master!',
     trivia: 'Toledo fue capital de España y es célebre por la convivencia de las tres culturas: judía, cristiana y musulmana.',
     interactiveQuestion: {
       prompt: 'Don Alonso te pone a prueba: "¿Qué verbo usamos para las profesiones permanentes: SER o ESTAR?"',
+      englishPrompt: 'Don Alonso tests you: "Which verb do we use for permanent professions: SER or ESTAR?"',
       options: ['ESTAR (Estoy artesano)', 'TENER (Tengo artesano)', 'SER (Soy artesano)'],
       correctAnswer: 'SER (Soy artesano)',
       reactionCorrect: '¡Bien dicho! Como un buen acero toledano, la profesión se expresa con el verbo SER.',
@@ -221,6 +223,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'La fachada de la Universidad de Salamanca esconde una célebre ranita sobre una calavera; encontrarla augura éxito en los exámenes.',
     interactiveQuestion: {
       prompt: 'La decana Lucía te consulta: "¿Cómo concuerda el adjetivo femenino plural para las universidades históricas?"',
+      englishPrompt: 'Dean Lucía asks you: "How does the feminine plural adjective agree for historical universities?"',
       options: ['Las universidades históricas', 'Las universidades históricos', 'La universidad históricas'],
       correctAnswer: 'Las universidades históricas',
       reactionCorrect: '¡Magnífica concordancia de género y número!',
@@ -237,11 +240,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#E11D48',
     xPercent: 20,
     yPercent: 82,
-    dialogue: '¡Ay mi alma! Has aprendido a hablar de la familia y de las emociones con todo el duende y la gracia de Andalucía. ¡Brindemos por tu triunfo!',
-    englishDialogue: 'Bless your soul! You learned to speak of family and emotions with all the soul and grace of Andalusia. Let us toast to your triumph!',
+    dialogue: '¡Ay mi alma! Hablas de la familia y de las emociones con todo el duende y la gracia de Andalucía. ¡Brindemos por tu triunfo!',
+    englishDialogue: 'Bless your soul! You speak of family and emotions with all the soul and grace of Andalusia. Let us toast to your triumph!',
     trivia: 'La Giralda de Sevilla fue durante siglos la torre más alta del mundo cristiano y musulmán con sus 104 metros.',
     interactiveQuestion: {
       prompt: 'Doña Carmen te sonríe con palmas: "Dime, mi corazón, ¿cómo se dice en español \'I am 20 years old\'?"',
+      englishPrompt: 'Doña Carmen smiles with clapping hands: "Tell me, sweetheart, how do you say in Spanish \'I am 20 years old\'?"',
       options: ['Soy 20 años', 'Tengo 20 años', 'Estoy 20 años'],
       correctAnswer: 'Tengo 20 años',
       reactionCorrect: '¡Olé! ¡En español los años se tienen, con el verbo TENER!',
@@ -263,6 +267,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'El nombre de la Alhambra proviene del árabe "al-Qal\'a al-Hamra", que significa la fortaleza roja.',
     interactiveQuestion: {
       prompt: 'Tariq te indica un mapa: "Para ubicar la Alhambra en la colina, ¿qué preposición indica \'cerca de\'?"',
+      englishPrompt: 'Tariq points to a map: "To locate the Alhambra on the hill, which preposition indicates \'near\'?"',
       options: ['Lejos de la colina', 'Debajo de la colina', 'Cerca de la colina'],
       correctAnswer: 'Cerca de la colina',
       reactionCorrect: '¡Exacto! La preposición de lugar indica proximidad.',
@@ -284,6 +289,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'La Mezquita-Catedral de Córdoba alberga más de 850 columnas de jaspe, granito y mármol bicolor.',
     interactiveQuestion: {
       prompt: 'Rafael consulta su astrolabio: "Si son las 15:30, ¿cómo se expresa en lenguaje natural?"',
+      englishPrompt: 'Rafael checks his astrolabe: "If it is 15:30, how is it expressed in natural language?"',
       options: ['Son las tres y media', 'Es las tres y media', 'Son las tres y treinta horas'],
       correctAnswer: 'Son las tres y media',
       reactionCorrect: '¡Muy bien calculado! El tiempo en español se canta con naturalidad.',
@@ -305,6 +311,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'Málaga disfruta de más de 300 días de sol al año y vio nacer al universal pintor Pablo Picasso.',
     interactiveQuestion: {
       prompt: 'El capitán Manuel otea el horizonte: "¿Cómo decimos que hace buen clima con el verbo HACER?"',
+      englishPrompt: 'Captain Manuel scans the horizon: "How do we say the weather is good with the verb HACER?"',
       options: ['Está buen tiempo', 'Hace buen tiempo', 'Es buen tiempo'],
       correctAnswer: 'Hace buen tiempo',
       reactionCorrect: '¡Buen viento y buena mar! Usamos HACER para los fenómenos atmosféricos.',
@@ -326,6 +333,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'Cádiz fue fundada hacia el 1104 a.C. por navegantes fenicios, siendo considerada la ciudad más antigua de Occidente.',
     interactiveQuestion: {
       prompt: 'Lola toca el pito de carnaval: "Si a ti te entusiasma la música de Cádiz, ¿cómo dices \'I like music very much\'?"',
+      englishPrompt: 'Lola plays her carnival whistle: "If you love the music of Cádiz, how do you say \'I like music very much\'?"',
       options: ['Me gusta muy la música', 'Me gustan mucho la música', 'Me gusta mucho la música'],
       correctAnswer: 'Me gusta mucho la música',
       reactionCorrect: '¡Olé tu gracia gaditana! MUCHO acompaña al verbo, no MUY.',
@@ -347,6 +355,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'El parque del Turia en Valencia es uno de los mayores parques urbanos de España, con 9 kilómetros en un antiguo cauce fluvial.',
     interactiveQuestion: {
       prompt: 'Pau estira los gemelos: "¿Cuál es el pronombre reflexivo correcto para la primera persona: \'Yo ____ levanto temprano\'?"',
+      englishPrompt: 'Pau stretches his calves: "What is the correct reflexive pronoun for first person: \'Yo ____ levanto temprano\'?"',
       options: ['me', 'se', 'te'],
       correctAnswer: 'me',
       reactionCorrect: '¡Ritmo perfecto de carrera! "Yo me levanto" es el pronombre reflexivo de primera persona.',
@@ -363,11 +372,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#7C3AED',
     xPercent: 58,
     yPercent: 42,
-    dialogue: 'Construiste tus frases con la misma audacia con que Gaudí diseñó la Sagrada Família y el Parc Güell. ¡Impresionante trabajo!',
-    englishDialogue: 'You built your sentences with the same audacity Gaudí designed the Sagrada Família and Park Güell. Impressive work!',
+    dialogue: 'Construyes tus frases con la misma audacia con que Gaudí diseña la Sagrada Família y el Parc Güell. ¡Impresionante trabajo!',
+    englishDialogue: 'You build your sentences with the same audacity Gaudí designed the Sagrada Família and Park Güell. Impressive work!',
     trivia: 'La Sagrada Família de Barcelona es el monumento más visitado de España, en construcción continua desde 1882.',
     interactiveQuestion: {
       prompt: 'Marc revisa sus planos arquitectónicos: "Para preguntar por el horario del metro en la universidad, ¿cuál es la fórmula más correcta?"',
+      englishPrompt: 'Marc reviews his blueprints: "To ask for the metro timetable at the university, what is the most correct phrasing?"',
       options: ['¿Dónde es el metro de hora?', '¿A qué hora pasa el metro?', '¿Cuánto metro pasa la hora?'],
       correctAnswer: '¿A qué hora pasa el metro?',
       reactionCorrect: '¡Excelente estructura arquitectónica de la pregunta!',
@@ -384,11 +394,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#CA8A04',
     xPercent: 62,
     yPercent: 70,
-    dialogue: 'Retrataste la amistad, las virtudes humanas y las habilidades con una nobleza aragonesa intachable. ¡Tienes un corazón de oro!',
-    englishDialogue: 'You portrayed friendship, human virtues and skills with irreproachable Aragonese nobility. You have a heart of gold!',
+    dialogue: 'Retratas la amistad, las virtudes humanas y las habilidades con una nobleza aragonesa intachable. ¡Tienes un corazón de oro!',
+    englishDialogue: 'You portray friendship, human virtues and skills with irreproachable Aragonese nobility. You have a heart of gold!',
     trivia: 'La Basílica de Nuestra Señora del Pilar en Zaragoza es el primer templo mariano de la cristiandad.',
     interactiveQuestion: {
       prompt: 'Pilar te sonríe afectuosamente: "Para describir a un buen amigo como sincero y generoso, ¿qué verbo usamos?"',
+      englishPrompt: 'Pilar smiles warmly: "To describe a good friend as sincere and generous, which verb do we use?"',
       options: ['ESTAR (Está sincero y generoso)', 'HACER (Hace sincero y generoso)', 'SER (Es sincero y generoso)'],
       correctAnswer: 'SER (Es sincero y generoso)',
       reactionCorrect: '¡Muy bien! Las cualidades de la personalidad se describen con el verbo SER.',
@@ -405,11 +416,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#B91C1C',
     xPercent: 12,
     yPercent: 48,
-    dialogue: '¡Aupa viajero! En mis fogones se celebra tu victoria con un banquete de pintxos insuperable. ¡Te has ganado el título de gastrónomo honorífico!',
-    englishDialogue: 'Well done traveler! In my kitchen your victory is celebrated with an unbeatable feast of pintxos. You earned the title of honorary gourmet!',
+    dialogue: '¡Aupa viajero! En mis fogones se celebra tu victoria con un banquete de pintxos insuperable. ¡Ganas el título de gastrónomo honorífico!',
+    englishDialogue: 'Well done traveler! In my kitchen your victory is celebrated with an unbeatable feast of pintxos. You earn the title of honorary gourmet!',
     trivia: 'El Museo Guggenheim de Bilbao, diseñado por Frank Gehry, está recubierto por más de 33.000 planchas de titanio.',
     interactiveQuestion: {
       prompt: 'Iñaki te ofrece una bandeja humeante: "En la taberna vasca, ¿cómo dices que vas hacia el mercado?"',
+      englishPrompt: 'Iñaki offers you a steaming tray: "In the Basque tavern, how do you say that you are going to the market?"',
       options: ['Voy al mercado', 'Voy a el mercado', 'Voy en el mercado'],
       correctAnswer: 'Voy al mercado',
       reactionCorrect: '¡Perfecto! La contracción A + EL = AL es obligatoria en español.',
@@ -431,6 +443,7 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     trivia: 'San Sebastián cuenta con una de las mayores densidades de estrellas Michelin por metro cuadrado del planeta.',
     interactiveQuestion: {
       prompt: 'Maite te muestra la carta del restaurante: "Si quieres reservar una mesa para dos personas, ¿qué verbo modal de deseo utilizas?"',
+      englishPrompt: 'Maite shows you the restaurant menu: "If you want to book a table for two, which modal verb of desire do you use?"',
       options: ['Puedo reservo una mesa', 'Quiero reservar una mesa', 'Tengo reservar una mesa'],
       correctAnswer: 'Quiero reservar una mesa',
       reactionCorrect: '¡Mesa reservada con el verbo QUERER + Infinitivo!',
@@ -447,11 +460,12 @@ export const FESTIVAL_CHARACTERS: FestivalCharacter[] = [
     avatarColor: '#1E40AF',
     xPercent: 50,
     yPercent: 82,
-    dialogue: '¡El Camino ha terminado y tu dominio del español Level I ha comenzado para toda la vida! Eres bienvenido siempre en Galicia y en España.',
-    englishDialogue: 'The Camino has concluded and your lifelong Spanish Level I mastery has begun! You are always welcome in Galicia and in Spain.',
+    dialogue: '¡Completas el Camino y tu dominio del español se abre para toda la vida! Eres bienvenido siempre en Galicia y en España.',
+    englishDialogue: 'You complete the Camino and your Spanish mastery opens for a lifetime! You are always welcome in Galicia and in Spain.',
     trivia: 'El Botafumeiro de la Catedral de Santiago pesa más de 50 kilos y alcanza velocidades de casi 70 km/h al oscilar.',
     interactiveQuestion: {
       prompt: 'Xoán sella tu credencial de peregrino: "Para expresar que eres capaz de comunicarte en español, ¿qué verbo de habilidad usas?"',
+      englishPrompt: 'Xoán stamps your pilgrim credential: "To express that you are able to communicate in Spanish, which ability verb do you use?"',
       options: ['Pongo comunicarme en español', 'Voy comunicarme en español', 'Puedo comunicarme en español'],
       correctAnswer: 'Puedo comunicarme en español',
       reactionCorrect: '¡Enhorabuena, peregrino! Con PODER demuestras tu capacidad y competencia lingüística.',
@@ -531,7 +545,7 @@ export const CUMULATIVE_FINAL_ASSESSMENT: Question[] = [
     prompt: 'Conjugación de SER para la segunda persona plural informal usada en España: "Vosotros ______."',
     englishPrompt: 'Conjugation of SER for informal second person plural in Spain: "Vosotros sois."',
     audioText: 'sois',
-    options: ['somos', 'son', 'erais', 'sois'],
+    options: ['somos', 'son', 'estáis', 'sois'],
     correctAnswer: 'sois',
     explanation: 'Vosotros sois.',
     hints: ['Forma de vosotros de SER.'],
@@ -683,7 +697,7 @@ export const CUMULATIVE_FINAL_ASSESSMENT: Question[] = [
     options: [
               'Porque quien habla es un grupo de personas',
               'Porque \'canciones\' es una palabra femenina',
-              'Es un error gramatical y debería decirse \'gusto\'',
+              'Es un error gramatical y se dice \'gusto\'',
               'Porque el sujeto de GUSTAR es \'las canciones\' (plural)'
             ],
     correctAnswer: 'Porque el sujeto de GUSTAR es \'las canciones\' (plural)',
@@ -715,7 +729,7 @@ export const CUMULATIVE_FINAL_ASSESSMENT: Question[] = [
               'HAY solo para personas y ESTAR para edificios',
               'HAY para existencia de cosas indeterminadas; ESTAR para ubicación de cosas conocidas',
               'Son sinónimos absolutos',
-              'HAY se usa en pasado y ESTAR en presente'
+              'HAY se usa para horas y ESTAR para precios'
             ],
     correctAnswer: 'HAY para existencia de cosas indeterminadas; ESTAR para ubicación de cosas conocidas',
     explanation: 'HAY señala existencia indeterminada ("Hay un banco", "Hay tres libros"). ESTAR sitúa elementos determinados ("El banco está en la plaza").',
@@ -901,15 +915,15 @@ export const CUMULATIVE_FINAL_ASSESSMENT: Question[] = [
   {
     id: 'final-30',
     type: 'word-order',
-    prompt: 'Ordena la máxima del viajero graduado: "He recorrido España, he aprendido su lengua y ahora puedo comunicarme con el mundo"',
-    englishPrompt: 'Order the graduated traveler\'s maxim: "I have traveled Spain, learned its language and now can communicate with the world"',
-    audioText: 'He recorrido España, he aprendido su lengua y ahora puedo comunicarme con el mundo',
+    prompt: 'Ordena la máxima del viajero graduado: "Recorro España, aprendo su lengua y ahora puedo comunicarme con el mundo"',
+    englishPrompt: 'Order the graduated traveler\'s maxim: "I travel Spain, learn its language and now can communicate with the world"',
+    audioText: 'Recorro España, aprendo su lengua y ahora puedo comunicarme con el mundo',
     sentencePieces: [
-      'he', 'recorrido', 'comunicarme', 'mundo', 'España,', 'aprendido', 'y', 'ahora', 'con', 'el', 'lengua', 'su', 'puedo', 'He'
+      'aprendo', 'lengua', 'Recorro', 'España,', 'mundo', 'y', 'ahora', 'puedo', 'su', 'comunicarme', 'con', 'el'
     ],
-    correctAnswer: 'He recorrido España, he aprendido su lengua y ahora puedo comunicarme con el mundo',
-    explanation: 'Culminación perfecta del viaje: recorrido de las 15 ciudades, aprendizaje y dominio comunicativo.',
-    hints: ['Comienza por "He recorrido España".'],
+    correctAnswer: 'Recorro España, aprendo su lengua y ahora puedo comunicarme con el mundo',
+    explanation: 'Culminación perfecta del viaje: recorrido de las 15 ciudades, aprendizaje y dominio comunicativo en presente.',
+    hints: ['Comienza por "Recorro España".'],
     syllabusRef: 'M5-COMUNICACION',
     difficulty: 'hot'
   }

@@ -94,7 +94,7 @@ export const MODULE4_CITIES: City[] = [
             prompt: 'Vestirse tiene cambio de vocal e -> i: "Yo me ______ con ropa cómoda."',
             englishPrompt: 'Vestirse has an e -> i vowel change: "Yo me visto con ropa cómoda."',
             audioText: 'visto',
-            options: ['vesto', 'vistas', 'visto', 'viste'],
+            options: ['vesto', 'vistas', 'visto', 'visten'],
             correctAnswer: 'visto',
             explanation: 'Vestirse es irregular de cambio e -> i: me visto, te vistes, se viste, nos vestimos, os vestís, se visten.',
             hints: ['Primera persona con cambio a i: v-i-s-t-o.'],

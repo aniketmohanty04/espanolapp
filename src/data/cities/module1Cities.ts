@@ -35,6 +35,12 @@ export const MODULE1_CITIES: City[] = [
             correctAnswer: 'Buenos días',
             explanation: 'En español usamos "Buenos días" por la mañana hasta el mediodía. "Buenas tardes" se usa por la tarde y "Buenas noches" al anochecer.',
             hints: ['Piensa en el sol saliendo: es el inicio del día.'],
+            vocabularyHints: [
+              { word: 'Cómo', translation: 'how' },
+              { word: 'saludas', translation: 'you greet' },
+              { word: 'mañana', translation: 'morning' },
+              { word: 'formal', translation: 'formal' }
+            ],
             syllabusRef: 'M1-SALUDOS',
             difficulty: 'easy'
           },
@@ -56,33 +62,33 @@ export const MODULE1_CITIES: City[] = [
             type: 'dialogue',
             prompt: 'Conversación informal de bienvenida en la cafetería del aeropuerto:',
             englishPrompt: 'Informal welcome conversation at the airport cafe:',
-            audioText: '¡Hola! Bienvenido a Madrid. ¿Qué tal el viaje?',
-            correctAnswer: '¡Hola! Muy bien, gracias. El viaje fue excelente.',
-            explanation: 'Responder con cortesía y entusiasmo muestra competencia comunicativa inicial.',
-            hints: ['Saluda primero y comparte una respuesta positiva.'],
+            audioText: '¡Hola! Bienvenido a Madrid. ¿Cómo estás hoy?',
+            correctAnswer: '¡Hola! Muy bien, gracias. Estoy muy contento de estar aquí.',
+            explanation: 'Responder con cortesía y entusiasmo usando el verbo estar muestra competencia comunicativa inicial.',
+            hints: ['Saluda primero y comparte una respuesta positiva con el verbo estar.'],
             syllabusRef: 'M1-SALUDOS',
             difficulty: 'easy',
             dialogue: {
               npcName: 'Lucía',
               npcRole: 'Recepcionista del Punto de Información',
-              prompt: '¡Hola! Bienvenido a Madrid. ¿Qué tal el viaje?',
-              englishPrompt: 'Hello! Welcome to Madrid. How was the trip?',
+              prompt: '¡Hola! Bienvenido a Madrid. ¿Cómo estás hoy?',
+              englishPrompt: 'Hello! Welcome to Madrid. How are you today?',
               choices: [
                 {
                   id: 'c2',
                   text: 'Tengo treinta años.',
                   englishHint: 'I am thirty years old.',
                   isCorrect: false,
-                  npcResponse: 'Esa es tu edad, ¡pero te preguntaba por tu viaje!',
-                  explanation: 'No responde a "¿Qué tal el viaje?".'
+                  npcResponse: 'Esa es tu edad, ¡pero te preguntaba cómo estás!',
+                  explanation: 'No responde a "¿Cómo estás hoy?".'
                 },
                 {
                   id: 'c1',
-                  text: '¡Hola! Muy bien, gracias. El viaje fue excelente.',
-                  englishHint: 'Hello! Very well, thanks. The trip was excellent.',
+                  text: '¡Hola! Muy bien, gracias. Estoy muy contento de estar aquí.',
+                  englishHint: 'Hello! Very well, thanks. I am very happy to be here.',
                   isCorrect: true,
                   npcResponse: '¡Qué alegría! Que tengas una estancia maravillosa en España.',
-                  explanation: 'Respuesta cordial y comunicativamente perfecta.'
+                  explanation: 'Respuesta cordial y comunicativamente perfecta en presente.'
                 }
               ]
             }
@@ -304,8 +310,8 @@ export const MODULE1_CITIES: City[] = [
           {
             id: 'm1-q14',
             type: 'multiple-choice',
-            prompt: 'Si Ana nació en España, ¿cómo decimos su nacionalidad en femenino?',
-            englishPrompt: 'If Ana was born in Spain, how do we say her nationality in the feminine form?',
+            prompt: 'Si Ana es de España, ¿cómo decimos su nacionalidad en femenino?',
+            englishPrompt: 'If Ana is from Spain, how do we say her nationality in the feminine form?',
             audioText: 'Ana es española',
             options: ['Ana es española', 'Ana es español', 'Ana está española', 'Ana tiene español'],
             correctAnswer: 'Ana es española',
@@ -1045,8 +1051,8 @@ export const MODULE1_CITIES: City[] = [
           {
             id: 'm1-sal-1',
             type: 'multiple-choice',
-            prompt: 'La Universidad de Salamanca se fundó en el año 1218. ¿Cómo se dice 1.000 en español?',
-            englishPrompt: 'The University of Salamanca was founded in 1218. How do you say 1,000 in Spanish?',
+            prompt: 'La Universidad de Salamanca es del año 1218. ¿Cómo se dice 1.000 en español?',
+            englishPrompt: 'The University of Salamanca is from the year 1218. How do you say 1,000 in Spanish?',
             audioText: 'mil',
             options: ['un mil', 'mil', 'milo', 'miles'],
             correctAnswer: 'mil',
@@ -1221,7 +1227,7 @@ export const MODULE1_CITIES: City[] = [
             prompt: 'Para decir "You all are very polite" en España de manera informal decimos: "Vosotros ______ muy amables."',
             englishPrompt: 'To say "You all are very polite" in Spain informally: "Vosotros sois muy amables."',
             audioText: 'sois',
-            options: ['somos', 'son', 'sois', 'erais'],
+            options: ['somos', 'son', 'sois', 'estáis'],
             correctAnswer: 'sois',
             explanation: 'En el español peninsular "vosotros" se conjuga sistemáticamente como "sois" con el verbo SER.',
             hints: ['Forma de vosotros del verbo SER.'],
