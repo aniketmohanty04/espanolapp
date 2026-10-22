@@ -636,9 +636,9 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      // In continuous mode, Chrome intermittently emits 'no-speech' if the speaker pauses.
-      // Do not abort recognition session on harmless 'no-speech' events.
-      if (event.error === 'no-speech') {
+      // In continuous mode, Chrome intermittently emits 'no-speech' if the speaker pauses,
+      // or 'aborted' when stop() is called. Do not treat these as fatal errors.
+      if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
       }
 
@@ -654,6 +654,15 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
     };
 
     recognition.onend = () => {
+      // If still supposed to be listening, attempt seamless resume
+      if (isCurrentlyListening) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // Already running or terminating
+        }
+      }
       isCurrentlyListening = false;
       activeRecognition = null;
       options.onEnd?.();

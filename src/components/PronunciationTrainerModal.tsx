@@ -161,7 +161,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     }
 
     // If still no speech detected
-    setErrorMessage('No se detectó audio del micrófono. Habla más cerca del micrófono o escribe tu frase en el campo de texto abajo.');
+    setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
   }, [activeTarget, stopAudioMonitor, processCapturedTranscript]);
 
   // Start voice capture session
@@ -172,49 +172,16 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     setDetectedOption(null);
     lastTranscriptRef.current = '';
 
-    // Step 1: Start Audio Recording Session for high-fidelity fallback
-    let audioSession: AudioRecordingSession | null = null;
-    try {
-      audioSession = await startAudioRecordingSession();
-      sessionRef.current = audioSession;
-    } catch (err: unknown) {
-      const errorObj = err as { name?: string; message?: string };
-      console.warn('MediaRecorder notice:', err);
-      if (errorObj?.name === 'NotAllowedError' || errorObj?.name === 'PermissionDeniedError') {
-        setErrorMessage('🔒 Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador, cambia "Micrófono" a "Permitir" y vuelve a pulsar el botón.');
-        return;
-      }
-    }
-
-    setIsRecording(true);
-
-    // Track simulated volume level for lively waveform visualization
-    if (audioSession) {
-      const pollVolume = () => {
-        if (sessionRef.current) {
-          setAudioVolumeLevel(sessionRef.current.getVolume());
-          animFrameRef.current = requestAnimationFrame(pollVolume);
-        }
-      };
-      animFrameRef.current = requestAnimationFrame(pollVolume);
-    }
-
-    // Timer: track seconds and auto-stop after 10s of recording
-    let elapsed = 0;
-    timerRef.current = setInterval(() => {
-      elapsed += 1;
-      setRecordingSeconds(elapsed);
-      if (elapsed >= 10) {
-        handleStopRecording();
-      }
-    }, 1000);
-
-    // Step 2: Start Web Speech API for instantaneous streaming if supported
+    // Branch 1: Native Web Speech API (Chrome, Edge, Safari, Android)
+    // Run cleanly WITHOUT parallel MediaRecorder so Chrome does not lock audio hardware
     if (isSpeechRecognitionSupported()) {
-      startSpanishListening({
+      const started = startSpanishListening({
         lang: 'es-ES',
         continuous: true,
         interimResults: true,
+        onStart: () => {
+          setIsRecording(true);
+        },
         onResult: (transcript, _isFinal, confidence) => {
           if (transcript.trim().length > 0) {
             processCapturedTranscript(transcript, confidence);
@@ -222,8 +189,54 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         },
         onError: (err) => {
           console.warn('SpeechRecognition notice:', err);
+          setIsRecording(false);
+          setErrorMessage(err);
+        },
+        onEnd: () => {
+          // Continuous session managed by user stop button
         }
       });
+
+      if (started) {
+        setIsRecording(true);
+
+        // Lively waveform pulse & 15s safety auto-stop timer
+        let elapsed = 0;
+        timerRef.current = setInterval(() => {
+          elapsed += 1;
+          setRecordingSeconds(elapsed);
+          setAudioVolumeLevel(Math.round(45 + Math.sin(elapsed * 4) * 30 + Math.cos(elapsed * 7) * 20));
+          if (elapsed >= 15) {
+            handleStopRecording();
+          }
+        }, 1000);
+        return;
+      }
+    }
+
+    // Branch 2: Fallback for browsers without Web Speech (Firefox, Brave, etc.)
+    try {
+      const audioSession = await startAudioRecordingSession();
+      sessionRef.current = audioSession;
+      setIsRecording(true);
+
+      let elapsed = 0;
+      timerRef.current = setInterval(() => {
+        elapsed += 1;
+        setRecordingSeconds(elapsed);
+        setAudioVolumeLevel(audioSession.getVolume());
+        if (elapsed >= 12) {
+          handleStopRecording();
+        }
+      }, 1000);
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string; message?: string };
+      console.warn('MediaRecorder notice:', err);
+      if (errorObj?.name === 'NotAllowedError' || errorObj?.name === 'PermissionDeniedError') {
+        setErrorMessage('🔒 Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador, cambia "Micrófono" a "Permitir" y vuelve a pulsar el botón.');
+      } else {
+        setErrorMessage('No se pudo acceder al micrófono. Verifica que esté conectado y permitido en tu navegador.');
+      }
     }
   }, [handleStopRecording, processCapturedTranscript]);
 

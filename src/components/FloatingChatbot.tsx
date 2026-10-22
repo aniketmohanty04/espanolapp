@@ -284,18 +284,9 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       return;
     }
 
-    // Start audio recording session
-    try {
-      const session = await startAudioRecordingSession();
-      chatSessionRef.current = session;
-    } catch {
-      // Audio capture failed
-    }
-
-    setIsListeningToVoice(true);
-
+    // Branch 1: Modern Native Web Speech API
     if (isSpeechRecognitionSupported()) {
-      startSpanishListening({
+      const started = startSpanishListening({
         lang: 'es-ES',
         continuous: true,
         interimResults: true,
@@ -309,11 +300,26 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
         },
         onError: (err) => {
           console.warn('SpeechRecognition dictation notice:', err);
+          setIsListeningToVoice(false);
         },
         onEnd: () => {
           // Allow player to pause without prematurely killing dictation session
         }
       });
+      if (started) {
+        setIsListeningToVoice(true);
+        return;
+      }
+    }
+
+    // Branch 2: Fallback for non-WebSpeech browsers
+    try {
+      const session = await startAudioRecordingSession();
+      chatSessionRef.current = session;
+      setIsListeningToVoice(true);
+    } catch {
+      // Audio capture failed
+      setIsListeningToVoice(false);
     }
   };
 
