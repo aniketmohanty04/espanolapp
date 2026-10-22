@@ -28,3 +28,9 @@ dist-ssr
 .env
 .env*.local
 !.env.example
+
+# Assignment Reports & Local Artifacts
+*.pdf
+DA3_Spanish_Project_Report.html
+scratch/
+
