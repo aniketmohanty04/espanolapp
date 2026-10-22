@@ -10,7 +10,9 @@ import {
   isSpeechRecognitionSupported,
   startSpanishListening,
   stopSpanishListening,
-  isListening
+  isListening,
+  requestMicrophonePermission,
+  createAudioVolumeAnalyzer
 } from '../services/spanishVoiceRecognitionService';
 import { PronunciationTrainerModal } from '../components/PronunciationTrainerModal';
 import { LevelModal } from '../components/LevelModal';
@@ -254,8 +256,18 @@ describe('Spanish Voice Recognition & Pronunciation Assessment Engine', () => {
       });
 
       expect(onErrorMock).toHaveBeenCalledWith(
-        expect.stringContaining('Permiso de micrófono denegado')
+        expect.stringContaining('Permiso de micrófono')
       );
+    });
+
+    it('handles requestMicrophonePermission gracefully when navigator is unavailable or available', async () => {
+      const result = await requestMicrophonePermission();
+      expect(result).toHaveProperty('granted');
+    });
+
+    it('returns null for createAudioVolumeAnalyzer in non-browser environment safely', async () => {
+      const analyzer = await createAudioVolumeAnalyzer();
+      expect(analyzer).toBeNull();
     });
   });
 

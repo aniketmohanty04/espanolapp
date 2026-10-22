@@ -352,12 +352,36 @@ export const LevelModal: React.FC<LevelModalProps> = ({
       return;
     }
 
+    const normSpoken = normalizeSpanishForComparison(spokenAnswer);
+
+    // Letter and ordinal alias mapping
+    const letterMap: Record<number, string[]> = {
+      0: ['a', 'la a', 'opcion a', 'letra a', 'primera', 'uno', 'primero'],
+      1: ['b', 'la b', 'opcion b', 'letra b', 'segunda', 'dos', 'segundo'],
+      2: ['c', 'la c', 'opcion c', 'letra c', 'tercera', 'tres', 'tercero'],
+      3: ['d', 'la d', 'opcion d', 'letra d', 'cuarta', 'cuatro', 'cuarto']
+    };
+
     // Match MCQ
     if (currentQuestion.type === 'multiple-choice' && currentQuestion.options) {
-      const matched = currentQuestion.options.find(opt =>
-        normalizeSpanishForComparison(opt) === normalizeSpanishForComparison(spokenAnswer) ||
-        calculateWordSimilarity(opt, spokenAnswer) >= 0.72
-      );
+      // 1. Check letter/ordinal alias
+      for (const [idxStr, aliases] of Object.entries(letterMap)) {
+        const idx = Number(idxStr);
+        if (aliases.includes(normSpoken) && currentQuestion.options[idx]) {
+          setSelectedOption(currentQuestion.options[idx]);
+          setShowPronunciationTrainer(false);
+          return;
+        }
+      }
+
+      // 2. Check text similarity or containment
+      const matched = currentQuestion.options.find(opt => {
+        const normOpt = normalizeSpanishForComparison(opt);
+        return normOpt === normSpoken ||
+               calculateWordSimilarity(opt, spokenAnswer) >= 0.68 ||
+               (normSpoken.length >= 3 && normOpt.includes(normSpoken)) ||
+               (normOpt.length >= 3 && normSpoken.includes(normOpt));
+      });
       if (matched) {
         setSelectedOption(matched);
         setShowPronunciationTrainer(false);
@@ -367,10 +391,26 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
     // Match Dialogue
     if (currentQuestion.type === 'dialogue' && currentQuestion.dialogue?.choices) {
-      const matched = currentQuestion.dialogue.choices.find(c =>
-        normalizeSpanishForComparison(c.text) === normalizeSpanishForComparison(spokenAnswer) ||
-        calculateWordSimilarity(c.text, spokenAnswer) >= 0.72
-      );
+      // 1. Check letter/ordinal alias
+      for (const [idxStr, aliases] of Object.entries(letterMap)) {
+        const idx = Number(idxStr);
+        if (aliases.includes(normSpoken) && currentQuestion.dialogue.choices[idx]) {
+          const choice = currentQuestion.dialogue.choices[idx];
+          setDialogueChosenChoice(choice);
+          setSelectedOption(choice.text);
+          setShowPronunciationTrainer(false);
+          return;
+        }
+      }
+
+      // 2. Check choice text similarity
+      const matched = currentQuestion.dialogue.choices.find(c => {
+        const normChoice = normalizeSpanishForComparison(c.text);
+        return normChoice === normSpoken ||
+               calculateWordSimilarity(c.text, spokenAnswer) >= 0.68 ||
+               (normSpoken.length >= 3 && normChoice.includes(normSpoken)) ||
+               (normChoice.length >= 3 && normSpoken.includes(normChoice));
+      });
       if (matched) {
         setDialogueChosenChoice(matched);
         setSelectedOption(matched.text);

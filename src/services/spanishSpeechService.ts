@@ -64,6 +64,28 @@ export function cleanSpanishTextForSpeech(raw: string): string {
   return text;
 }
 
+/**
+ * Formats Spanish text to insert gentle, natural micro-pauses between words
+ * so language learners hear each word distinctly without words slurring together.
+ */
+export function formatSpanishWithWordPauses(raw: string): string {
+  const cleaned = cleanSpanishTextForSpeech(raw);
+  if (!cleaned) return '';
+
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  if (tokens.length <= 1) return cleaned;
+
+  return tokens
+    .map((word, i) => {
+      if (i === tokens.length - 1) return word;
+      // If word already ends in sentence punctuation, preserve it
+      if (/[,.:;!?¡¿]$/.test(word)) return word;
+      // Insert soft pause separator
+      return `${word} ,`;
+    })
+    .join(' ');
+}
+
 export function getBestSpanishVoice(): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
 
@@ -124,6 +146,7 @@ export interface SpeakSpanishOptions {
   rate?: number;
   pitch?: number;
   volume?: number;
+  pauseBetweenWords?: boolean; // When true, inserts slight micro-pauses between words for distinct clarity
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err?: unknown) => void;
@@ -152,7 +175,10 @@ export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): b
         // This causes the TTS engine to pause ~150ms before pronouncing the first word.
         // During this pause, the Windows/Chrome audio hardware awakens and initializes,
         // preventing the first word or initial syllable from being clipped!
-        const textToSpeak = `, ${cleaned}`;
+        const baseText = options.pauseBetweenWords
+          ? formatSpanishWithWordPauses(cleaned)
+          : cleaned;
+        const textToSpeak = `, ${baseText}`;
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
         const spanishVoice = getBestSpanishVoice();
@@ -163,7 +189,9 @@ export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): b
           utterance.lang = 'es-ES';
         }
 
-        utterance.rate = options.rate ?? 0.88;
+        // Calibrated beginner rate: slower, calmer cadence (0.74 if pauseBetweenWords, 0.80 standard)
+        const defaultRate = options.pauseBetweenWords ? 0.74 : 0.80;
+        utterance.rate = options.rate ?? defaultRate;
         utterance.pitch = options.pitch ?? 1.0;
         utterance.volume = options.volume ?? 1.0;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic, MicOff, Volume2, Sparkles, X, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { speakSpanish, stopSpanishSpeech } from '../services/spanishSpeechService';
 import {
@@ -6,6 +6,9 @@ import {
   startSpanishListening,
   stopSpanishListening,
   evaluateSpanishPronunciation,
+  requestMicrophonePermission,
+  createAudioVolumeAnalyzer,
+  AudioVolumeAnalyzer,
   PronunciationEvaluation
 } from '../services/spanishVoiceRecognitionService';
 
@@ -29,17 +32,38 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [evaluation, setEvaluation] = useState<PronunciationEvaluation | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const isSupported = isSpeechRecognitionSupported();
+  const [audioVolumeLevel, setAudioVolumeLevel] = useState<number>(0);
 
-  // Stop any ongoing speech or recognition when modal unmounts
+  // Cadence control: default to slow with distinct inter-word pauses
+  const [isSlowMode, setIsSlowMode] = useState<boolean>(true);
+
+  const isSupported = isSpeechRecognitionSupported();
+  const volumeAnalyzerRef = useRef<AudioVolumeAnalyzer | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const lastTranscriptRef = useRef<string>('');
+
+  const stopVolumeMonitor = useCallback(() => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (volumeAnalyzerRef.current) {
+      volumeAnalyzerRef.current.stop();
+      volumeAnalyzerRef.current = null;
+    }
+    setAudioVolumeLevel(0);
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopSpanishListening();
       stopSpanishSpeech();
+      stopVolumeMonitor();
     };
-  }, []);
+  }, [stopVolumeMonitor]);
 
-  // Listen to native pronunciation
+  // Listen to native model pronunciation with optional slow & distinct word pauses
   const handlePlayNativeAudio = useCallback(() => {
     if (isPlayingAudio) {
       stopSpanishSpeech();
@@ -48,51 +72,87 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     }
     setIsPlayingAudio(true);
     speakSpanish(targetText, {
-      rate: 0.85, // clear beginner-friendly cadence
+      rate: isSlowMode ? 0.72 : 0.84,
+      pauseBetweenWords: isSlowMode,
       onEnd: () => setIsPlayingAudio(false),
       onError: () => setIsPlayingAudio(false)
     });
-  }, [targetText, isPlayingAudio]);
+  }, [targetText, isPlayingAudio, isSlowMode]);
 
-  // Toggle voice capture
-  const handleToggleListening = useCallback(() => {
+  // Toggle voice capture with explicit mic permissions and live volume visualization
+  const handleToggleListening = useCallback(async () => {
     if (isRecording) {
       stopSpanishListening();
+      stopVolumeMonitor();
       setIsRecording(false);
+      if (lastTranscriptRef.current.trim().length > 0) {
+        const evalResult = evaluateSpanishPronunciation(targetText, lastTranscriptRef.current);
+        setEvaluation(evalResult);
+      }
       return;
     }
 
     setErrorMessage(null);
     setSpokenTranscript('');
     setEvaluation(null);
+    lastTranscriptRef.current = '';
 
+    // Step 1: Ensure explicit browser mic permission
+    const permResult = await requestMicrophonePermission();
+    if (!permResult.granted) {
+      setErrorMessage(permResult.error || 'Permiso de micrófono bloqueado en tu navegador.');
+      return;
+    }
+
+    // Step 2: Initialize real-time audio volume monitoring
+    const analyzer = await createAudioVolumeAnalyzer();
+    if (analyzer) {
+      volumeAnalyzerRef.current = analyzer;
+      const pollVolume = () => {
+        if (volumeAnalyzerRef.current) {
+          setAudioVolumeLevel(volumeAnalyzerRef.current.getVolume());
+          animFrameRef.current = requestAnimationFrame(pollVolume);
+        }
+      };
+      animFrameRef.current = requestAnimationFrame(pollVolume);
+    }
+
+    // Step 3: Start continuous Spanish speech recognition
     const started = startSpanishListening({
       lang: 'es-ES',
-      continuous: false,
+      continuous: true,
       interimResults: true,
       onStart: () => {
         setIsRecording(true);
       },
       onResult: (transcript, isFinal, confidence) => {
+        lastTranscriptRef.current = transcript;
         setSpokenTranscript(transcript);
-        if (isFinal || transcript.length >= targetText.length * 0.8) {
+        if (transcript.trim().length > 0) {
           const evalResult = evaluateSpanishPronunciation(targetText, transcript, confidence);
           setEvaluation(evalResult);
         }
       },
       onError: (err) => {
         setIsRecording(false);
+        stopVolumeMonitor();
         setErrorMessage(err);
       },
       onEnd: () => {
         setIsRecording(false);
+        stopVolumeMonitor();
+        if (lastTranscriptRef.current.trim().length > 0) {
+          const evalResult = evaluateSpanishPronunciation(targetText, lastTranscriptRef.current);
+          setEvaluation(evalResult);
+        }
       }
     });
 
     if (!started) {
-      setErrorMessage('No se pudo activar el micrófono. Verifica los permisos de tu navegador.');
+      stopVolumeMonitor();
+      setErrorMessage('No se pudo iniciar el reconocimiento de voz. Te recomendamos usar Google Chrome o Microsoft Edge.');
     }
-  }, [isRecording, targetText]);
+  }, [isRecording, targetText, stopVolumeMonitor]);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn">
@@ -113,7 +173,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         </div>
 
         {/* Target Spanish Sentence Box */}
-        <div className="p-4 rounded-2xl bg-white border-2 border-amber-300 shadow-xs mb-4">
+        <div className="p-4 rounded-2xl bg-white border-2 border-amber-300 shadow-xs mb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide block mb-1">
@@ -128,40 +188,78 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 </p>
               )}
             </div>
-            <button
-              onClick={handlePlayNativeAudio}
-              className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center ${
-                isPlayingAudio
-                  ? 'bg-amber-400 border-amber-600 text-slate-950 scale-105 shadow-md'
-                  : 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900'
-              }`}
-              title="Escuchar modelo nativo de pronunciación"
-            >
-              <Volume2 className={`w-5 h-5 ${isPlayingAudio ? 'animate-pulse' : ''}`} />
-            </button>
+
+            {/* Audio Playback & Speed Controls */}
+            <div className="flex flex-col items-center space-y-1.5 shrink-0">
+              <button
+                onClick={handlePlayNativeAudio}
+                className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center ${
+                  isPlayingAudio
+                    ? 'bg-amber-400 border-amber-600 text-slate-950 scale-105 shadow-md'
+                    : 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900'
+                }`}
+                title="Escuchar modelo nativo de pronunciación"
+              >
+                <Volume2 className={`w-5 h-5 ${isPlayingAudio ? 'animate-pulse' : ''}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSlowMode(prev => !prev)}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                  isSlowMode
+                    ? 'bg-amber-300 border-amber-500 text-amber-950 shadow-xs'
+                    : 'bg-stone-100 border-stone-300 text-stone-600 hover:bg-stone-200'
+                }`}
+                title="Alternar entre pronunciación pausada palabra por palabra y velocidad normal"
+              >
+                {isSlowMode ? '🐢 Pausado' : '🗣️ Normal'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Recording / Voice Input Controls */}
-        <div className="flex flex-col items-center justify-center my-3 space-y-3">
+        <div className="flex flex-col items-center justify-center my-2 space-y-2.5">
           {isSupported ? (
-            <button
-              onClick={handleToggleListening}
-              className={`relative p-5 rounded-full border-4 transition-all duration-300 flex items-center justify-center shadow-xl cursor-pointer ${
-                isRecording
-                  ? 'bg-red-500 border-red-300 text-white animate-pulse scale-110 shadow-red-500/40'
-                  : 'bg-gradient-to-tr from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 border-amber-300 text-slate-950 hover:scale-105 shadow-amber-500/30'
-              }`}
-              title={isRecording ? 'Detener grabación' : 'Hablar en español'}
-            >
-              {isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-              {isRecording && (
-                <span className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping opacity-75" />
-              )}
-            </button>
+            <div className="relative flex items-center justify-center">
+              <button
+                onClick={handleToggleListening}
+                className={`relative p-5 rounded-full border-4 transition-all duration-300 flex items-center justify-center shadow-xl cursor-pointer ${
+                  isRecording
+                    ? 'bg-red-500 border-red-300 text-white animate-pulse scale-110 shadow-red-500/40'
+                    : 'bg-gradient-to-tr from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 border-amber-300 text-slate-950 hover:scale-105 shadow-amber-500/30'
+                }`}
+                title={isRecording ? 'Detener grabación' : 'Hablar en español'}
+              >
+                {isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+                {isRecording && (
+                  <span className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping opacity-75" />
+                )}
+              </button>
+            </div>
           ) : (
-            <div className="p-3 bg-rose-100 border border-rose-300 rounded-xl text-xs text-rose-800 font-semibold text-center">
-              Reconocimiento de voz no soportado directamente en este navegador. Te recomendamos usar Google Chrome o Microsoft Edge.
+            <div className="p-3 bg-amber-100 border border-amber-300 rounded-xl text-xs text-amber-900 font-semibold text-center">
+              Tu navegador no tiene la Web Speech API activa. Te recomendamos Google Chrome o Microsoft Edge, o utiliza el campo de texto a continuación:
+            </div>
+          )}
+
+          {/* Real-time Audio Volume Waveform */}
+          {isRecording && (
+            <div className="flex items-center space-x-1.5 py-0.5">
+              <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wide">Voz detectada:</span>
+              <div className="flex items-center space-x-1 h-5">
+                {[1, 2, 3, 4, 5, 6, 7].map((bar) => {
+                  const h = Math.max(4, Math.min(20, Math.round(audioVolumeLevel * (0.4 + (bar % 3) * 0.3))));
+                  return (
+                    <div
+                      key={bar}
+                      className="w-1.5 rounded-full bg-gradient-to-t from-red-500 to-amber-500 transition-all duration-75"
+                      style={{ height: `${h}px` }}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -170,9 +268,27 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           </span>
         </div>
 
+        {/* Error message if any */}
+        {errorMessage && (
+          <div className="p-3 mb-2 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Live / Spoken Transcript Display */}
+        {spokenTranscript && (
+          <div className="p-3 mb-2.5 rounded-2xl bg-white/90 border border-amber-200 text-slate-900 text-sm animate-fadeIn">
+            <span className="text-[10px] font-black text-amber-800 uppercase block mb-0.5">
+              Lo que hemos detectado (You said):
+            </span>
+            <p className="font-semibold text-slate-900 italic">"{spokenTranscript}"</p>
+          </div>
+        )}
+
         {/* Manual Test / Fallback input */}
-        <div className="mt-1 mb-3">
-          <details className="text-xs text-slate-600 cursor-pointer">
+        <div className="mb-2.5">
+          <details className="text-xs text-slate-600 cursor-pointer" open={!isSupported}>
             <summary className="font-semibold hover:text-amber-800 select-none">
               ¿Quieres escribir para evaluar tu pronunciación y tildes? (Opcional)
             </summary>
@@ -210,24 +326,6 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
             </div>
           </details>
         </div>
-
-        {/* Error message if any */}
-        {errorMessage && (
-          <div className="p-3 mb-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* Live / Spoken Transcript Display */}
-        {spokenTranscript && (
-          <div className="p-3 mb-3 rounded-2xl bg-white/90 border border-amber-200 text-slate-900 text-sm">
-            <span className="text-[10px] font-black text-amber-800 uppercase block mb-1">
-              Lo que hemos detectado (You said):
-            </span>
-            <p className="font-semibold text-slate-900 italic">"{spokenTranscript}"</p>
-          </div>
-        )}
 
         {/* Pronunciation Assessment Results */}
         {evaluation && (
@@ -314,7 +412,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 className="flex-1 py-2.5 px-4 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Repetir intento</span>
+                <span>{isRecording ? 'Detener' : 'Repetir intento'}</span>
               </button>
 
               {onApplySpokenAnswer && evaluation.isMatch && (
@@ -331,7 +429,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         )}
 
         {/* Footer cancel button */}
-        <div className="pt-4 text-center">
+        <div className="pt-3 text-center">
           <button
             onClick={onClose}
             className="text-xs font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"

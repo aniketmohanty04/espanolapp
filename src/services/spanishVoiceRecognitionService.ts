@@ -83,6 +83,84 @@ export function isSpeechRecognitionSupported(): boolean {
   return getSpeechRecognitionClass() !== null;
 }
 
+/**
+ * Explicitly requests microphone permissions via getUserMedia.
+ * This ensures the browser displays the prompt and confirms hardware availability.
+ */
+export async function requestMicrophonePermission(): Promise<{ granted: boolean; error?: string }> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    return { granted: true };
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    return { granted: true };
+  } catch (err: unknown) {
+    const errorObj = err as { name?: string };
+    const isDenied = errorObj.name === 'NotAllowedError' || errorObj.name === 'PermissionDeniedError';
+    return {
+      granted: false,
+      error: isDenied
+        ? 'Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador y permite el micrófono.'
+        : 'No se pudo acceder al micrófono. Verifica que esté conectado y no esté en uso por otra app.'
+    };
+  }
+}
+
+export interface AudioVolumeAnalyzer {
+  getVolume: () => number; // 0 to 100
+  stop: () => void;
+}
+
+/**
+ * Creates an AudioContext Analyzer to measure real-time microphone volume levels.
+ */
+export async function createAudioVolumeAnalyzer(): Promise<AudioVolumeAnalyzer | null> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia || typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) {
+      stream.getTracks().forEach(t => t.stop());
+      return null;
+    }
+    const ctx = new AudioCtx();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 64;
+    analyser.smoothingTimeConstant = 0.4;
+    const source = ctx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    return {
+      getVolume: () => {
+        try {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / dataArray.length;
+          return Math.min(100, Math.round((avg / 128) * 100));
+        } catch {
+          return 0;
+        }
+      },
+      stop: () => {
+        try {
+          source.disconnect();
+          ctx.close();
+          stream.getTracks().forEach(t => t.stop());
+        } catch {
+          // ignore
+        }
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
 let activeRecognition: SpeechRecognitionInstance | null = null;
 let isCurrentlyListening = false;
 
@@ -351,7 +429,7 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
   try {
     const recognition = new RecognitionClass();
     recognition.lang = options.lang || 'es-ES'; // Peninsular Spanish standard
-    recognition.continuous = options.continuous ?? false;
+    recognition.continuous = options.continuous ?? true;
     recognition.interimResults = options.interimResults ?? true;
     recognition.maxAlternatives = options.maxAlternatives ?? 3;
 
@@ -361,35 +439,43 @@ export function startSpanishListening(options: VoiceRecognitionOptions = {}): bo
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interimTranscript = '';
       let finalTranscript = '';
+      let interimTranscript = '';
       let highestConfidence = 0.9;
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      for (let i = 0; i < event.results.length; ++i) {
         const item = event.results[i];
         const transcriptPart = item[0]?.transcript || '';
         const confidence = item[0]?.confidence || 0.9;
         if (confidence > highestConfidence) highestConfidence = confidence;
 
         if (item.isFinal) {
-          finalTranscript += transcriptPart;
+          finalTranscript += (finalTranscript ? ' ' : '') + transcriptPart.trim();
         } else {
-          interimTranscript += transcriptPart;
+          interimTranscript += (interimTranscript ? ' ' : '') + transcriptPart.trim();
         }
       }
 
-      const deliveredTranscript = finalTranscript.trim() || interimTranscript.trim();
-      const isFinal = Boolean(finalTranscript.trim());
+      const deliveredTranscript = (finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
+      const isFinal = Boolean(finalTranscript) && !interimTranscript;
 
       options.onResult?.(deliveredTranscript, isFinal, highestConfidence);
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      // In continuous mode, Chrome intermittently emits 'no-speech' if the speaker pauses.
+      // Do not abort recognition session on harmless 'no-speech' events.
+      if (event.error === 'no-speech') {
+        return;
+      }
+
       isCurrentlyListening = false;
       const errorMsg = event.error === 'not-allowed'
-        ? 'Permiso de micrófono denegado. Permite el acceso al micrófono en tu navegador.'
-        : event.error === 'no-speech'
-        ? 'No se detectó voz. Intenta hablar más cerca del micrófono.'
+        ? 'Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador y permite el micrófono.'
+        : event.error === 'audio-capture'
+        ? 'No se detectó ningún micrófono. Asegúrate de conectar tu micrófono.'
+        : event.error === 'network'
+        ? 'Error de red en el reconocimiento de voz. Verifica tu conexión a internet o VPN.'
         : `Error de reconocimiento de voz: ${event.error}`;
       options.onError?.(errorMsg);
     };

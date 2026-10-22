@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   cleanSpanishTextForSpeech,
+  formatSpanishWithWordPauses,
   getBestSpanishVoice,
   speakSpanish,
   stopSpanishSpeech
@@ -61,6 +62,17 @@ describe('Spanish Speech Service & Text Sanitization', () => {
       expect(cleanSpanishTextForSpeech('')).toBe('');
       expect(cleanSpanishTextForSpeech('   ')).toBe('');
       expect(cleanSpanishTextForSpeech(null as unknown as string)).toBe('');
+    });
+
+    it('formats Spanish text with gentle pauses between words for clear learner cadence', () => {
+      const raw = '¡Buenos días, ¿cómo estás?!';
+      const paused = formatSpanishWithWordPauses(raw);
+      expect(paused).toBe('Buenos , días, cómo , estás?!');
+    });
+
+    it('handles single word strings without trailing commas', () => {
+      expect(formatSpanishWithWordPauses('¡Hola!')).toBe('Hola!');
+      expect(formatSpanishWithWordPauses('')).toBe('');
     });
   });
 
@@ -135,6 +147,15 @@ describe('Spanish Speech Service & Text Sanitization', () => {
       speakSpanish('¡Hola!');
       stopSpanishSpeech();
       expect(mockCancel).toHaveBeenCalled();
+    });
+
+    it('applies inter-word micro-pauses and learner-friendly cadence when pauseBetweenWords is true', () => {
+      speakSpanish('Buenos días', { pauseBetweenWords: true });
+      vi.advanceTimersByTime(60);
+      expect(mockSpeak).toHaveBeenCalled();
+      const callArg = mockSpeak.mock.calls[0][0];
+      expect(callArg.text).toBe(', Buenos , días');
+      expect(callArg.rate).toBeLessThanOrEqual(0.75);
     });
   });
 });
