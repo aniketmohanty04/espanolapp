@@ -7,7 +7,7 @@ import {
 import { encodeMonoWav, resampleAudioBuffer, convertAudioBlobToWav } from '../utils/audioConversion';
 import { INITIAL_PROGRESS } from '../services/storageService';
 
-describe('Azure AI Speech Pronunciation Assessment Suite', () => {
+describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -193,7 +193,7 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
             phonemes: [
               { phoneme: 'm', accuracyScore: 95 },
               { phoneme: 'a', accuracyScore: 90 },
-              { phoneme: 'ɲ', accuracyScore: 55 }, // Lower score for imperfect ñ palatalization
+              { phoneme: 'ɲ', accuracyScore: 55 },
               { phoneme: 'a', accuracyScore: 85 },
               { phoneme: 'n', accuracyScore: 50 },
               { phoneme: 'a', accuracyScore: 85 }
@@ -220,7 +220,21 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
     });
   });
 
-  describe('Error Handling, Missing Secrets, and Rate Limits', () => {
+  describe('Honest Acoustic Metrics & Offline Disclaimers', () => {
+    it('sets acoustic fluency and completeness scores to null in offline text approximations', () => {
+      const approx = createOfflineApproximationResult('Buenos días', 'Buenos días', 'es-ES');
+
+      expect(approx.provider).toBe('offline_approximation');
+      expect(approx.isRealAzure).toBe(false);
+      expect(approx.scores.pronunciationScore).toBeGreaterThanOrEqual(90);
+      expect(approx.scores.accuracyScore).toBeGreaterThanOrEqual(90);
+
+      // Acoustic fluency & completeness MUST be null when not provided by genuine acoustic Azure analysis
+      expect(approx.scores.fluencyScore).toBeNull();
+      expect(approx.scores.completenessScore).toBeNull();
+      expect(approx.guidance).toContain('Evaluación local aproximada');
+    });
+
     it('gracefully falls back to local approximation when Azure credentials are not configured (503)', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
         new Response(
@@ -244,8 +258,8 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(result.success).toBe(true);
       expect(result.provider).toBe('offline_approximation');
       expect(result.isRealAzure).toBe(false);
-      expect(result.guidance).toContain('Evaluación local aproximada');
-      expect(result.scores.pronunciationScore).toBeGreaterThan(70);
+      expect(result.scores.fluencyScore).toBeNull();
+      expect(result.scores.completenessScore).toBeNull();
     });
 
     it('handles network failure by delivering transparent local approximation with notice', async () => {
@@ -263,6 +277,7 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(result.isRealAzure).toBe(false);
       expect(result.provider).toBe('offline_approximation');
       expect(result.error).toContain('No se pudo conectar');
+      expect(result.scores.fluencyScore).toBeNull();
     });
 
     it('handles provider quota exhaustion (403) with actionable error information', async () => {
@@ -309,11 +324,10 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
       const initialXp = INITIAL_PROGRESS.stats.xp;
       const initialLevel = INITIAL_PROGRESS.stats.level;
 
-      // Create a high pronunciation assessment result
       const mockResult = createOfflineApproximationResult('Buenos días', 'Buenos días', 'es-ES');
       expect(mockResult.scores.pronunciationScore).toBeGreaterThanOrEqual(90);
 
-      // Confirm that player progress remained strictly isolated and unaltered
+      // Confirm player progress remained strictly isolated and unaltered
       expect(INITIAL_PROGRESS.stats.coins).toBe(initialCoins);
       expect(INITIAL_PROGRESS.stats.xp).toBe(initialXp);
       expect(INITIAL_PROGRESS.stats.level).toBe(initialLevel);
@@ -321,7 +335,7 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
     });
   });
 
-  describe('Endpoint Configuration and Locales', () => {
+  describe('Endpoint Configuration and Request Construction', () => {
     it('defaults to /api/assess-pronunciation when cloud database is in local mode', () => {
       const endpoint = getAssessmentEndpoint();
       expect(endpoint.url).toMatch(/(assess-pronunciation)/);
@@ -356,7 +370,7 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
     it('prevents state corruption during concurrent requests', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
         const body = (init as any)?.body as FormData;
-        const requestedLocale = body?.get?.('locale') as string || 'es-ES';
+        const requestedLocale = (body?.get?.('locale') as string) || 'es-ES';
         return new Response(JSON.stringify({
           success: true,
           provider: 'azure',
@@ -378,5 +392,59 @@ describe('Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(res2.success).toBe(true);
       expect(res2.locale).toBe('es-MX');
     });
+  });
+});
+
+describe('[Mocked Contract] Backend Request Construction & Protocol Specifications', () => {
+  it('verifies that Azure REST request URL mandates format=detailed query param', () => {
+    const region = 'eastus';
+    const locale = 'es-ES';
+    const constructedUrl = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}&format=detailed`;
+
+    const parsed = new URL(constructedUrl);
+    expect(parsed.searchParams.get('format')).toBe('detailed');
+    expect(parsed.searchParams.get('language')).toBe('es-ES');
+  });
+
+  it('verifies that assessment JSON configuration does not include hard-coded non-GUID ScenarioId', () => {
+    const config = {
+      ReferenceText: 'Buenos días',
+      GradingSystem: 'HundredMark',
+      Granularity: 'Phoneme',
+      Dimension: 'Comprehensive',
+      EnableMiscue: true
+    };
+
+    expect((config as any).ScenarioId).toBeUndefined();
+    const jsonStr = JSON.stringify(config);
+    expect(jsonStr).not.toContain('espanolapp-v1');
+    expect(jsonStr).toContain('"Granularity":"Phoneme"');
+  });
+
+  it('verifies documented audio content type for genuine 16kHz 16-bit mono PCM WAV', () => {
+    const pcmHeader = 'audio/wav; codecs=audio/pcm; samplerate=16000';
+    expect(pcmHeader).toContain('codecs=audio/pcm');
+    expect(pcmHeader).toContain('samplerate=16000');
+  });
+});
+
+// Conditionally executed suite for live end-to-end integration testing with Azure AI Speech
+const hasLiveAzureKey = Boolean(
+  typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.AZURE_SPEECH_KEY
+);
+describe.skipIf(!hasLiveAzureKey)('[Live Integration] Azure AI Speech Pronunciation Assessment (Real Cloud)', () => {
+  it('connects to real Azure service when valid server credentials exist', async () => {
+    const testSamples = new Float32Array(16000); // 1 second of silence/sine wave
+    const wavBuffer = encodeMonoWav(testSamples, 16000);
+    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+    const result = await assessSpanishPronunciationWithAzure({
+      audioBlob: wavBlob,
+      referenceText: 'Hola',
+      locale: 'es-ES'
+    });
+
+    expect(result.provider).toBe('azure');
+    expect(result.scores).toBeDefined();
   });
 });

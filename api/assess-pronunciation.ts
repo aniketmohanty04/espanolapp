@@ -4,14 +4,80 @@
 
 export const config = {
   api: {
-    bodyParser: false, // Handle raw multipart streams
+    bodyParser: false,
   },
 };
 
 const ALLOWED_LOCALES = new Set(['es-ES', 'es-MX']);
-const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+const MAX_AUDIO_BYTES = 5 * 1024 * 1024; // 5 MB
+const MIN_AUDIO_BYTES = 200;
 const MAX_TEXT_LENGTH = 500;
 const TIMEOUT_MS = 12000;
+const RATE_LIMIT_WINDOW_MS = 60000;
+const MAX_REQUESTS_PER_WINDOW = 15;
+
+// Sliding window rate limiter
+interface RateLimitEntry {
+  timestamps: number[];
+}
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function getClientIdentifier(req: any): string {
+  const authHeader = req.headers?.authorization || '';
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ') && authHeader.length > 20) {
+    let hash = 0;
+    for (let i = 0; i < Math.min(authHeader.length, 64); i++) {
+      hash = (hash << 5) - hash + authHeader.charCodeAt(i);
+      hash |= 0;
+    }
+    return `auth_${hash}`;
+  }
+
+  const vercelIp = req.headers?.['x-vercel-ip'] || req.headers?.get?.('x-vercel-ip');
+  if (vercelIp) return `vercel_${String(vercelIp).trim()}`;
+
+  const realIp = req.headers?.['x-real-ip'] || req.headers?.get?.('x-real-ip');
+  if (realIp) return `real_${String(realIp).trim()}`;
+
+  const forwarded = req.headers?.['x-forwarded-for'] || req.headers?.get?.('x-forwarded-for');
+  if (forwarded) {
+    const firstIp = String(forwarded).split(',')[0].trim();
+    if (/^[a-fA-F0-9:.]+$/.test(firstIp)) {
+      return `fwd_${firstIp}`;
+    }
+  }
+
+  return 'anonymous_client';
+}
+
+function checkRateLimit(clientId: string): boolean {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+
+  if (rateLimitMap.size > 500) {
+    for (const [key, entry] of rateLimitMap.entries()) {
+      entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+      if (entry.timestamps.length === 0) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  let entry = rateLimitMap.get(clientId);
+  if (!entry) {
+    entry = { timestamps: [] };
+    rateLimitMap.set(clientId, entry);
+  }
+
+  entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+
+  if (entry.timestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+
+  entry.timestamps.push(now);
+  return true;
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +86,6 @@ const CORS_HEADERS = {
 };
 
 export default async function handler(req: any, res?: any) {
-  // Support both standard Fetch Request/Response and Node IncomingMessage/ServerResponse
   if (req.method === 'OPTIONS') {
     if (res?.status) {
       Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
@@ -35,6 +100,31 @@ export default async function handler(req: any, res?: any) {
       return res.status(405).json(errObj);
     }
     return new Response(JSON.stringify(errObj), { status: 405, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  }
+
+  // Early content-length check
+  const rawContentLength = req.headers?.['content-length'] || req.headers?.get?.('content-length');
+  if (rawContentLength) {
+    const contentLength = parseInt(rawContentLength, 10);
+    if (!isNaN(contentLength) && contentLength > MAX_AUDIO_BYTES + 8192) {
+      const err = {
+        success: false,
+        error: `Request payload (${(contentLength / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+        errorCode: 'PAYLOAD_TOO_LARGE'
+      };
+      return res?.status ? res.status(413).json(err) : new Response(JSON.stringify(err), { status: 413, headers: CORS_HEADERS });
+    }
+  }
+
+  const clientId = getClientIdentifier(req);
+  if (!checkRateLimit(clientId)) {
+    const err = {
+      success: false,
+      error: 'Rate limit exceeded. Please wait a minute before retrying.',
+      errorCode: 'RATE_LIMITED',
+      guidance: 'Has realizado demasiadas solicitudes seguidas. Espera un momento antes de volver a intentarlo.'
+    };
+    return res?.status ? res.status(429).json(err) : new Response(JSON.stringify(err), { status: 429, headers: CORS_HEADERS });
   }
 
   const azureKey = process.env.AZURE_SPEECH_KEY;
@@ -54,7 +144,6 @@ export default async function handler(req: any, res?: any) {
   }
 
   try {
-    // Read body chunks
     const chunks: Uint8Array[] = [];
     if (req.body && typeof req.body.getReader === 'function') {
       const reader = req.body.getReader();
@@ -74,7 +163,6 @@ export default async function handler(req: any, res?: any) {
     const totalBuffer = Buffer.concat(chunks);
     const contentType = req.headers['content-type'] || req.headers?.get?.('content-type') || '';
 
-    // Create a temporary Request object to parse FormData cleanly
     const fakeReq = new Request('http://localhost/api/assess-pronunciation', {
       method: 'POST',
       headers: {
@@ -111,8 +199,8 @@ export default async function handler(req: any, res?: any) {
     }
 
     const audioBytes = Buffer.from(await audioEntry.arrayBuffer());
-    if (audioBytes.length === 0) {
-      const err = { success: false, error: 'Audio recording is empty (0 bytes).', errorCode: 'EMPTY_AUDIO', guidance: 'No se detectó audio.' };
+    if (audioBytes.length < MIN_AUDIO_BYTES) {
+      const err = { success: false, error: 'Audio recording is empty or too short.', errorCode: 'EMPTY_AUDIO', guidance: 'No se detectó audio suficiente.' };
       return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: CORS_HEADERS });
     }
 
@@ -121,22 +209,51 @@ export default async function handler(req: any, res?: any) {
       return res?.status ? res.status(413).json(err) : new Response(JSON.stringify(err), { status: 413, headers: CORS_HEADERS });
     }
 
+    // Inspect magic bytes to prevent mislabeling audio
+    const isRiffWav = audioBytes.length >= 12 &&
+      audioBytes[0] === 0x52 && audioBytes[1] === 0x49 && audioBytes[2] === 0x46 && audioBytes[3] === 0x46 &&
+      audioBytes[8] === 0x57 && audioBytes[9] === 0x41 && audioBytes[10] === 0x56 && audioBytes[11] === 0x45;
+
+    const isOggOpus = audioBytes.length >= 4 &&
+      audioBytes[0] === 0x4f && audioBytes[1] === 0x67 && audioBytes[2] === 0x67 && audioBytes[3] === 0x53;
+
+    const isWebm = audioBytes.length >= 4 &&
+      audioBytes[0] === 0x1a && audioBytes[1] === 0x45 && audioBytes[2] === 0xdf && audioBytes[3] === 0xa3;
+
+    let audioContentType = '';
+    if (isRiffWav) {
+      audioContentType = 'audio/wav; codecs=audio/pcm; samplerate=16000';
+    } else if (isOggOpus) {
+      audioContentType = 'audio/ogg; codecs=opus';
+    } else if (isWebm) {
+      const err = {
+        success: false,
+        error: 'El formato WebM directo no es admitido por la API REST de Azure Speech. Debe convertirse a WAV 16kHz mono.',
+        errorCode: 'UNSUPPORTED_AUDIO_FORMAT',
+        guidance: 'Formato de audio no compatible. Asegúrate de que el conversor a WAV esté activo.'
+      };
+      return res?.status ? res.status(415).json(err) : new Response(JSON.stringify(err), { status: 415, headers: CORS_HEADERS });
+    } else {
+      const err = {
+        success: false,
+        error: 'Formato de audio no reconocido o dañado. Se requiere WAV PCM o OGG Opus genuino.',
+        errorCode: 'INVALID_AUDIO_FORMAT'
+      };
+      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: CORS_HEADERS });
+    }
+
+    // Assessment config without non-GUID ScenarioId
     const assessmentConfig = {
       ReferenceText: referenceText,
       GradingSystem: 'HundredMark',
       Granularity: 'Phoneme',
       Dimension: 'Comprehensive',
-      EnableMiscue: true,
-      ScenarioId: 'espanolapp-v1'
+      EnableMiscue: true
     };
 
     const configBase64 = Buffer.from(JSON.stringify(assessmentConfig)).toString('base64');
-    const azureEndpoint = `https://${azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}`;
-
-    let audioContentType = audioEntry.type || 'audio/wav';
-    if (!audioContentType || audioContentType === 'application/octet-stream') {
-      audioContentType = 'audio/wav; codecs=audio/pcm; samplerate=16000';
-    }
+    // Azure Speech Pronunciation Assessment REST endpoint with format=detailed
+    const azureEndpoint = `https://${azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}&format=detailed`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -186,6 +303,10 @@ export default async function handler(req: any, res?: any) {
         errorCode = 'AZURE_RATE_LIMITED';
         errorMsg = 'Azure Speech rate limit exceeded.';
         guidance = 'Demasiadas peticiones simultáneas a Azure. Espera un momento.';
+      } else if (azureRes.status === 400) {
+        errorCode = 'AZURE_BAD_AUDIO';
+        errorMsg = 'Azure rejected the audio format.';
+        guidance = 'Formato de audio no reconocido por Azure. Habla claro y prueba de nuevo.';
       }
 
       const err = { success: false, error: errorMsg, errorCode, guidance };

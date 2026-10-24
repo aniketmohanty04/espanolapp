@@ -84,7 +84,6 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     return false;
   });
 
-  const isAudioSupported = isAnyAudioInputSupported();
   const sessionRef = useRef<AudioRecordingSession | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -308,6 +307,10 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   // Start voice capture session
   const handleStartRecording = useCallback(async () => {
     if (isAssessing) return; // Prevent concurrent requests
+    if (!isAnyAudioInputSupported()) {
+      setErrorMessage('Tu navegador no soporta captura de audio ni reconocimiento de voz.');
+      return;
+    }
     setErrorMessage(null);
     setSpokenTranscript('');
     setEvaluation(null);
@@ -804,14 +807,24 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               </div>
               <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
                 <span className="text-[10px] text-slate-600 font-bold block uppercase">Fluidez</span>
-                <span className="text-lg font-black text-blue-800 font-mono">
-                  {azureResult.scores.fluencyScore}%
+                <span
+                  className="text-lg font-black text-blue-800 font-mono"
+                  title={azureResult.scores.fluencyScore === null || azureResult.scores.fluencyScore === undefined ? 'Métrica acústica de fluidez disponible exclusivamente con Azure AI Speech' : undefined}
+                >
+                  {azureResult.scores.fluencyScore !== null && azureResult.scores.fluencyScore !== undefined
+                    ? `${azureResult.scores.fluencyScore}%`
+                    : 'N/D'}
                 </span>
               </div>
               <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
                 <span className="text-[10px] text-slate-600 font-bold block uppercase">Completitud</span>
-                <span className="text-lg font-black text-purple-800 font-mono">
-                  {azureResult.scores.completenessScore}%
+                <span
+                  className="text-lg font-black text-purple-800 font-mono"
+                  title={azureResult.scores.completenessScore === null || azureResult.scores.completenessScore === undefined ? 'Métrica acústica de completitud disponible exclusivamente con Azure AI Speech' : undefined}
+                >
+                  {azureResult.scores.completenessScore !== null && azureResult.scores.completenessScore !== undefined
+                    ? `${azureResult.scores.completenessScore}%`
+                    : 'N/D'}
                 </span>
               </div>
             </div>

@@ -5,23 +5,80 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ALLOWED_LOCALES = new Set(["es-ES", "es-MX"]);
-const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_AUDIO_BYTES = 5 * 1024 * 1024; // 5 MB maximum audio size
+const MIN_AUDIO_BYTES = 200; // Minimum audio byte length
 const MAX_TEXT_LENGTH = 500;
 const TIMEOUT_MS = 12000;
+const RATE_LIMIT_WINDOW_MS = 60000;
+const MAX_REQUESTS_PER_WINDOW = 15;
 
-// Simple in-memory rate limiter per IP / client token: max 20 requests per minute
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+// Sliding window rate limiter with auto-pruning
+interface RateLimitEntry {
+  timestamps: number[];
+}
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function getClientIdentifier(req: Request): string {
+  // 1. If authenticated user token is present in Authorization header, use it as primary identity
+  const authHeader = req.headers.get("authorization") || "";
+  if (authHeader.startsWith("Bearer ") && authHeader.length > 20) {
+    const tokenPart = authHeader.substring(7);
+    // Simple fast hash of token
+    let hash = 0;
+    for (let i = 0; i < Math.min(tokenPart.length, 64); i++) {
+      hash = (hash << 5) - hash + tokenPart.charCodeAt(i);
+      hash |= 0;
+    }
+    return `auth_${hash}`;
+  }
+
+  // 2. Trust Cloudflare connecting IP in Supabase Edge Functions
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return `cf_${cfIp.trim()}`;
+
+  // 3. Fallback to x-real-ip
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return `real_${realIp.trim()}`;
+
+  // 4. Sanitize leftmost client IP from x-forwarded-for
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const firstIp = forwarded.split(",")[0].trim();
+    if (/^[a-fA-F0-9:.]+$/.test(firstIp)) {
+      return `fwd_${firstIp}`;
+    }
+  }
+
+  return "anonymous_client";
+}
+
 function checkRateLimit(clientId: string): boolean {
   const now = Date.now();
-  const entry = rateLimitMap.get(clientId);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(clientId, { count: 1, resetAt: now + 60000 });
-    return true;
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+
+  // Prune expired entries periodically if map grows
+  if (rateLimitMap.size > 500) {
+    for (const [key, entry] of rateLimitMap.entries()) {
+      entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+      if (entry.timestamps.length === 0) {
+        rateLimitMap.delete(key);
+      }
+    }
   }
-  if (entry.count >= 20) {
+
+  let entry = rateLimitMap.get(clientId);
+  if (!entry) {
+    entry = { timestamps: [] };
+    rateLimitMap.set(clientId, entry);
+  }
+
+  entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+
+  if (entry.timestamps.length >= MAX_REQUESTS_PER_WINDOW) {
     return false;
   }
-  entry.count += 1;
+
+  entry.timestamps.push(now);
   return true;
 }
 
@@ -70,9 +127,25 @@ serve(async (req: Request) => {
     );
   }
 
-  // Rate limiting safeguard
-  const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-  if (!checkRateLimit(clientIp)) {
+  // Early content-length check to prevent buffer overflow attacks
+  const rawContentLength = req.headers.get("content-length");
+  if (rawContentLength) {
+    const contentLength = parseInt(rawContentLength, 10);
+    if (!isNaN(contentLength) && contentLength > MAX_AUDIO_BYTES + 8192) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Request payload (${(contentLength / 1024 / 1024).toFixed(1)}MB) exceeds limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+          errorCode: "PAYLOAD_TOO_LARGE"
+        }),
+        { status: 413, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  // Rate limiting safeguard with trusted headers
+  const clientId = getClientIdentifier(req);
+  if (!checkRateLimit(clientId)) {
     return new Response(
       JSON.stringify({
         success: false,
@@ -165,13 +238,13 @@ serve(async (req: Request) => {
     }
 
     const audioBytes = new Uint8Array(await audioEntry.arrayBuffer());
-    if (audioBytes.byteLength === 0) {
+    if (audioBytes.byteLength < MIN_AUDIO_BYTES) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Audio recording is empty (0 bytes).",
+          error: "Audio recording is empty or too short to contain speech.",
           errorCode: "EMPTY_AUDIO",
-          guidance: "El micrófono no capturó audio. Asegúrate de hablar claramente cerca del micrófono."
+          guidance: "El micrófono no capturó audio suficiente. Asegúrate de hablar claramente cerca del micrófono."
         }),
         { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
@@ -188,29 +261,61 @@ serve(async (req: Request) => {
       );
     }
 
-    // Build Azure Pronunciation Assessment configuration
-    // Uses official Comprehensive dimension and Phoneme granularity
+    // Inspect magic bytes to strictly verify audio container
+    // Never claim audio is WAV if it is not genuine RIFF WAV!
+    const isRiffWav = audioBytes.byteLength >= 12 &&
+      audioBytes[0] === 0x52 && audioBytes[1] === 0x49 && audioBytes[2] === 0x46 && audioBytes[3] === 0x46 && // 'RIFF'
+      audioBytes[8] === 0x57 && audioBytes[9] === 0x41 && audioBytes[10] === 0x56 && audioBytes[11] === 0x45;  // 'WAVE'
+
+    const isOggOpus = audioBytes.byteLength >= 4 &&
+      audioBytes[0] === 0x4f && audioBytes[1] === 0x67 && audioBytes[2] === 0x67 && audioBytes[3] === 0x53; // 'OggS'
+
+    const isWebm = audioBytes.byteLength >= 4 &&
+      audioBytes[0] === 0x1a && audioBytes[1] === 0x45 && audioBytes[2] === 0xdf && audioBytes[3] === 0xa3; // EBML / WebM
+
+    let audioContentType = "";
+    if (isRiffWav) {
+      // Documented content type for 16 kHz, mono, 16-bit PCM WAV
+      audioContentType = "audio/wav; codecs=audio/pcm; samplerate=16000";
+    } else if (isOggOpus) {
+      audioContentType = "audio/ogg; codecs=opus";
+    } else if (isWebm) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "El formato WebM directo no es admitido por la API REST de Azure Speech. Debe convertirse a WAV 16kHz mono.",
+          errorCode: "UNSUPPORTED_AUDIO_FORMAT",
+          guidance: "Formato de audio no compatible. Asegúrate de que el conversor a WAV esté activo en tu navegador."
+        }),
+        { status: 415, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    } else {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Formato de audio no reconocido o dañado. Se requiere WAV PCM o OGG Opus genuino.",
+          errorCode: "INVALID_AUDIO_FORMAT"
+        }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Build official Azure Pronunciation Assessment configuration
+    // (ScenarioId omitted as required by official documentation unless valid GUID is supplied)
     const assessmentConfig = {
       ReferenceText: referenceText,
       GradingSystem: "HundredMark",
       Granularity: "Phoneme",
       Dimension: "Comprehensive",
-      EnableMiscue: true,
-      ScenarioId: "espanolapp-v1"
+      EnableMiscue: true
     };
 
-    // Base64 encode the JSON config for the HTTP header
+    // Base64 encode JSON configuration for header
     const configJson = JSON.stringify(assessmentConfig);
     const configBase64 = btoa(unescape(encodeURIComponent(configJson)));
 
-    // Azure Speech Pronunciation Assessment REST endpoint
-    const azureEndpoint = `https://${azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}`;
-
-    // Determine Audio Content-Type
-    let audioContentType = audioEntry.type || "audio/wav";
-    if (!audioContentType || audioContentType === "application/octet-stream") {
-      audioContentType = "audio/wav; codecs=audio/pcm; samplerate=16000";
-    }
+    // Azure Speech Pronunciation Assessment REST endpoint with format=detailed
+    const azureEndpoint = `https://${azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}&format=detailed`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -315,7 +420,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Process NBest[0] assessment result
+    // Process NBest[0] assessment result from detailed format
     const bestResult = azureData.NBest?.[0];
     const assessment = bestResult?.PronunciationAssessment;
 

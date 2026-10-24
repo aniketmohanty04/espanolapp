@@ -45,8 +45,8 @@ export interface AzureAssessmentResult {
   scores: {
     pronunciationScore: number; // 0 to 100
     accuracyScore: number;      // 0 to 100
-    fluencyScore: number;       // 0 to 100
-    completenessScore: number;  // 0 to 100
+    fluencyScore?: number | null;      // Available only when assessed acoustically by Azure
+    completenessScore?: number | null; // Available only when assessed acoustically by Azure
   };
   words: AzureWordAssessment[];
   error?: string;
@@ -119,8 +119,8 @@ export function createOfflineApproximationResult(
     scores: {
       pronunciationScore: localEval.overallScore,
       accuracyScore: localEval.accuracyPercent,
-      fluencyScore: Math.min(100, Math.round(localEval.overallScore * 0.95)),
-      completenessScore: localEval.accuracyPercent > 60 ? 100 : Math.round(localEval.accuracyPercent * 1.2)
+      fluencyScore: null,       // Acoustic fluency is explicitly unavailable from text alone
+      completenessScore: null   // Acoustic completeness is explicitly unavailable from text alone
     },
     words,
     error: errorNotice,
@@ -231,7 +231,12 @@ export async function assessSpanishPronunciationWithAzure(
       locale: data.locale || locale,
       recognitionStatus: data.recognitionStatus || 'Success',
       displayText: data.displayText,
-      scores: data.scores || { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
+      scores: {
+        pronunciationScore: typeof data.scores?.pronunciationScore === 'number' ? data.scores.pronunciationScore : 0,
+        accuracyScore: typeof data.scores?.accuracyScore === 'number' ? data.scores.accuracyScore : 0,
+        fluencyScore: typeof data.scores?.fluencyScore === 'number' ? data.scores.fluencyScore : null,
+        completenessScore: typeof data.scores?.completenessScore === 'number' ? data.scores.completenessScore : null
+      },
       words: data.words || [],
       error: data.error,
       errorCode: data.errorCode,
