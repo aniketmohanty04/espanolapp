@@ -1,5 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Mic, MicOff, Volume2, Sparkles, X, CheckCircle2, AlertCircle, RefreshCw, Loader2, Check } from 'lucide-react';
+import {
+  Mic,
+  MicOff,
+  Volume2,
+  Sparkles,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Loader2,
+  Check,
+  Cloud,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 import { speakSpanish, stopSpanishSpeech } from '../services/spanishSpeechService';
 import { transcribeSpanishAudioWithGemini } from '../services/geminiService';
 import {
@@ -15,6 +29,13 @@ import {
   MatchedQuizOption,
   PronunciationEvaluation
 } from '../services/spanishVoiceRecognitionService';
+import {
+  assessSpanishPronunciationWithAzure,
+  createOfflineApproximationResult,
+  AzureAssessmentResult,
+  AzurePronunciationLocale,
+  AzureWordAssessment
+} from '../services/azurePronunciationService';
 
 interface PronunciationTrainerModalProps {
   targetText: string;
@@ -35,11 +56,15 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
 }) => {
   // Current active target text (can be toggled if options are present)
   const [activeTarget, setActiveTarget] = useState<string>(targetText);
+  const [selectedLocale, setSelectedLocale] = useState<AzurePronunciationLocale>('es-ES');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+  const [isAssessing, setIsAssessing] = useState<boolean>(false);
   const [spokenTranscript, setSpokenTranscript] = useState<string>('');
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [evaluation, setEvaluation] = useState<PronunciationEvaluation | null>(null);
+  const [azureResult, setAzureResult] = useState<AzureAssessmentResult | null>(null);
+  const [expandedWordIndex, setExpandedWordIndex] = useState<number | null>(null);
   const [detectedOption, setDetectedOption] = useState<MatchedQuizOption | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [audioVolumeLevel, setAudioVolumeLevel] = useState<number>(0);
@@ -64,6 +89,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   const animFrameRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTranscriptRef = useRef<string>('');
+  const isAssessingRef = useRef<boolean>(false);
 
   // Synchronize targetText if prop changes
   useEffect(() => {
@@ -83,7 +109,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     setRecordingSeconds(0);
   }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — strictly release all microphone tracks and stop speech
   useEffect(() => {
     return () => {
       abortSpanishListening();
@@ -120,7 +146,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     lastTranscriptRef.current = trimmed;
     setSpokenTranscript(trimmed);
 
-    // 1. Evaluate pronunciation against active phrase
+    // 1. Evaluate pronunciation against active phrase using local engine
     const evalResult = evaluateSpanishPronunciation(activeTarget, trimmed, confidence);
     setEvaluation(evalResult);
 
@@ -131,7 +157,56 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     }
   }, [activeTarget, options]);
 
-  // Stop recording and process transcript from Web Speech or Gemini
+  // Execute Azure Speech Pronunciation Assessment on recorded audio blob
+  const runAzureAssessment = useCallback(async (audioBlob: Blob, fallbackTranscript: string) => {
+    if (isAssessingRef.current) return;
+    isAssessingRef.current = true;
+    setIsAssessing(true);
+    setErrorMessage(null);
+
+    try {
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob,
+        referenceText: activeTarget,
+        locale: selectedLocale,
+        spokenTranscriptFallback: fallbackTranscript
+      });
+
+      setAzureResult(result);
+
+      const effectiveText = result.displayText || fallbackTranscript;
+      if (effectiveText) {
+        setSpokenTranscript(effectiveText);
+        if (options && options.length > 0) {
+          const matched = matchSpokenTextToQuizOptions(effectiveText, options);
+          setDetectedOption(matched);
+        }
+      }
+
+      // Keep local evaluation for backwards compatibility and phonetic tips
+      const localEval = evaluateSpanishPronunciation(activeTarget, effectiveText || activeTarget);
+      setEvaluation({
+        ...localEval,
+        overallScore: result.scores.pronunciationScore,
+        accuracyPercent: result.scores.accuracyScore,
+        isMatch: result.scores.pronunciationScore >= 65
+      });
+
+      if (result.recognitionStatus === 'InitialSilenceTimeout' || result.recognitionStatus === 'NoMatch') {
+        setErrorMessage(result.guidance || 'No se detectó voz clara. Habla cerca del micrófono e inténtalo de nuevo.');
+      }
+    } catch (err) {
+      console.warn('Azure assessment notice:', err);
+      // Create safe fallback on unexpected client exception
+      const fallback = createOfflineApproximationResult(activeTarget, fallbackTranscript || activeTarget, selectedLocale);
+      setAzureResult(fallback);
+    } finally {
+      isAssessingRef.current = false;
+      setIsAssessing(false);
+    }
+  }, [activeTarget, options, selectedLocale]);
+
+  // Stop recording and process transcript from Azure, Web Speech, or Gemini
   const handleStopRecording = useCallback(async () => {
     setIsRecording(false);
     stopAudioMonitor();
@@ -139,13 +214,6 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
 
     const activeSession = sessionRef.current;
     sessionRef.current = null;
-
-    // Check immediately if recognized text is already available
-    const liveTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
-    if (liveTranscript.length > 0) {
-      processCapturedTranscript(liveTranscript);
-      return;
-    }
 
     let audioBlob: Blob | null = null;
     if (activeSession) {
@@ -156,23 +224,40 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       }
     }
 
-    // Fallback: If Web Speech produced no text, use Gemini Multimodal Audio transcription
+    const liveTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
+
+    // If audio recording was captured, send to Azure AI Speech Assessment
     if (audioBlob && audioBlob.size > 800) {
+      await runAzureAssessment(audioBlob, liveTranscript);
+      return;
+    }
+
+    // Fallback if no audio blob but Web Speech transcript was captured
+    if (liveTranscript.length > 0) {
+      processCapturedTranscript(liveTranscript);
+      const fallback = createOfflineApproximationResult(activeTarget, liveTranscript, selectedLocale);
+      setAzureResult(fallback);
+      return;
+    }
+
+    // If Web Speech produced no text, try Gemini fallback
+    if (audioBlob && audioBlob.size > 400) {
       setIsTranscribing(true);
       try {
         const geminiResult = await transcribeSpanishAudioWithGemini(audioBlob, activeTarget, options);
         if (geminiResult && geminiResult.transcript) {
           processCapturedTranscript(geminiResult.transcript, geminiResult.confidence);
+          await runAzureAssessment(audioBlob, geminiResult.transcript);
           setIsTranscribing(false);
           return;
         }
       } catch (err) {
-        console.warn('Gemini transcription error:', err);
+        console.warn('Gemini transcription notice:', err);
       }
       setIsTranscribing(false);
     }
 
-    // Allow 350ms for speech recognizer to deliver final flushed utterance before showing notice
+    // Grace period for speech recognizer
     setTimeout(() => {
       const finalTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
       if (finalTranscript.length > 0) {
@@ -181,14 +266,16 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
       }
     }, 350);
-  }, [activeTarget, options, stopAudioMonitor, processCapturedTranscript, spokenTranscript]);
+  }, [activeTarget, options, selectedLocale, stopAudioMonitor, processCapturedTranscript, runAzureAssessment, spokenTranscript]);
 
   // Start recording audio locally using MediaRecorder
   const startAudioRecordingFallback = useCallback(async () => {
+    if (isAssessing) return; // Prevent concurrent requests
     stopSpanishListening();
     setErrorMessage(null);
     setSpokenTranscript('');
     setEvaluation(null);
+    setAzureResult(null);
     setDetectedOption(null);
     lastTranscriptRef.current = '';
 
@@ -202,7 +289,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         elapsed += 1;
         setRecordingSeconds(elapsed);
         setAudioVolumeLevel(audioSession.getVolume());
-        if (elapsed >= 8) {
+        if (elapsed >= 10) {
           handleStopRecording();
         }
       }, 1000);
@@ -216,13 +303,15 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         setErrorMessage('No se pudo acceder al micrófono. Verifica que esté conectado y permitido en tu navegador.');
       }
     }
-  }, [handleStopRecording]);
+  }, [handleStopRecording, isAssessing]);
 
   // Start voice capture session
   const handleStartRecording = useCallback(async () => {
+    if (isAssessing) return; // Prevent concurrent requests
     setErrorMessage(null);
     setSpokenTranscript('');
     setEvaluation(null);
+    setAzureResult(null);
     setDetectedOption(null);
     lastTranscriptRef.current = '';
 
@@ -234,7 +323,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
 
     // Otherwise use Web Speech API in Chrome
     const started = startSpanishListening({
-      lang: 'es-ES',
+      lang: selectedLocale,
       continuous: false,
       interimResults: true,
       onStart: () => {
@@ -272,7 +361,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       setUseAudioMode(true);
       startAudioRecordingFallback();
     }
-  }, [useAudioMode, handleStopRecording, processCapturedTranscript, startAudioRecordingFallback, stopAudioMonitor]);
+  }, [isAssessing, selectedLocale, useAudioMode, handleStopRecording, processCapturedTranscript, startAudioRecordingFallback, stopAudioMonitor]);
 
   // Toggle button click
   const handleToggleListening = useCallback(() => {
@@ -289,6 +378,21 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       onApplySpokenAnswer(chosenText, evaluation || undefined);
     }
     onClose();
+  };
+
+  // Manual text testing handler
+  const handleManualEval = (textToEval: string) => {
+    const trimmed = textToEval.trim();
+    if (!trimmed) {
+      setEvaluation(null);
+      setAzureResult(null);
+      setDetectedOption(null);
+      return;
+    }
+
+    processCapturedTranscript(trimmed);
+    const approx = createOfflineApproximationResult(activeTarget, trimmed, selectedLocale);
+    setAzureResult(approx);
   };
 
   return (
@@ -356,6 +460,40 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           </div>
         </div>
 
+        {/* Spanish Locale Selector */}
+        <div className="mb-2.5 p-2.5 rounded-2xl bg-white/80 border border-amber-200 flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <span className="text-xs font-bold text-slate-800">Variante de Español:</span>
+            <span className="text-[10px] text-amber-700 font-medium">(Azure Locale)</span>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <button
+              type="button"
+              data-testid="locale-es-ES-btn"
+              onClick={() => setSelectedLocale('es-ES')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                selectedLocale === 'es-ES'
+                  ? 'bg-amber-400 border-amber-600 text-slate-950 shadow-xs font-black'
+                  : 'bg-white hover:bg-amber-50 border-amber-200 text-slate-700'
+              }`}
+            >
+              🇪🇸 España (es-ES)
+            </button>
+            <button
+              type="button"
+              data-testid="locale-es-MX-btn"
+              onClick={() => setSelectedLocale('es-MX')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                selectedLocale === 'es-MX'
+                  ? 'bg-amber-400 border-amber-600 text-slate-950 shadow-xs font-black'
+                  : 'bg-white hover:bg-amber-50 border-amber-200 text-slate-700'
+              }`}
+            >
+              🇲🇽 México (es-MX)
+            </button>
+          </div>
+        </div>
+
         {/* Quiz Multiple Choice Options Pills (if provided) */}
         {options && options.length > 0 && (
           <div className="mb-3 p-3 rounded-2xl bg-amber-100/60 border border-amber-200">
@@ -373,8 +511,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                     onClick={() => {
                       setActiveTarget(opt);
                       if (spokenTranscript) {
-                        const evalResult = evaluateSpanishPronunciation(opt, spokenTranscript);
-                        setEvaluation(evalResult);
+                        handleManualEval(spokenTranscript);
                       }
                     }}
                     className={`p-2 rounded-xl text-xs font-bold text-left border flex items-center space-x-2 transition-all cursor-pointer ${
@@ -416,7 +553,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
             }`}
           >
-            🎙️ Audio IA (Brave/Edge/Universal)
+            🎙️ Audio Grabado (Azure / Universal)
           </button>
         </div>
 
@@ -425,7 +562,8 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           <div className="relative flex items-center justify-center">
             <button
               onClick={handleToggleListening}
-              disabled={isTranscribing}
+              disabled={isTranscribing || isAssessing}
+              data-testid="pronunciation-mic-btn"
               className={`relative p-5 rounded-full border-4 transition-all duration-300 flex items-center justify-center shadow-xl cursor-pointer ${
                 isRecording
                   ? 'bg-red-500 border-red-300 text-white animate-pulse scale-110 shadow-red-500/40'
@@ -433,8 +571,8 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               }`}
               title={isRecording ? 'Toca para finalizar y evaluar' : 'Toca para hablar en español'}
             >
-              {isTranscribing ? (
-                <Loader2 className="w-8 h-8 animate-spin" />
+              {isAssessing || isTranscribing ? (
+                <Loader2 className="w-8 h-8 animate-spin text-slate-950" />
               ) : isRecording ? (
                 <MicOff className="w-8 h-8" />
               ) : (
@@ -468,14 +606,16 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           )}
 
           <span className="text-xs font-bold text-slate-800 text-center">
-            {isTranscribing
-              ? '🤖 Procesando tu audio con IA Camino...'
+            {isAssessing
+              ? '☁️ Evaluando pronunciación con Azure AI Speech...'
+              : isTranscribing
+              ? '🤖 Procesando audio con IA Camino...'
               : isRecording
               ? (useAudioMode
-                  ? '🔴 Grabando tu audio... Di tu respuesta y toca para finalizar.'
+                  ? '🔴 Grabando tu audio... Di tu respuesta y pulsa para evaluar.'
                   : '🔴 Escuchando... Di tu frase o respuesta.')
               : (useAudioMode
-                  ? 'Toca el micrófono para grabar tu voz con IA'
+                  ? 'Toca el micrófono para grabar y evaluar con Azure Speech'
                   : 'Toca el micrófono para hablar en español')}
           </span>
         </div>
@@ -507,7 +647,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs flex items-center justify-center space-x-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
               >
                 <Mic className="w-4 h-4 text-slate-950" />
-                <span>🎙️ Hablar ahora con Grabación de Audio IA</span>
+                <span>🎙️ Hablar ahora con Grabación de Audio Directa</span>
               </button>
             </div>
 
@@ -584,7 +724,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               type="button"
               onClick={() => {
                 setSpokenTranscript(activeTarget);
-                processCapturedTranscript(activeTarget);
+                handleManualEval(activeTarget);
               }}
               className="text-[10px] text-amber-800 font-bold underline hover:text-amber-950 cursor-pointer"
             >
@@ -602,9 +742,10 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 const val = e.target.value;
                 setSpokenTranscript(val);
                 if (val.trim()) {
-                  processCapturedTranscript(val);
+                  handleManualEval(val);
                 } else {
                   setEvaluation(null);
+                  setAzureResult(null);
                   setDetectedOption(null);
                 }
               }}
@@ -615,7 +756,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               data-testid="pronunciation-eval-btn"
               onClick={() => {
                 if (spokenTranscript.trim()) {
-                  processCapturedTranscript(spokenTranscript);
+                  handleManualEval(spokenTranscript);
                 }
               }}
               className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs cursor-pointer"
@@ -625,71 +766,133 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
           </div>
         </div>
 
-        {/* Pronunciation Assessment Results */}
-        {evaluation && (
-          <div className="space-y-3 pt-2 border-t border-amber-200 animate-fadeIn">
-            {/* Score & Rating Badge */}
-            <div
-              className="p-3 rounded-2xl border-2 flex items-center justify-between shadow-xs"
-              style={{
-                backgroundColor: `${evaluation.ratingColor}15`,
-                borderColor: evaluation.ratingColor
-              }}
-            >
-              <div className="flex items-center space-x-2">
-                <CheckCircle2 className="w-5 h-5" style={{ color: evaluation.ratingColor }} />
-                <div>
-                  <span className="font-bold text-sm block" style={{ color: evaluation.ratingColor }}>
-                    {evaluation.ratingLabel}
-                  </span>
-                  <span className="text-[11px] text-slate-600 font-medium">
-                    Precisión fonética estimada
-                  </span>
-                </div>
+        {/* ========================================================
+            AZURE AI SPEECH PRONUNCIATION ASSESSMENT RESULTS
+            ======================================================== */}
+        {azureResult && (
+          <div className="space-y-3 pt-2 border-t border-amber-200 animate-fadeIn" data-testid="azure-assessment-results">
+            {/* Header with Provider Badge */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-amber-900 uppercase tracking-wide">
+                Evaluación Fonética
+              </span>
+              {azureResult.isRealAzure ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 font-bold text-[10px] border border-blue-300 flex items-center space-x-1 shadow-xs">
+                  <Cloud className="w-3 h-3 text-blue-600" />
+                  <span>Azure AI Speech ({azureResult.locale})</span>
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] border border-amber-300">
+                  ⚡ Modo Local (Aproximación de texto)
+                </span>
+              )}
+            </div>
+
+            {/* Comprehensive Scores Grid (PronScore, Accuracy, Fluency, Completeness) */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
+                <span className="text-[10px] text-slate-600 font-bold block uppercase">Pronunciación</span>
+                <span className="text-lg font-black text-amber-900 font-mono">
+                  {azureResult.scores.pronunciationScore}%
+                </span>
               </div>
-              <div
-                className="px-3 py-1 rounded-xl text-lg font-black font-mono shadow-xs"
-                style={{
-                  backgroundColor: evaluation.ratingColor,
-                  color: '#FFFFFF'
-                }}
-              >
-                {evaluation.overallScore}%
+              <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
+                <span className="text-[10px] text-slate-600 font-bold block uppercase">Precisión</span>
+                <span className="text-lg font-black text-emerald-800 font-mono">
+                  {azureResult.scores.accuracyScore}%
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
+                <span className="text-[10px] text-slate-600 font-bold block uppercase">Fluidez</span>
+                <span className="text-lg font-black text-blue-800 font-mono">
+                  {azureResult.scores.fluencyScore}%
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-center shadow-xs">
+                <span className="text-[10px] text-slate-600 font-bold block uppercase">Completitud</span>
+                <span className="text-lg font-black text-purple-800 font-mono">
+                  {azureResult.scores.completenessScore}%
+                </span>
               </div>
             </div>
 
-            {/* Word-by-Word Breakdown */}
-            {evaluation.wordBreakdown.length > 0 && (
-              <div className="p-3 rounded-2xl bg-white border border-amber-200 space-y-1.5">
+            {/* Word-by-Word Breakdown with Azure ErrorType and Expandable Phonemes */}
+            {azureResult.words && azureResult.words.length > 0 && (
+              <div className="p-3 rounded-2xl bg-white border border-amber-200 space-y-2">
                 <span className="text-[10px] font-black text-amber-800 uppercase block">
-                  Desglose palabra por palabra:
+                  Desglose de palabras y fonemas (pulsa para ver fonemas):
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {evaluation.wordBreakdown.map((item, idx) => {
-                    const isGood = item.status === 'correct';
-                    const isNear = item.status === 'near';
+                  {azureResult.words.map((w: AzureWordAssessment, idx: number) => {
+                    const isGood = w.accuracyScore >= 80 && w.errorType === 'None';
+                    const isNear = w.accuracyScore >= 60 || w.errorType === 'Mispronunciation';
+                    const isExpanded = expandedWordIndex === idx;
+                    const hasPhonemes = Boolean(w.phonemes && w.phonemes.length > 0);
+
                     return (
-                      <span
-                        key={idx}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
-                          isGood
-                            ? 'bg-emerald-50 border-emerald-400 text-emerald-900'
-                            : isNear
-                            ? 'bg-amber-50 border-amber-400 text-amber-900'
-                            : 'bg-rose-50 border-rose-300 text-rose-900'
-                        }`}
-                        title={item.tip || `Similitud: ${Math.round(item.similarity * 100)}%`}
-                      >
-                        {item.word} {isGood ? '✓' : isNear ? '~' : '✗'}
-                      </span>
+                      <div key={idx} className="flex flex-col">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (hasPhonemes) {
+                              setExpandedWordIndex(isExpanded ? null : idx);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center space-x-1 cursor-pointer ${
+                            isGood
+                              ? 'bg-emerald-50 border-emerald-400 text-emerald-950 hover:bg-emerald-100'
+                              : isNear
+                              ? 'bg-amber-50 border-amber-400 text-amber-950 hover:bg-amber-100'
+                              : 'bg-rose-50 border-rose-300 text-rose-950 hover:bg-rose-100'
+                          }`}
+                          title={`Precisión: ${w.accuracyScore}% | Error: ${w.errorType}`}
+                        >
+                          <span>{w.word}</span>
+                          <span className="font-mono text-[10px] opacity-80">{w.accuracyScore}%</span>
+                          {w.errorType !== 'None' && (
+                            <span className="text-[9px] uppercase px-1 rounded bg-rose-200 text-rose-800 font-black">
+                              {w.errorType}
+                            </span>
+                          )}
+                          {hasPhonemes && (
+                            isExpanded ? <ChevronUp className="w-3 h-3 text-slate-600" /> : <ChevronDown className="w-3 h-3 text-slate-600" />
+                          )}
+                        </button>
+
+                        {/* Expandable Phoneme Scores */}
+                        {isExpanded && w.phonemes && (
+                          <div className="mt-1 p-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-mono flex flex-wrap gap-1 animate-fadeIn">
+                            {w.phonemes.map((p, pIdx) => (
+                              <span
+                                key={pIdx}
+                                className={`px-1.5 py-0.5 rounded ${
+                                  p.accuracyScore >= 80 ? 'bg-emerald-700' : p.accuracyScore >= 60 ? 'bg-amber-600' : 'bg-rose-700'
+                                }`}
+                              >
+                                /{p.phoneme}/: {p.accuracyScore}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
               </div>
             )}
 
-            {/* Phonetic Coaching Tips */}
-            {evaluation.phoneticTips.length > 0 && (
+            {/* Offline Fallback Guidance Notice */}
+            {!azureResult.isRealAzure && (
+              <div className="p-2.5 rounded-xl bg-amber-100/60 border border-amber-300 text-[11px] text-amber-900">
+                <span className="font-bold block">💡 Nota sobre modo local:</span>
+                <span>
+                  {azureResult.guidance || 'Evaluación local aproximada. Para activar la evaluación acústica nativa, configura AZURE_SPEECH_KEY en el servidor.'}
+                </span>
+              </div>
+            )}
+
+            {/* Phonetic Coaching Tips from Camino */}
+            {evaluation && evaluation.phoneticTips && evaluation.phoneticTips.length > 0 && (
               <div className="p-3 rounded-2xl bg-amber-100/70 border border-amber-300 text-xs text-amber-950 space-y-1">
                 <span className="font-bold flex items-center space-x-1 text-amber-900">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 fill-amber-400" />
@@ -707,13 +910,14 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
             <div className="pt-2 flex items-center space-x-2">
               <button
                 onClick={handleToggleListening}
+                disabled={isAssessing}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>{isRecording ? 'Detener grabación' : 'Repetir intento'}</span>
               </button>
 
-              {onApplySpokenAnswer && (evaluation.isMatch || detectedOption) && (
+              {onApplySpokenAnswer && (
                 <button
                   onClick={() => handleConfirmAnswer(detectedOption ? detectedOption.matchedOption : (spokenTranscript || activeTarget))}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all cursor-pointer"
