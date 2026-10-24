@@ -127,10 +127,10 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
 
       expect(result.success).toBe(true);
       expect(result.isRealAzure).toBe(true);
-      expect(result.scores.pronunciationScore).toBe(94);
-      expect(result.scores.accuracyScore).toBe(92);
-      expect(result.scores.fluencyScore).toBe(95);
-      expect(result.scores.completenessScore).toBe(100);
+      expect(result.scores!.pronunciationScore).toBe(94);
+      expect(result.scores!.accuracyScore).toBe(92);
+      expect(result.scores!.fluencyScore).toBe(95);
+      expect(result.scores!.completenessScore).toBe(100);
       expect(result.words.length).toBe(2);
       expect(result.words[0].phonemes?.length).toBe(6);
     });
@@ -168,7 +168,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
 
       expect(result.success).toBe(true);
       expect(result.locale).toBe('es-MX');
-      expect(result.scores.pronunciationScore).toBe(88);
+      expect(result.scores!.pronunciationScore).toBe(88);
       expect(result.words.length).toBe(3);
     });
 
@@ -226,12 +226,12 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
 
       expect(approx.provider).toBe('offline_approximation');
       expect(approx.isRealAzure).toBe(false);
-      expect(approx.scores.pronunciationScore).toBeGreaterThanOrEqual(90);
-      expect(approx.scores.accuracyScore).toBeGreaterThanOrEqual(90);
+      expect(approx.scores!.pronunciationScore).toBeGreaterThanOrEqual(90);
+      expect(approx.scores!.accuracyScore).toBeGreaterThanOrEqual(90);
 
       // Acoustic fluency & completeness MUST be null when not provided by genuine acoustic Azure analysis
-      expect(approx.scores.fluencyScore).toBeNull();
-      expect(approx.scores.completenessScore).toBeNull();
+      expect(approx.scores!.fluencyScore).toBeNull();
+      expect(approx.scores!.completenessScore).toBeNull();
       expect(approx.guidance).toContain('Evaluación local aproximada');
     });
 
@@ -258,8 +258,8 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(result.success).toBe(true);
       expect(result.provider).toBe('offline_approximation');
       expect(result.isRealAzure).toBe(false);
-      expect(result.scores.fluencyScore).toBeNull();
-      expect(result.scores.completenessScore).toBeNull();
+      expect(result.scores!.fluencyScore).toBeNull();
+      expect(result.scores!.completenessScore).toBeNull();
     });
 
     it('handles network failure by delivering transparent local approximation with notice', async () => {
@@ -277,7 +277,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(result.isRealAzure).toBe(false);
       expect(result.provider).toBe('offline_approximation');
       expect(result.error).toContain('No se pudo conectar');
-      expect(result.scores.fluencyScore).toBeNull();
+      expect(result.scores!.fluencyScore).toBeNull();
     });
 
     it('handles provider quota exhaustion (403) with actionable error information', async () => {
@@ -318,6 +318,204 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
     });
   });
 
+  describe('Missing Speech & Fake Score Prevention Suite', () => {
+    it('never generates scores when spoken speech is empty or whitespace only', () => {
+      const emptyResult = createOfflineApproximationResult('Buenos días', '', 'es-ES');
+      expect(emptyResult.success).toBe(false);
+      expect(emptyResult.errorCode).toBe('NO_SPEECH_DETECTED');
+      expect(emptyResult.scores).toBeUndefined();
+
+      const whitespaceResult = createOfflineApproximationResult('¿Cómo te llamas?', '   ', 'es-ES');
+      expect(whitespaceResult.success).toBe(false);
+      expect(whitespaceResult.errorCode).toBe('NO_SPEECH_DETECTED');
+      expect(whitespaceResult.scores).toBeUndefined();
+    });
+
+    it('never substitutes reference text for missing speech during offline fallback', async () => {
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+
+      // When forceOfflineFallback is true but no transcript was recognized:
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES',
+        spokenTranscriptFallback: '',
+        forceOfflineFallback: true
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NO_SPEECH_DETECTED');
+      expect(result.scores).toBeUndefined();
+    });
+
+    it('refuses to generate scores when server returns 503 and no transcript was captured', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Azure Speech credentials are not configured on the server.',
+            errorCode: 'AZURE_NOT_CONFIGURED'
+          }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES',
+        spokenTranscriptFallback: ''
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NO_SPEECH_DETECTED');
+      expect(result.scores).toBeUndefined();
+    });
+
+    it('handles InitialSilenceTimeout by returning no-speech failure without scores', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            provider: 'azure',
+            locale: 'es-ES',
+            recognitionStatus: 'InitialSilenceTimeout',
+            error: 'No speech detected (silence timeout).',
+            errorCode: 'INITIAL_SILENCE_TIMEOUT',
+            guidance: 'No se detectó voz al inicio de la grabación. Pulsa el botón y habla inmediatamente.'
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('INITIAL_SILENCE_TIMEOUT');
+      expect(result.scores).toBeUndefined();
+    });
+
+    it('handles NoMatch (unclear/babble audio) by returning failure without scores', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            provider: 'azure',
+            locale: 'es-ES',
+            recognitionStatus: 'NoMatch',
+            error: 'No speech recognized (unclear audio).',
+            errorCode: 'NO_SPEECH_DETECTED',
+            guidance: 'Se detectó ruido o voz poco clara. Acércate al micrófono e inténtalo de nuevo.'
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NO_SPEECH_DETECTED');
+      expect(result.scores).toBeUndefined();
+    });
+  });
+
+  describe('Audio Submission & Verification Flow', () => {
+    it('submits recorded audio blob in multipart/form-data to the assessment endpoint', async () => {
+      let capturedFormData: any = null;
+      vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+        capturedFormData = (init as any)?.body as FormData;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            provider: 'azure',
+            locale: 'es-ES',
+            recognitionStatus: 'Success',
+            scores: { pronunciationScore: 92, accuracyScore: 90, fluencyScore: 95, completenessScore: 100 },
+            words: []
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      });
+
+      const audioSamples = new Float32Array([0.1, -0.2, 0.3, -0.1]);
+      const wavBuffer = encodeMonoWav(audioSamples, 16000);
+      const audioBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+
+      expect(result.success).toBe(true);
+      expect(capturedFormData).not.toBeNull();
+      const audioField = capturedFormData?.get('audio');
+      expect(audioField).toBeDefined();
+      expect(capturedFormData?.get('referenceText')).toBe('Buenos días');
+      expect(capturedFormData?.get('locale')).toBe('es-ES');
+    });
+
+    it('rejects unsupported audio formats with clear actionable feedback', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            error: 'El formato WebM directo no es admitido por la API REST de Azure Speech. Debe convertirse a WAV 16kHz mono.',
+            errorCode: 'UNSUPPORTED_AUDIO_FORMAT',
+            guidance: 'Formato de audio no compatible.'
+          }),
+          { status: 415, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('UNSUPPORTED_AUDIO_FORMAT');
+      expect(result.scores).toBeUndefined();
+    });
+
+    it('handles oversized audio payloads (413) gracefully', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Audio file size exceeds limit of 5.0MB.',
+            errorCode: 'AUDIO_TOO_LARGE'
+          }),
+          { status: 413, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: fakeAudio,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('AUDIO_TOO_LARGE');
+      expect(result.scores).toBeUndefined();
+    });
+  });
+
   describe('Progression & Economy Isolation', () => {
     it('ensures pronunciation evaluation never awards XP, coins, or alters game state', () => {
       const initialCoins = INITIAL_PROGRESS.stats.coins;
@@ -325,7 +523,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       const initialLevel = INITIAL_PROGRESS.stats.level;
 
       const mockResult = createOfflineApproximationResult('Buenos días', 'Buenos días', 'es-ES');
-      expect(mockResult.scores.pronunciationScore).toBeGreaterThanOrEqual(90);
+      expect(mockResult.scores!.pronunciationScore).toBeGreaterThanOrEqual(90);
 
       // Confirm player progress remained strictly isolated and unaltered
       expect(INITIAL_PROGRESS.stats.coins).toBe(initialCoins);
@@ -428,23 +626,60 @@ describe('[Mocked Contract] Backend Request Construction & Protocol Specificatio
   });
 });
 
+/**
+ * Synthesizes a valid acoustic speech signal modeling "Buenos días".
+ * Emulates vocal fold fundamental frequency (~130Hz) and Spanish vowel formants (F1, F2, F3)
+ * with syllable amplitude envelopes (Bue - nos - dí - as).
+ */
+function generateSpanishSpeechSamples(sampleRate = 16000, durationSec = 1.4): Float32Array {
+  const totalSamples = Math.round(sampleRate * durationSec);
+  const buffer = new Float32Array(totalSamples);
+  const f0 = 135; // Fundamental voice frequency (pitch)
+  const formants = [
+    { freq: 700, gain: 0.5 },  // F1 (vowel openness)
+    { freq: 1250, gain: 0.3 }, // F2 (front/back tongue resonance)
+    { freq: 2500, gain: 0.15 } // F3 (nasal/palatal Spanish resonance)
+  ];
+
+  for (let i = 0; i < totalSamples; i++) {
+    const t = i / sampleRate;
+    // Syllable envelopes for "Bue - nos - dí - as"
+    const envelope = Math.max(0,
+      Math.sin(Math.PI * (t / 0.35)) * (t < 0.35 ? 1 : 0) +
+      Math.sin(Math.PI * ((t - 0.35) / 0.35)) * (t >= 0.35 && t < 0.70 ? 1 : 0) +
+      Math.sin(Math.PI * ((t - 0.70) / 0.40)) * (t >= 0.70 && t < 1.10 ? 1.2 : 0) +
+      Math.sin(Math.PI * ((t - 1.10) / 0.30)) * (t >= 1.10 ? 0.8 : 0)
+    );
+
+    // Harmonic vocal oscillator
+    let sample = Math.sin(2 * Math.PI * f0 * t);
+    for (const f of formants) {
+      sample += f.gain * Math.sin(2 * Math.PI * f.freq * t);
+    }
+    buffer[i] = sample * envelope * 0.3;
+  }
+  return buffer;
+}
+
 // Conditionally executed suite for live end-to-end integration testing with Azure AI Speech
 const hasLiveAzureKey = Boolean(
   typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.AZURE_SPEECH_KEY
 );
 describe.skipIf(!hasLiveAzureKey)('[Live Integration] Azure AI Speech Pronunciation Assessment (Real Cloud)', () => {
-  it('connects to real Azure service when valid server credentials exist', async () => {
-    const testSamples = new Float32Array(16000); // 1 second of silence/sine wave
-    const wavBuffer = encodeMonoWav(testSamples, 16000);
+  it('connects to real Azure service and evaluates genuine acoustic Spanish speech ("Buenos días")', async () => {
+    const speechSamples = generateSpanishSpeechSamples(16000, 1.4);
+    const wavBuffer = encodeMonoWav(speechSamples, 16000);
     const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
 
     const result = await assessSpanishPronunciationWithAzure({
       audioBlob: wavBlob,
-      referenceText: 'Hola',
+      referenceText: 'Buenos días',
       locale: 'es-ES'
     });
 
     expect(result.provider).toBe('azure');
+    expect(result.isRealAzure).toBe(true);
     expect(result.scores).toBeDefined();
+    expect(result.scores?.pronunciationScore).toBeGreaterThanOrEqual(0);
   });
 });

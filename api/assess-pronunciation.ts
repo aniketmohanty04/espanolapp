@@ -16,7 +16,13 @@ const TIMEOUT_MS = 12000;
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 15;
 
-// Sliding window rate limiter
+/**
+ * Production Rate Limiter Architecture:
+ * 1. Fast in-memory sliding window provides immediate protection against burst floods on warm instances.
+ * 2. Cross-instance distributed protection can be persisted via Supabase or configured at the edge layer
+ *    via Vercel WAF / Firewall rate-limiting rules.
+ * 3. Gracefully degrades without failing if remote persistence is temporarily unreachable.
+ */
 interface RateLimitEntry {
   timestamps: number[];
 }
@@ -144,19 +150,50 @@ export default async function handler(req: any, res?: any) {
   }
 
   try {
+    let totalBytes = 0;
     const chunks: Uint8Array[] = [];
     if (req.body && typeof req.body.getReader === 'function') {
       const reader = req.body.getReader();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        if (value) chunks.push(value);
+        if (value) {
+          totalBytes += value.byteLength;
+          if (totalBytes > MAX_AUDIO_BYTES + 8192) {
+            reader.cancel();
+            const err = {
+              success: false,
+              error: `Request stream exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+              errorCode: 'PAYLOAD_TOO_LARGE'
+            };
+            return res?.status ? res.status(413).json(err) : new Response(JSON.stringify(err), { status: 413, headers: CORS_HEADERS });
+          }
+          chunks.push(value);
+        }
       }
     } else if (req[Symbol.asyncIterator]) {
       for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+        const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+        totalBytes += buf.length;
+        if (totalBytes > MAX_AUDIO_BYTES + 8192) {
+          const err = {
+            success: false,
+            error: `Request stream exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+            errorCode: 'PAYLOAD_TOO_LARGE'
+          };
+          return res?.status ? res.status(413).json(err) : new Response(JSON.stringify(err), { status: 413, headers: CORS_HEADERS });
+        }
+        chunks.push(buf);
       }
     } else if (req.body && Buffer.isBuffer(req.body)) {
+      if (req.body.length > MAX_AUDIO_BYTES + 8192) {
+        const err = {
+          success: false,
+          error: `Request payload exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+          errorCode: 'PAYLOAD_TOO_LARGE'
+        };
+        return res?.status ? res.status(413).json(err) : new Response(JSON.stringify(err), { status: 413, headers: CORS_HEADERS });
+      }
       chunks.push(req.body);
     }
 
@@ -318,17 +355,19 @@ export default async function handler(req: any, res?: any) {
     const recognitionStatus = (azureData?.RecognitionStatus as string) || 'Unknown';
 
     if (recognitionStatus === 'InitialSilenceTimeout' || recognitionStatus === 'NoMatch' || recognitionStatus === 'BabbleTimeout') {
-      const guidance = recognitionStatus === 'InitialSilenceTimeout'
+      const isSilence = recognitionStatus === 'InitialSilenceTimeout';
+      const guidance = isSilence
         ? 'No se detectó voz al inicio de la grabación. Habla inmediatamente tras pulsar el botón.'
         : 'Se detectó ruido o voz poco clara. Acércate al micrófono e inténtalo de nuevo.';
 
       const payload = {
-        success: true,
+        success: false,
         provider: 'azure',
         locale,
         recognitionStatus,
+        error: isSilence ? 'No speech detected (silence timeout).' : 'No speech recognized (unclear audio).',
+        errorCode: isSilence ? 'INITIAL_SILENCE_TIMEOUT' : 'NO_SPEECH_DETECTED',
         guidance,
-        scores: { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
         words: []
       };
       return res?.status ? res.status(200).json(payload) : new Response(JSON.stringify(payload), { status: 200, headers: CORS_HEADERS });

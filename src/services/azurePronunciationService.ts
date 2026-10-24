@@ -42,7 +42,7 @@ export interface AzureAssessmentResult {
   locale: AzurePronunciationLocale;
   recognitionStatus: string;
   displayText?: string;
-  scores: {
+  scores?: {
     pronunciationScore: number; // 0 to 100
     accuracyScore: number;      // 0 to 100
     fluencyScore?: number | null;      // Available only when assessed acoustically by Azure
@@ -93,6 +93,7 @@ export function getAssessmentEndpoint(): { url: string; headers: Record<string, 
 /**
  * Creates an offline approximation result using local text similarity.
  * Strictly labels the result as an approximation, never fabricating phoneme or acoustic scores.
+ * If spokenText is empty or missing, returns an explicit no-speech failure without scores.
  */
 export function createOfflineApproximationResult(
   referenceText: string,
@@ -100,7 +101,23 @@ export function createOfflineApproximationResult(
   locale: AzurePronunciationLocale = 'es-ES',
   errorNotice?: string
 ): AzureAssessmentResult {
-  const localEval = evaluateSpanishPronunciation(referenceText, spokenText);
+  const cleanSpoken = (spokenText || '').trim();
+  if (!cleanSpoken) {
+    return {
+      success: false,
+      provider: 'offline_approximation',
+      isRealAzure: false,
+      locale,
+      recognitionStatus: 'NoSpeechDetected',
+      displayText: '',
+      words: [],
+      error: errorNotice || 'No se detectó voz o texto para evaluar.',
+      errorCode: 'NO_SPEECH_DETECTED',
+      guidance: 'No se detectó voz. Habla claro cerca del micrófono e inténtalo de nuevo.'
+    };
+  }
+
+  const localEval = evaluateSpanishPronunciation(referenceText, cleanSpoken);
 
   // Map word breakdown to assessment format
   const words: AzureWordAssessment[] = localEval.wordBreakdown.map((w) => ({
@@ -115,7 +132,7 @@ export function createOfflineApproximationResult(
     isRealAzure: false,
     locale,
     recognitionStatus: 'OfflineApproximation',
-    displayText: spokenText,
+    displayText: cleanSpoken,
     scores: {
       pronunciationScore: localEval.overallScore,
       accuracyScore: localEval.accuracyPercent,
@@ -143,8 +160,23 @@ export async function assessSpanishPronunciationWithAzure(
     forceOfflineFallback = false
   } = options;
 
+  const validTranscriptFallback = (spokenTranscriptFallback || '').trim();
+
   if (forceOfflineFallback) {
-    return createOfflineApproximationResult(referenceText, spokenTranscriptFallback, locale);
+    if (!validTranscriptFallback) {
+      return {
+        success: false,
+        provider: 'offline_approximation',
+        isRealAzure: false,
+        locale,
+        recognitionStatus: 'NoSpeechDetected',
+        words: [],
+        error: 'No se detectó voz para evaluar.',
+        errorCode: 'NO_SPEECH_DETECTED',
+        guidance: 'No se detectó voz. Habla claro cerca del micrófono e inténtalo de nuevo.'
+      };
+    }
+    return createOfflineApproximationResult(referenceText, validTranscriptFallback, locale);
   }
 
   if (!referenceText || referenceText.trim().length === 0) {
@@ -154,7 +186,6 @@ export async function assessSpanishPronunciationWithAzure(
       isRealAzure: false,
       locale,
       recognitionStatus: 'InvalidInput',
-      scores: { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
       words: [],
       error: 'La frase de referencia no puede estar vacía.',
       errorCode: 'MISSING_REFERENCE_TEXT'
@@ -162,7 +193,30 @@ export async function assessSpanishPronunciationWithAzure(
   }
 
   // Convert browser recording (WebM/Opus) to genuine 16kHz mono 16-bit PCM WAV
-  const { wavBlob, mimeType } = await convertAudioBlobToWav(audioBlob, 16000);
+  const { wavBlob, mimeType, isConverted } = await convertAudioBlobToWav(audioBlob, 16000);
+
+  // If conversion failed and format is unsupported (e.g. raw WebM), do not send invalid audio to Azure
+  if (!isConverted && mimeType !== 'audio/wav' && mimeType !== 'audio/ogg') {
+    if (validTranscriptFallback) {
+      return createOfflineApproximationResult(
+        referenceText,
+        validTranscriptFallback,
+        locale,
+        'La conversión de audio a WAV 16kHz falló. Se utilizó aproximación de texto basada en lo transcrito.'
+      );
+    }
+    return {
+      success: false,
+      provider: 'offline_approximation',
+      isRealAzure: false,
+      locale,
+      recognitionStatus: 'AudioConversionFailed',
+      words: [],
+      error: 'No se pudo convertir la grabación a un formato WAV compatible y no se detectó texto transcrito.',
+      errorCode: 'AUDIO_CONVERSION_FAILED',
+      guidance: 'Verifica tu micrófono y asegúrate de permitir la grabación de audio en el navegador.'
+    };
+  }
 
   const { url, headers } = getAssessmentEndpoint();
   const formData = new FormData();
@@ -186,15 +240,28 @@ export async function assessSpanishPronunciationWithAzure(
 
     clearTimeout(timeoutId);
 
-    // If endpoint is unconfigured or not found, fall back gracefully to local approximation
+    // If endpoint is unconfigured or not found, fall back gracefully to local approximation ONLY if speech exists
     if (response.status === 503 || response.status === 404) {
       const errJson = await response.json().catch(() => ({}));
-      return createOfflineApproximationResult(
-        referenceText,
-        spokenTranscriptFallback || referenceText,
+      if (validTranscriptFallback) {
+        return createOfflineApproximationResult(
+          referenceText,
+          validTranscriptFallback,
+          locale,
+          errJson.error || 'Servidor Azure no configurado. Mostrando aproximación de texto.'
+        );
+      }
+      return {
+        success: false,
+        provider: 'offline_approximation',
+        isRealAzure: false,
         locale,
-        errJson.error || 'Servidor Azure no configurado.'
-      );
+        recognitionStatus: 'NoSpeechDetected',
+        words: [],
+        error: errJson.error || 'Servidor Azure no configurado y no se detectó voz.',
+        errorCode: 'NO_SPEECH_DETECTED',
+        guidance: 'No se detectó voz para evaluar. Habla claro cerca del micrófono e inténtalo de nuevo.'
+      };
     }
 
     if (!response.ok) {
@@ -205,7 +272,6 @@ export async function assessSpanishPronunciationWithAzure(
         isRealAzure: false,
         locale,
         recognitionStatus: 'Error',
-        scores: { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
         words: [],
         error: errorData.error || `Error del servidor HTTP ${response.status}`,
         errorCode: errorData.errorCode || 'BACKEND_ERROR',
@@ -215,17 +281,30 @@ export async function assessSpanishPronunciationWithAzure(
 
     const data = await response.json();
 
-    if (!data.success && data.errorCode === 'AZURE_NOT_CONFIGURED') {
-      return createOfflineApproximationResult(
-        referenceText,
-        spokenTranscriptFallback || referenceText,
-        locale,
-        data.error
-      );
+    if (!data.success) {
+      if (data.errorCode === 'AZURE_NOT_CONFIGURED' && validTranscriptFallback) {
+        return createOfflineApproximationResult(
+          referenceText,
+          validTranscriptFallback,
+          locale,
+          data.error
+        );
+      }
+      return {
+        success: false,
+        provider: data.provider || 'azure',
+        isRealAzure: false,
+        locale: data.locale || locale,
+        recognitionStatus: data.recognitionStatus || 'Error',
+        words: [],
+        error: data.error || 'La evaluación no fue exitosa.',
+        errorCode: data.errorCode || 'ASSESSMENT_FAILED',
+        guidance: data.guidance || 'Inténtalo de nuevo.'
+      };
     }
 
     return {
-      success: Boolean(data.success),
+      success: true,
       provider: data.provider || 'azure',
       isRealAzure: data.provider === 'azure' && data.scores !== undefined,
       locale: data.locale || locale,
@@ -247,12 +326,25 @@ export async function assessSpanishPronunciationWithAzure(
     clearTimeout(timeoutId);
     const isTimeout = (err as { name?: string })?.name === 'AbortError';
 
-    // On network failure or timeout, provide local approximation fallback with clear notice
-    return createOfflineApproximationResult(
-      referenceText,
-      spokenTranscriptFallback || referenceText,
+    if (validTranscriptFallback) {
+      return createOfflineApproximationResult(
+        referenceText,
+        validTranscriptFallback,
+        locale,
+        isTimeout ? 'Tiempo de espera agotado al conectar con Azure. Mostrando aproximación de texto.' : 'No se pudo conectar con el servidor Azure. Mostrando aproximación de texto.'
+      );
+    }
+
+    return {
+      success: false,
+      provider: 'offline_approximation',
+      isRealAzure: false,
       locale,
-      isTimeout ? 'Tiempo de espera agotado al conectar con Azure.' : 'No se pudo conectar con el servidor de evaluación Azure.'
-    );
+      recognitionStatus: isTimeout ? 'Timeout' : 'NetworkError',
+      words: [],
+      error: isTimeout ? 'Tiempo de espera agotado al conectar con Azure.' : 'No se pudo conectar con el servidor de evaluación Azure.',
+      errorCode: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      guidance: 'Comprueba tu conexión e inténtalo de nuevo en unos segundos.'
+    };
   }
 }

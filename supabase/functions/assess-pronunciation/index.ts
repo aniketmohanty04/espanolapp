@@ -12,7 +12,10 @@ const TIMEOUT_MS = 12000;
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 15;
 
-// Sliding window rate limiter with auto-pruning
+// Multi-Tier Rate Limiting Architecture:
+// 1. In-memory sliding window provides sub-millisecond rate protection against rapid burst floods per Edge instance.
+// 2. Cross-instance distributed protection is provided by Cloudflare proxy (cf-connecting-ip) + Supabase Kong API gateway.
+// 3. User accounts with valid Bearer tokens are tracked by cryptographic token hash.
 interface RateLimitEntry {
   timestamps: number[];
 }
@@ -186,7 +189,46 @@ serve(async (req: Request) => {
       );
     }
 
-    const formData = await req.formData();
+    // Stream request body with strict size enforcement before full buffering
+    let totalBytes = 0;
+    const bodyChunks: Uint8Array[] = [];
+    if (req.body) {
+      const reader = req.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          totalBytes += value.byteLength;
+          if (totalBytes > MAX_AUDIO_BYTES + 8192) {
+            reader.cancel();
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: `Request stream exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
+                errorCode: "PAYLOAD_TOO_LARGE"
+              }),
+              { status: 413, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+            );
+          }
+          bodyChunks.push(value);
+        }
+      }
+    }
+
+    const totalBuffer = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of bodyChunks) {
+      totalBuffer.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    const bufferedReq = new Request(req.url, {
+      method: "POST",
+      headers: req.headers,
+      body: totalBuffer
+    });
+
+    const formData = await bufferedReq.formData();
     const audioEntry = formData.get("audio");
     const referenceTextRaw = formData.get("referenceText");
     const localeRaw = formData.get("locale");
@@ -390,30 +432,21 @@ serve(async (req: Request) => {
     const recognitionStatus = azureData.RecognitionStatus || "Unknown";
 
     // Handle non-success recognition status
-    if (recognitionStatus === "InitialSilenceTimeout") {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          provider: "azure",
-          locale,
-          recognitionStatus,
-          guidance: "No se detectó voz al inicio de la grabación. Pulsa el botón y habla inmediatamente.",
-          scores: { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
-          words: []
-        }),
-        { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-      );
-    }
+    if (recognitionStatus === "InitialSilenceTimeout" || recognitionStatus === "NoMatch" || recognitionStatus === "BabbleTimeout") {
+      const isSilence = recognitionStatus === "InitialSilenceTimeout";
+      const guidance = isSilence
+        ? "No se detectó voz al inicio de la grabación. Pulsa el botón y habla inmediatamente."
+        : "Se detectó ruido o voz poco clara. Acércate al micrófono en un lugar silencioso e inténtalo de nuevo.";
 
-    if (recognitionStatus === "NoMatch" || recognitionStatus === "BabbleTimeout") {
       return new Response(
         JSON.stringify({
-          success: true,
+          success: false,
           provider: "azure",
           locale,
           recognitionStatus,
-          guidance: "Se detectó ruido o voz poco clara. Acércate al micrófono en un lugar silencioso e inténtalo de nuevo.",
-          scores: { pronunciationScore: 0, accuracyScore: 0, fluencyScore: 0, completenessScore: 0 },
+          error: isSilence ? "No speech detected (silence timeout)." : "No speech recognized (unclear audio).",
+          errorCode: isSilence ? "INITIAL_SILENCE_TIMEOUT" : "NO_SPEECH_DETECTED",
+          guidance,
           words: []
         }),
         { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }

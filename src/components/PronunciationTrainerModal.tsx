@@ -73,16 +73,8 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
   // Cadence control: default to slow with distinct inter-word pauses
   const [isSlowMode, setIsSlowMode] = useState<boolean>(true);
 
-  // Audio Mode: True on Edge/Brave/Firefox or if Web Speech fails with network error
-  const [useAudioMode, setUseAudioMode] = useState<boolean>(() => {
-    if (typeof navigator !== 'undefined') {
-      const isEdgeOrBrave = (navigator as any).brave ||
-        navigator.userAgent.includes('Edg/') ||
-        navigator.userAgent.includes('Brave');
-      return Boolean(isEdgeOrBrave);
-    }
-    return false;
-  });
+  // Audio Mode: default to true so recorded audio reaches Azure AI Speech by default across all browsers
+  const [useAudioMode, setUseAudioMode] = useState<boolean>(true);
 
   const sessionRef = useRef<AudioRecordingSession | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -171,6 +163,13 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         spokenTranscriptFallback: fallbackTranscript
       });
 
+      if (!result.success || !result.scores) {
+        setAzureResult(null);
+        setEvaluation(null);
+        setErrorMessage(result.error || result.guidance || 'No se detectó voz o la evaluación falló. Pulsa "Repetir intento" para hablar de nuevo.');
+        return;
+      }
+
       setAzureResult(result);
 
       const effectiveText = result.displayText || fallbackTranscript;
@@ -190,15 +189,25 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         accuracyPercent: result.scores.accuracyScore,
         isMatch: result.scores.pronunciationScore >= 65
       });
-
-      if (result.recognitionStatus === 'InitialSilenceTimeout' || result.recognitionStatus === 'NoMatch') {
-        setErrorMessage(result.guidance || 'No se detectó voz clara. Habla cerca del micrófono e inténtalo de nuevo.');
-      }
     } catch (err) {
       console.warn('Azure assessment notice:', err);
-      // Create safe fallback on unexpected client exception
-      const fallback = createOfflineApproximationResult(activeTarget, fallbackTranscript || activeTarget, selectedLocale);
-      setAzureResult(fallback);
+      setAzureResult(null);
+      setEvaluation(null);
+      if (fallbackTranscript && fallbackTranscript.trim().length > 0) {
+        const fallback = createOfflineApproximationResult(activeTarget, fallbackTranscript, selectedLocale);
+        if (fallback.success && fallback.scores) {
+          setAzureResult(fallback);
+          const localEval = evaluateSpanishPronunciation(activeTarget, fallbackTranscript);
+          setEvaluation({
+            ...localEval,
+            overallScore: fallback.scores.pronunciationScore,
+            accuracyPercent: fallback.scores.accuracyScore,
+            isMatch: fallback.scores.pronunciationScore >= 65
+          });
+          return;
+        }
+      }
+      setErrorMessage('No se detectó voz ni se pudo evaluar la grabación. Asegúrate de hablar claro e inténtalo de nuevo.');
     } finally {
       isAssessingRef.current = false;
       setIsAssessing(false);
@@ -225,8 +234,8 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
 
     const liveTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
 
-    // If audio recording was captured, send to Azure AI Speech Assessment
-    if (audioBlob && audioBlob.size > 800) {
+    // If audio recording was captured, send genuine audio to Azure AI Speech Assessment
+    if (audioBlob && audioBlob.size > 200) {
       await runAzureAssessment(audioBlob, liveTranscript);
       return;
     }
@@ -235,12 +244,17 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     if (liveTranscript.length > 0) {
       processCapturedTranscript(liveTranscript);
       const fallback = createOfflineApproximationResult(activeTarget, liveTranscript, selectedLocale);
-      setAzureResult(fallback);
+      if (fallback.success && fallback.scores) {
+        setAzureResult(fallback);
+      } else {
+        setAzureResult(null);
+        setErrorMessage(fallback.error || 'No se detectó voz suficiente.');
+      }
       return;
     }
 
     // If Web Speech produced no text, try Gemini fallback
-    if (audioBlob && audioBlob.size > 400) {
+    if (audioBlob && audioBlob.size > 200) {
       setIsTranscribing(true);
       try {
         const geminiResult = await transcribeSpanishAudioWithGemini(audioBlob, activeTarget, options);
@@ -256,19 +270,14 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
       setIsTranscribing(false);
     }
 
-    // Grace period for speech recognizer
-    setTimeout(() => {
-      const finalTranscript = (lastTranscriptRef.current || spokenTranscript).trim();
-      if (finalTranscript.length > 0) {
-        processCapturedTranscript(finalTranscript);
-      } else {
-        setErrorMessage('No se detectó voz del micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
-      }
-    }, 350);
+    // No audio or transcript captured
+    setAzureResult(null);
+    setEvaluation(null);
+    setErrorMessage('No se detectó voz en el micrófono. Habla claro cerca del micrófono o prueba escribir tu frase abajo.');
   }, [activeTarget, options, selectedLocale, stopAudioMonitor, processCapturedTranscript, runAzureAssessment, spokenTranscript]);
 
-  // Start recording audio locally using MediaRecorder
-  const startAudioRecordingFallback = useCallback(async () => {
+  // Start recording audio using MediaRecorder (Default Microphone Flow)
+  const startAudioRecordingPipeline = useCallback(async () => {
     if (isAssessing) return; // Prevent concurrent requests
     stopSpanishListening();
     setErrorMessage(null);
@@ -295,7 +304,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     } catch (err: unknown) {
       setIsRecording(false);
       const errorObj = err as { name?: string; message?: string };
-      console.warn('MediaRecorder notice:', err);
+      console.warn('MediaRecorder error:', err);
       if (errorObj?.name === 'NotAllowedError' || errorObj?.name === 'PermissionDeniedError') {
         setErrorMessage('🔒 Permiso de micrófono bloqueado. Haz clic en el candado 🔒 en la barra de direcciones de tu navegador, cambia "Micrófono" a "Permitir" y vuelve a pulsar el botón.');
       } else {
@@ -304,7 +313,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     }
   }, [handleStopRecording, isAssessing]);
 
-  // Start voice capture session
+  // Start voice capture session - default flow submits actual recorded audio
   const handleStartRecording = useCallback(async () => {
     if (isAssessing) return; // Prevent concurrent requests
     if (!isAnyAudioInputSupported()) {
@@ -318,53 +327,55 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     setDetectedOption(null);
     lastTranscriptRef.current = '';
 
-    // If Audio Mode is selected or on Edge/Brave, use MediaRecorder directly!
+    // Primary default recording flow: MediaRecorder audio pipeline for genuine Azure AI Speech assessment
     if (useAudioMode || !isSpeechRecognitionSupported()) {
-      startAudioRecordingFallback();
+      startAudioRecordingPipeline();
       return;
     }
 
-    // Otherwise use Web Speech API in Chrome
-    const started = startSpanishListening({
-      lang: selectedLocale,
-      continuous: false,
-      interimResults: true,
-      onStart: () => {
+    // Fallback: Web Speech API only when MediaRecorder is unavailable in browser
+    if (isSpeechRecognitionSupported()) {
+      const started = startSpanishListening({
+        lang: selectedLocale,
+        continuous: false,
+        interimResults: true,
+        onStart: () => {
+          setIsRecording(true);
+        },
+        onResult: (transcript, _isFinal, confidence) => {
+          if (transcript.trim().length > 0) {
+            processCapturedTranscript(transcript, confidence);
+          }
+        },
+        onError: (err) => {
+          console.warn('SpeechRecognition notice:', err);
+          setErrorMessage('Error al escuchar el micrófono. Inténtalo de nuevo.');
+        },
+        onEnd: () => {
+          setIsRecording(false);
+          stopAudioMonitor();
+        }
+      });
+
+      if (started) {
         setIsRecording(true);
-      },
-      onResult: (transcript, _isFinal, confidence) => {
-        if (transcript.trim().length > 0) {
-          processCapturedTranscript(transcript, confidence);
-        }
-      },
-      onError: (err) => {
-        console.warn('SpeechRecognition notice, auto-switching to Audio Recording mode:', err);
-        setUseAudioMode(true);
-        startAudioRecordingFallback();
-      },
-      onEnd: () => {
-        setIsRecording(false);
-        stopAudioMonitor();
+        let elapsed = 0;
+        timerRef.current = setInterval(() => {
+          elapsed += 1;
+          setRecordingSeconds(elapsed);
+          setAudioVolumeLevel(Math.round(45 + Math.sin(elapsed * 4) * 30 + Math.cos(elapsed * 7) * 20));
+          if (elapsed >= 12) {
+            handleStopRecording();
+          }
+        }, 1000);
+      } else {
+        startAudioRecordingPipeline();
       }
-    });
-
-    if (started) {
-      setIsRecording(true);
-
-      let elapsed = 0;
-      timerRef.current = setInterval(() => {
-        elapsed += 1;
-        setRecordingSeconds(elapsed);
-        setAudioVolumeLevel(Math.round(45 + Math.sin(elapsed * 4) * 30 + Math.cos(elapsed * 7) * 20));
-        if (elapsed >= 12) {
-          handleStopRecording();
-        }
-      }, 1000);
-    } else {
-      setUseAudioMode(true);
-      startAudioRecordingFallback();
+      return;
     }
-  }, [isAssessing, selectedLocale, useAudioMode, handleStopRecording, processCapturedTranscript, startAudioRecordingFallback, stopAudioMonitor]);
+
+    startAudioRecordingPipeline();
+  }, [isAssessing, selectedLocale, useAudioMode, handleStopRecording, processCapturedTranscript, startAudioRecordingPipeline, stopAudioMonitor]);
 
   // Toggle button click
   const handleToggleListening = useCallback(() => {
@@ -395,7 +406,21 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
 
     processCapturedTranscript(trimmed);
     const approx = createOfflineApproximationResult(activeTarget, trimmed, selectedLocale);
-    setAzureResult(approx);
+    if (approx.success && approx.scores) {
+      setAzureResult(approx);
+      const localEval = evaluateSpanishPronunciation(activeTarget, trimmed);
+      setEvaluation({
+        ...localEval,
+        overallScore: approx.scores.pronunciationScore,
+        accuracyPercent: approx.scores.accuracyScore,
+        isMatch: approx.scores.pronunciationScore >= 65
+      });
+      setErrorMessage(null);
+    } else {
+      setAzureResult(null);
+      setEvaluation(null);
+      setErrorMessage(approx.error || 'No se detectó texto válido para evaluar.');
+    }
   };
 
   return (
@@ -538,17 +563,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         <div className="flex items-center justify-center space-x-2 my-1">
           <button
             type="button"
-            onClick={() => setUseAudioMode(false)}
-            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
-              !useAudioMode
-                ? 'bg-amber-300 border-amber-500 text-amber-950 font-black shadow-xs'
-                : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
-            }`}
-          >
-            ⚡ Web Speech (Chrome)
-          </button>
-          <button
-            type="button"
+            data-testid="audio-mode-btn"
             onClick={() => setUseAudioMode(true)}
             className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
               useAudioMode
@@ -556,7 +571,19 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
                 : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
             }`}
           >
-            🎙️ Audio Grabado (Azure / Universal)
+            🎙️ Audio Genuino (Azure AI Speech)
+          </button>
+          <button
+            type="button"
+            data-testid="web-speech-mode-btn"
+            onClick={() => setUseAudioMode(false)}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+              !useAudioMode
+                ? 'bg-amber-300 border-amber-500 text-amber-950 font-black shadow-xs'
+                : 'bg-white/80 border-amber-200 text-slate-600 hover:bg-amber-100'
+            }`}
+          >
+            ⚡ Solo Texto Local (Aproximación Web Speech)
           </button>
         </div>
 
@@ -614,18 +641,14 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               : isTranscribing
               ? '🤖 Procesando audio con IA Camino...'
               : isRecording
-              ? (useAudioMode
-                  ? '🔴 Grabando tu audio... Di tu respuesta y pulsa para evaluar.'
-                  : '🔴 Escuchando... Di tu frase o respuesta.')
-              : (useAudioMode
-                  ? 'Toca el micrófono para grabar y evaluar con Azure Speech'
-                  : 'Toca el micrófono para hablar en español')}
+              ? '🔴 Grabando tu audio... Di tu frase y pulsa para evaluar con Azure AI Speech.'
+              : 'Toca el micrófono para grabar y evaluar con Azure AI Speech'}
           </span>
         </div>
 
         {/* Error message or network speech fallback */}
         {errorMessage && (
-          <div className="p-3.5 mb-2.5 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-slate-800 text-xs space-y-2 animate-fadeIn">
+          <div className="p-3.5 mb-2.5 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-slate-800 text-xs space-y-2 animate-fadeIn" data-testid="assessment-error-banner">
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
               <div className="flex-1">
@@ -638,19 +661,19 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               </div>
             </div>
 
-            {/* Direct fallback to Audio Recording button */}
+            {/* Clear Retry Action Button */}
             <div className="pt-1">
               <button
                 type="button"
+                data-testid="pronunciation-retry-button"
                 onClick={() => {
                   setErrorMessage(null);
-                  setUseAudioMode(true);
-                  startAudioRecordingFallback();
+                  handleStartRecording();
                 }}
                 className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs flex items-center justify-center space-x-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
               >
-                <Mic className="w-4 h-4 text-slate-950" />
-                <span>🎙️ Hablar ahora con Grabación de Audio Directa</span>
+                <RefreshCw className="w-4 h-4 text-slate-950" />
+                <span>🔄 Repetir intento (Hablar de nuevo)</span>
               </button>
             </div>
 
@@ -772,7 +795,7 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
         {/* ========================================================
             AZURE AI SPEECH PRONUNCIATION ASSESSMENT RESULTS
             ======================================================== */}
-        {azureResult && (
+        {azureResult && azureResult.success && azureResult.scores && (
           <div className="space-y-3 pt-2 border-t border-amber-200 animate-fadeIn" data-testid="azure-assessment-results">
             {/* Header with Provider Badge */}
             <div className="flex items-center justify-between">
