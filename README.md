@@ -118,6 +118,44 @@ create table if not exists public.player_progress (
 ### Prerequisites
 - Node.js 18+
 
+## 🎙️ Azure AI Speech Pronunciation Assessment
+
+The platform includes genuine pronunciation assessment using **Azure AI Speech Services** (`es-ES` for Spain and `es-MX` for Mexico).
+
+### Features:
+- **Comprehensive Acoustic Metrics**: Overall Pronunciation Score (0-100), Accuracy Score, Fluency Score, and Completeness Score.
+- **Word & Phoneme-level Breakdown**: Displays accuracy and miscue classification (`None`, `Mispronunciation`, `Omission`, `Insertion`) and expandable phoneme scores.
+- **Dual-Locale Support**: Choose between Peninsular Spanish (`es-ES`) and Mexican Spanish (`es-MX`).
+- **Genuine 16kHz PCM WAV Audio Conversion**: Browser microphone audio is decoded and converted to standard 16kHz mono 16-bit PCM WAV (WebM is never fraudulently relabeled).
+- **Secure Backend Relay**: Client code never handles `AZURE_SPEECH_KEY`. Credentials remain strictly in server environment secrets (Supabase Edge Function or `/api/assess-pronunciation`).
+- **Transparent Offline Fallback**: If Azure credentials are not configured or offline, the app provides a clearly-labeled local text approximation and never fabricates fake phoneme or fluency scores.
+- **Zero Game State Side-Effects**: Pronunciation evaluation never awards coins or XP; progression remains strictly within game quiz logic.
+
+### Server-Side Setup & Deployment:
+
+#### Option A: Supabase Edge Function (Production)
+```bash
+# Set secrets in Supabase CLI (do NOT prefix with VITE_):
+supabase secrets set AZURE_SPEECH_KEY=your_key AZURE_SPEECH_REGION=eastus
+
+# Deploy the function:
+supabase functions deploy assess-pronunciation
+```
+
+#### Option B: Local Development / Vercel Serverless
+1. Add the server secrets to your local `.env` (never commit actual keys):
+   ```env
+   AZURE_SPEECH_KEY=your_key
+   AZURE_SPEECH_REGION=eastus
+   ```
+2. Start the local server:
+   ```bash
+   npm run dev
+   ```
+   The built-in dev proxy handles `/api/assess-pronunciation` securely using your local `.env`.
+
+---
+
 ### Installation & Run
 ```bash
 # Clone or navigate to the repository
