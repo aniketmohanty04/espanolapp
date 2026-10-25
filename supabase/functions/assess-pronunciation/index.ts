@@ -17,6 +17,7 @@ const MAX_REQUESTS_PER_WINDOW = 15;
 // on an individual warm Edge instance.
 //
 // IMPORTANT ARCHITECTURAL LIMITATION:
+// Rate limiting is instance-local unless shared infrastructure actually enforces it.
 // Because Edge Functions run in isolated, ephemeral Deno runtimes globally distributed across Cloudflare locations,
 // this in-memory Map does NOT provide shared distributed rate limiting across instances.
 // For production deployments requiring shared abuse prevention across all instances without added paid services,

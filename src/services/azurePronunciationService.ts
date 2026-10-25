@@ -60,19 +60,31 @@ export interface AssessPronunciationOptions {
   locale?: AzurePronunciationLocale;
   spokenTranscriptFallback?: string;
   forceOfflineFallback?: boolean;
+  endpointUrl?: string;
 }
 
 /**
  * Resolves the backend endpoint for pronunciation assessment.
  * Priority:
- * 1. Custom endpoint from VITE_AZURE_ASSESSMENT_URL (if specified)
- * 2. Supabase Edge Function URL (${supabaseUrl}/functions/v1/assess-pronunciation) if Supabase is configured
- * 3. Local / serverless endpoint (/api/assess-pronunciation)
+ * 1. Direct explicit override (if specified in options or argument)
+ * 2. Custom endpoint from AZURE_ASSESSMENT_ENDPOINT or VITE_AZURE_ASSESSMENT_URL
+ * 3. Supabase Edge Function URL (${supabaseUrl}/functions/v1/assess-pronunciation) if Supabase is configured
+ * 4. Local / serverless endpoint (/api/assess-pronunciation)
  */
-export function getAssessmentEndpoint(): { url: string; headers: Record<string, string> } {
-  const customUrl = (import.meta.env.VITE_AZURE_ASSESSMENT_URL || '').trim();
-  if (customUrl) {
-    return { url: customUrl, headers: {} };
+export function getAssessmentEndpoint(customOverrideUrl?: string): { url: string; headers: Record<string, string> } {
+  const directOverride = (customOverrideUrl || '').trim();
+  if (directOverride) {
+    return { url: directOverride, headers: {} };
+  }
+
+  const globalProcess = typeof globalThis !== 'undefined' ? (globalThis as any).process : undefined;
+  const envUrl = (
+    (globalProcess && (globalProcess.env?.AZURE_ASSESSMENT_ENDPOINT || globalProcess.env?.VITE_AZURE_ASSESSMENT_URL)) ||
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AZURE_ASSESSMENT_URL) ||
+    ''
+  ).trim();
+  if (envUrl) {
+    return { url: envUrl, headers: {} };
   }
 
   const supabaseConfig = supabaseService.getConfig();
@@ -218,7 +230,7 @@ export async function assessSpanishPronunciationWithAzure(
     };
   }
 
-  const { url, headers } = getAssessmentEndpoint();
+  const { url, headers } = getAssessmentEndpoint(options.endpointUrl);
   const formData = new FormData();
   formData.append('audio', wavBlob, mimeType === 'audio/wav' ? 'recording.wav' : 'recording.webm');
   formData.append('referenceText', referenceText.trim());

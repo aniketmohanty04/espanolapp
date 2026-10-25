@@ -102,83 +102,122 @@ export interface WavHeaderInfo {
  * Validates whether an ArrayBuffer contains a genuine 16 kHz mono 16-bit linear PCM WAV.
  * Validates the RIFF/WAVE container, fmt subchunk, PCM format tag (1), channel count (1),
  * sample rate (16000), bit depth (16), and data subchunk with non-zero audio samples.
+ * Rejects truncated files, corrupt headers, and inconsistent RIFF/data chunk sizes without crashing.
  */
 export function parseWavHeader(buffer: ArrayBuffer): WavHeaderInfo {
-  if (buffer.byteLength < 44) {
-    return { isValid16kMonoPcm: false, isPcm: false, error: 'Buffer is smaller than minimum 44-byte WAV header' };
-  }
-
-  const view = new DataView(buffer);
-  const readAscii = (offset: number, length: number): string => {
-    let s = '';
-    for (let i = 0; i < length; i++) {
-      s += String.fromCharCode(view.getUint8(offset + i));
+  try {
+    if (!buffer || !(buffer instanceof ArrayBuffer)) {
+      return { isValid16kMonoPcm: false, isPcm: false, error: 'Input must be a valid ArrayBuffer' };
     }
-    return s;
-  };
 
-  const riff = readAscii(0, 4);
-  const wave = readAscii(8, 4);
-  if (riff !== 'RIFF' || wave !== 'WAVE') {
-    return { isValid16kMonoPcm: false, isPcm: false, error: 'Not a valid RIFF/WAVE container' };
-  }
+    if (buffer.byteLength < 44) {
+      return { isValid16kMonoPcm: false, isPcm: false, error: 'Buffer is smaller than minimum 44-byte WAV header' };
+    }
 
-  let offset = 12;
-  let hasFmt = false;
-  let isPcm = false;
-  let numChannels = 0;
-  let sampleRate = 0;
-  let bitsPerSample = 0;
-  let hasData = false;
-  let dataSize = 0;
-
-  while (offset + 8 <= buffer.byteLength) {
-    const chunkId = readAscii(offset, 4);
-    const chunkSize = view.getUint32(offset + 4, true);
-
-    if (chunkId === 'fmt ') {
-      hasFmt = true;
-      if (chunkSize < 16) {
-        return { isValid16kMonoPcm: false, isPcm: false, error: 'fmt chunk is smaller than 16 bytes' };
+    const view = new DataView(buffer);
+    const readAscii = (offset: number, length: number): string => {
+      let s = '';
+      for (let i = 0; i < length; i++) {
+        s += String.fromCharCode(view.getUint8(offset + i));
       }
-      const audioFormat = view.getUint16(offset + 8, true);
-      isPcm = audioFormat === 1; // 1 = WAVE_FORMAT_PCM
-      numChannels = view.getUint16(offset + 10, true);
-      sampleRate = view.getUint32(offset + 12, true);
-      bitsPerSample = view.getUint16(offset + 22, true);
-    } else if (chunkId === 'data') {
-      hasData = true;
-      dataSize = chunkSize;
+      return s;
+    };
+
+    const riff = readAscii(0, 4);
+    const riffLength = view.getUint32(4, true);
+    const wave = readAscii(8, 4);
+
+    if (riff !== 'RIFF' || wave !== 'WAVE') {
+      return { isValid16kMonoPcm: false, isPcm: false, error: 'Not a valid RIFF/WAVE container' };
     }
 
-    offset += 8 + chunkSize;
-    if (chunkSize % 2 !== 0) {
-      offset += 1; // 16-bit word alignment
+    // A valid RIFF container specifies fileSize - 8 as riffLength.
+    // If the buffer byteLength is less than riffLength + 8, the file is truncated or has an inconsistent RIFF length.
+    if (buffer.byteLength < riffLength + 8) {
+      return {
+        isValid16kMonoPcm: false,
+        isPcm: false,
+        error: `Truncated WAV file: RIFF header declares ${riffLength + 8} bytes but buffer contains only ${buffer.byteLength} bytes`
+      };
     }
+
+    let offset = 12;
+    let hasFmt = false;
+    let isPcm = false;
+    let numChannels = 0;
+    let sampleRate = 0;
+    let bitsPerSample = 0;
+    let hasData = false;
+    let dataSize = 0;
+
+    while (offset + 8 <= buffer.byteLength) {
+      const chunkId = readAscii(offset, 4);
+      const chunkSize = view.getUint32(offset + 4, true);
+
+      // Verify that this chunk does not claim to extend beyond the buffer bounds (truncated or inconsistent chunk)
+      if (offset + 8 + chunkSize > buffer.byteLength) {
+        return {
+          isValid16kMonoPcm: false,
+          isPcm,
+          error: `Truncated WAV file: chunk "${chunkId}" declares size ${chunkSize} but only ${buffer.byteLength - offset - 8} bytes remain`
+        };
+      }
+
+      if (chunkId === 'fmt ') {
+        hasFmt = true;
+        if (chunkSize < 16) {
+          return { isValid16kMonoPcm: false, isPcm: false, error: 'fmt chunk is smaller than 16 bytes' };
+        }
+        const audioFormat = view.getUint16(offset + 8, true);
+        isPcm = audioFormat === 1; // 1 = WAVE_FORMAT_PCM
+        numChannels = view.getUint16(offset + 10, true);
+        sampleRate = view.getUint32(offset + 12, true);
+        bitsPerSample = view.getUint16(offset + 22, true);
+      } else if (chunkId === 'data') {
+        hasData = true;
+        dataSize = chunkSize;
+
+        if (dataSize <= 0) {
+          return { isValid16kMonoPcm: false, isPcm, error: 'WAV data chunk has 0 samples' };
+        }
+      }
+
+      offset += 8 + chunkSize;
+      if (chunkSize % 2 !== 0) {
+        offset += 1; // 16-bit word alignment padding
+      }
+    }
+
+    if (!hasFmt || !hasData) {
+      return { isValid16kMonoPcm: false, isPcm, error: 'Missing required fmt or data chunk' };
+    }
+
+    if (!isPcm) {
+      return { isValid16kMonoPcm: false, isPcm: false, numChannels, sampleRate, bitsPerSample, error: 'Audio is not uncompressed PCM' };
+    }
+
+    // Check for inconsistent data chunk alignment: 16-bit audio must have an even byte count
+    if (bitsPerSample === 16 && dataSize % 2 !== 0) {
+      return { isValid16kMonoPcm: false, isPcm, numChannels, sampleRate, bitsPerSample, error: 'Inconsistent data chunk size for 16-bit audio (odd byte count)' };
+    }
+
+    const isValid16kMonoPcm = isPcm && numChannels === 1 && sampleRate === 16000 && bitsPerSample === 16 && dataSize > 0;
+
+    return {
+      isValid16kMonoPcm,
+      isPcm,
+      numChannels,
+      sampleRate,
+      bitsPerSample,
+      dataSize
+    };
+  } catch (err) {
+    return {
+      isValid16kMonoPcm: false,
+      isPcm: false,
+      error: `Corrupt WAV structure: ${err instanceof Error ? err.message : String(err)}`
+    };
   }
-
-  if (!hasFmt || !hasData) {
-    return { isValid16kMonoPcm: false, isPcm, error: 'Missing required fmt or data chunk' };
-  }
-
-  if (!isPcm) {
-    return { isValid16kMonoPcm: false, isPcm: false, numChannels, sampleRate, bitsPerSample, error: 'Audio is not uncompressed PCM' };
-  }
-
-  if (dataSize <= 0) {
-    return { isValid16kMonoPcm: false, isPcm: true, numChannels, sampleRate, bitsPerSample, error: 'WAV data chunk has 0 samples' };
-  }
-
-  const isValid16kMonoPcm = isPcm && numChannels === 1 && sampleRate === 16000 && bitsPerSample === 16 && dataSize > 0;
-
-  return {
-    isValid16kMonoPcm,
-    isPcm,
-    numChannels,
-    sampleRate,
-    bitsPerSample,
-    dataSize
-  };
 }
 
 /**

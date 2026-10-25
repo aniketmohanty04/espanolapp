@@ -108,6 +108,50 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(infoStereo.numChannels).toBe(2);
     });
 
+    it('rejects truncated WAV files and inconsistent RIFF lengths without crashing', () => {
+      // 1. Buffer smaller than 44 bytes (does not crash)
+      const truncated1 = parseWavHeader(new ArrayBuffer(10));
+      expect(truncated1.isValid16kMonoPcm).toBe(false);
+      expect(truncated1.error).toContain('smaller than minimum 44-byte WAV header');
+
+      // 2. Inconsistent declared RIFF size (declared size > available bytes in buffer)
+      const validBuffer = encodeMonoWav(new Float32Array([0.1, -0.1, 0.2, -0.2]), 16000);
+      const corruptedRiff = validBuffer.slice(0);
+      new DataView(corruptedRiff).setUint32(4, 50000, true); // claims 50008 bytes
+      const riffResult = parseWavHeader(corruptedRiff);
+      expect(riffResult.isValid16kMonoPcm).toBe(false);
+      expect(riffResult.error).toContain('Truncated WAV file: RIFF header declares');
+
+      // 3. Truncated buffer sliced mid-data
+      const slicedBuffer = validBuffer.slice(0, validBuffer.byteLength - 4);
+      const slicedResult = parseWavHeader(slicedBuffer);
+      expect(slicedResult.isValid16kMonoPcm).toBe(false);
+      expect(slicedResult.error).toContain('Truncated WAV file');
+    });
+
+    it('rejects inconsistent data chunk lengths and odd byte counts without crashing', () => {
+      const validBuffer = encodeMonoWav(new Float32Array([0.1, -0.1, 0.2, -0.2]), 16000);
+
+      // 1. Inconsistent data chunk size claiming more bytes than remaining in buffer
+      const corruptedDataSize = validBuffer.slice(0);
+      new DataView(corruptedDataSize).setUint32(40, 20000, true);
+      const dataSizeResult = parseWavHeader(corruptedDataSize);
+      expect(dataSizeResult.isValid16kMonoPcm).toBe(false);
+      expect(dataSizeResult.error).toContain('Truncated WAV file: chunk "data" declares size');
+
+      // 2. Inconsistent 16-bit PCM data chunk size with odd byte count (e.g. 7 bytes instead of 8)
+      const oddByteCountBuffer = validBuffer.slice(0);
+      new DataView(oddByteCountBuffer).setUint32(40, 7, true);
+      const oddResult = parseWavHeader(oddByteCountBuffer);
+      expect(oddResult.isValid16kMonoPcm).toBe(false);
+      expect(oddResult.error).toContain('Inconsistent data chunk size');
+
+      // 3. Completely garbage/malformed random bytes (does not throw/crash)
+      const randomGarbage = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x10, 0x57, 0x41, 0x56, 0x45, 0xff, 0xff, 0xff, 0xff]).buffer;
+      const garbageResult = parseWavHeader(randomGarbage);
+      expect(garbageResult.isValid16kMonoPcm).toBe(false);
+    });
+
     it('does not blindly trust audio/wav MIME type when WAV header is invalid', async () => {
       // Create a corrupt blob with MIME type 'audio/wav' but invalid bytes
       const corruptBlob = new Blob([new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04])], { type: 'audio/wav' });
@@ -596,6 +640,12 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       expect(endpoint.url).toMatch(/(assess-pronunciation)/);
     });
 
+    it('honors explicitly passed custom endpoint URL for deployed backend testing', () => {
+      const customUrl = 'https://custom-deploy.vercel.app/api/assess-pronunciation';
+      const endpoint = getAssessmentEndpoint(customUrl);
+      expect(endpoint.url).toBe(customUrl);
+    });
+
     it('properly validates supported Spanish locales es-ES and es-MX', () => {
       const esResult = createOfflineApproximationResult('Hola', 'Hola', 'es-ES');
       expect(esResult.locale).toBe('es-ES');
@@ -683,19 +733,31 @@ describe('[Mocked Contract] Backend Request Construction & Protocol Specificatio
   });
 });
 
-// Conditionally executed suite for live end-to-end integration testing against real Azure AI Speech.
-// Requires BOTH real Azure server credentials (AZURE_SPEECH_KEY) AND an authorized genuine Spanish speech recording file (AZURE_TEST_AUDIO_PATH).
-// If either is missing, the live test is cleanly skipped by Vitest instead of fabricating scores or pretending it passed.
-const hasLiveAzureKey = Boolean(
-  typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.AZURE_SPEECH_KEY
-);
-const liveAudioPath = typeof globalThis !== 'undefined'
-  ? ((globalThis as any).process?.env?.AZURE_TEST_AUDIO_PATH || '')
+// Explicit configuration for live cloud integration testing against a deployed backend.
+// In Node test environments, relative URLs like '/api/assess-pronunciation' cannot be resolved.
+// Therefore, the live test mandates an explicitly configured absolute endpoint (AZURE_ASSESSMENT_ENDPOINT or VITE_AZURE_ASSESSMENT_URL),
+// server-side Azure credentials (AZURE_SPEECH_KEY or AZURE_LIVE_TEST_ENABLED), AND an authorized genuine Spanish audio recording file (AZURE_TEST_AUDIO_PATH).
+// If any of these are missing, Vitest cleanly skips the live test with a documented reason instead of fabricating results or pretending it passed.
+const liveAssessmentEndpoint = typeof globalThis !== 'undefined'
+  ? ((globalThis as any).process?.env?.AZURE_ASSESSMENT_ENDPOINT || (globalThis as any).process?.env?.VITE_AZURE_ASSESSMENT_URL || '').trim()
   : '';
-const canRunLiveIntegration = Boolean(hasLiveAzureKey && liveAudioPath);
+const isAbsoluteEndpoint = liveAssessmentEndpoint.startsWith('http://') || liveAssessmentEndpoint.startsWith('https://');
+
+const hasServerCredentialsOrFlag = Boolean(
+  typeof globalThis !== 'undefined' && (
+    (globalThis as any).process?.env?.AZURE_SPEECH_KEY ||
+    (globalThis as any).process?.env?.AZURE_LIVE_TEST_ENABLED === 'true'
+  )
+);
+
+const liveAudioPath = typeof globalThis !== 'undefined'
+  ? ((globalThis as any).process?.env?.AZURE_TEST_AUDIO_PATH || '').trim()
+  : '';
+
+const canRunLiveIntegration = Boolean(isAbsoluteEndpoint && hasServerCredentialsOrFlag && liveAudioPath);
 
 describe.skipIf(!canRunLiveIntegration)('[Live Integration] Azure AI Speech Pronunciation Assessment (Real Cloud)', () => {
-  it('connects to real backend and Azure service using a genuine Spanish speech recording', async () => {
+  it('connects to real deployed backend and Azure service using a genuine Spanish speech recording', async () => {
     // Ensure real unmocked network fetch is restored so requests genuinely reach the server and Azure
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -713,7 +775,8 @@ describe.skipIf(!canRunLiveIntegration)('[Live Integration] Azure AI Speech Pron
     const result = await assessSpanishPronunciationWithAzure({
       audioBlob,
       referenceText: targetText,
-      locale: targetLocale
+      locale: targetLocale,
+      endpointUrl: liveAssessmentEndpoint
     });
 
     expect(result.provider).toBe('azure');

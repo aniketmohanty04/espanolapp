@@ -22,6 +22,7 @@ const MAX_REQUESTS_PER_WINDOW = 15;
  * on a single warm serverless instance.
  *
  * IMPORTANT ARCHITECTURAL LIMITATION:
+ * Rate limiting is instance-local unless shared infrastructure actually enforces it.
  * Because serverless execution instances are ephemeral, independently scaled, and do not share memory,
  * this in-memory Map does NOT provide distributed rate limiting across concurrent serverless instances.
  * In production deployments, dependable cross-instance abuse prevention should be configured at the
