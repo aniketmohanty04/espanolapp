@@ -12,10 +12,15 @@ const TIMEOUT_MS = 12000;
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 15;
 
-// Multi-Tier Rate Limiting Architecture:
-// 1. In-memory sliding window provides sub-millisecond rate protection against rapid burst floods per Edge instance.
-// 2. Cross-instance distributed protection is provided by Cloudflare proxy (cf-connecting-ip) + Supabase Kong API gateway.
-// 3. User accounts with valid Bearer tokens are tracked by cryptographic token hash.
+// Rate Limiting Architecture Note:
+// The in-memory sliding-window limiter below provides instance-local protection against rapid burst floods
+// on an individual warm Edge instance.
+//
+// IMPORTANT ARCHITECTURAL LIMITATION:
+// Because Edge Functions run in isolated, ephemeral Deno runtimes globally distributed across Cloudflare locations,
+// this in-memory Map does NOT provide shared distributed rate limiting across instances.
+// For production deployments requiring shared abuse prevention across all instances without added paid services,
+// dependable rate limiting should be configured at the Supabase API Gateway (Kong) or Cloudflare WAF level.
 interface RateLimitEntry {
   timestamps: number[];
 }

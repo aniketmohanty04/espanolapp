@@ -88,18 +88,120 @@ export function resampleAudioBuffer(
   return result;
 }
 
+export interface WavHeaderInfo {
+  isValid16kMonoPcm: boolean;
+  isPcm: boolean;
+  numChannels?: number;
+  sampleRate?: number;
+  bitsPerSample?: number;
+  dataSize?: number;
+  error?: string;
+}
+
 /**
- * Converts any audio Blob (WebM, OGG, MP4) into a verified 16kHz mono 16-bit PCM WAV Blob.
+ * Validates whether an ArrayBuffer contains a genuine 16 kHz mono 16-bit linear PCM WAV.
+ * Validates the RIFF/WAVE container, fmt subchunk, PCM format tag (1), channel count (1),
+ * sample rate (16000), bit depth (16), and data subchunk with non-zero audio samples.
+ */
+export function parseWavHeader(buffer: ArrayBuffer): WavHeaderInfo {
+  if (buffer.byteLength < 44) {
+    return { isValid16kMonoPcm: false, isPcm: false, error: 'Buffer is smaller than minimum 44-byte WAV header' };
+  }
+
+  const view = new DataView(buffer);
+  const readAscii = (offset: number, length: number): string => {
+    let s = '';
+    for (let i = 0; i < length; i++) {
+      s += String.fromCharCode(view.getUint8(offset + i));
+    }
+    return s;
+  };
+
+  const riff = readAscii(0, 4);
+  const wave = readAscii(8, 4);
+  if (riff !== 'RIFF' || wave !== 'WAVE') {
+    return { isValid16kMonoPcm: false, isPcm: false, error: 'Not a valid RIFF/WAVE container' };
+  }
+
+  let offset = 12;
+  let hasFmt = false;
+  let isPcm = false;
+  let numChannels = 0;
+  let sampleRate = 0;
+  let bitsPerSample = 0;
+  let hasData = false;
+  let dataSize = 0;
+
+  while (offset + 8 <= buffer.byteLength) {
+    const chunkId = readAscii(offset, 4);
+    const chunkSize = view.getUint32(offset + 4, true);
+
+    if (chunkId === 'fmt ') {
+      hasFmt = true;
+      if (chunkSize < 16) {
+        return { isValid16kMonoPcm: false, isPcm: false, error: 'fmt chunk is smaller than 16 bytes' };
+      }
+      const audioFormat = view.getUint16(offset + 8, true);
+      isPcm = audioFormat === 1; // 1 = WAVE_FORMAT_PCM
+      numChannels = view.getUint16(offset + 10, true);
+      sampleRate = view.getUint32(offset + 12, true);
+      bitsPerSample = view.getUint16(offset + 22, true);
+    } else if (chunkId === 'data') {
+      hasData = true;
+      dataSize = chunkSize;
+    }
+
+    offset += 8 + chunkSize;
+    if (chunkSize % 2 !== 0) {
+      offset += 1; // 16-bit word alignment
+    }
+  }
+
+  if (!hasFmt || !hasData) {
+    return { isValid16kMonoPcm: false, isPcm, error: 'Missing required fmt or data chunk' };
+  }
+
+  if (!isPcm) {
+    return { isValid16kMonoPcm: false, isPcm: false, numChannels, sampleRate, bitsPerSample, error: 'Audio is not uncompressed PCM' };
+  }
+
+  if (dataSize <= 0) {
+    return { isValid16kMonoPcm: false, isPcm: true, numChannels, sampleRate, bitsPerSample, error: 'WAV data chunk has 0 samples' };
+  }
+
+  const isValid16kMonoPcm = isPcm && numChannels === 1 && sampleRate === 16000 && bitsPerSample === 16 && dataSize > 0;
+
+  return {
+    isValid16kMonoPcm,
+    isPcm,
+    numChannels,
+    sampleRate,
+    bitsPerSample,
+    dataSize
+  };
+}
+
+/**
+ * Converts any audio Blob (WebM, OGG, MP4, or non-compliant WAV) into a verified 16kHz mono 16-bit PCM WAV Blob.
+ * Validates WAV header and format instead of blindly trusting audioBlob.type.
  * If decoding fails (e.g. in test environment without Web Audio API), it safely returns
- * the original Blob preserving its genuine mimeType — NEVER fraudulently relabeling WebM as WAV.
+ * the original Blob preserving its genuine mimeType with isConverted: false — NEVER fraudulently relabeling.
  */
 export async function convertAudioBlobToWav(
   audioBlob: Blob,
   targetSampleRate = 16000
 ): Promise<{ wavBlob: Blob; isConverted: boolean; mimeType: string }> {
-  // If the blob is already genuine audio/wav, verify or return
-  if (audioBlob.type === 'audio/wav' && audioBlob.size > 44) {
-    return { wavBlob: audioBlob, isConverted: true, mimeType: 'audio/wav' };
+  // If the blob is audio/wav, do NOT blindly trust the MIME type!
+  // Validate the actual RIFF/PCM/channels/sampleRate/bitsPerSample/data header.
+  if (audioBlob.type === 'audio/wav' || audioBlob.type === 'audio/x-wav') {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const wavInfo = parseWavHeader(arrayBuffer);
+    if (wavInfo.isValid16kMonoPcm) {
+      // It has been thoroughly verified as genuine 16kHz mono 16-bit PCM WAV with valid data!
+      return { wavBlob: audioBlob, isConverted: true, mimeType: 'audio/wav' };
+    }
+    // If it is WAV but not 16kHz mono 16-bit PCM (e.g. 44.1kHz, stereo, float, etc.),
+    // proceed to decode and re-encode it.
   }
 
   // Check if AudioContext is available in browser
@@ -122,7 +224,7 @@ export async function convertAudioBlobToWav(
     const arrayBuffer = await audioBlob.arrayBuffer();
     const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    // Extract mono channel (mixdown if stereo)
+    // Extract mono channel (mixdown if stereo or multichannel)
     const numChannels = decodedBuffer.numberOfChannels;
     let monoData: Float32Array;
 
@@ -140,11 +242,23 @@ export async function convertAudioBlobToWav(
       }
     }
 
-    // Resample to 16kHz
+    // Resample to targetSampleRate (16kHz)
     const resampledData = resampleAudioBuffer(monoData, decodedBuffer.sampleRate, targetSampleRate);
 
-    // Encode standard PCM WAV
+    // Encode genuine standard PCM WAV
     const wavBuffer = encodeMonoWav(resampledData, targetSampleRate);
+
+    // Verify the re-encoded buffer strictly conforms to 16kHz mono 16-bit PCM WAV
+    const verifyHeader = parseWavHeader(wavBuffer);
+    if (!verifyHeader.isValid16kMonoPcm) {
+      console.warn('Re-encoded WAV failed verification:', verifyHeader.error);
+      return {
+        wavBlob: audioBlob,
+        isConverted: false,
+        mimeType: audioBlob.type || 'audio/webm'
+      };
+    }
+
     const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
 
     return {
@@ -153,7 +267,7 @@ export async function convertAudioBlobToWav(
       mimeType: 'audio/wav'
     };
   } catch (err) {
-    console.warn('Audio decoding to 16kHz WAV failed, falling back to genuine original format:', err);
+    console.warn('Audio decoding to 16kHz WAV failed, preserving genuine original format:', err);
     return {
       wavBlob: audioBlob,
       isConverted: false,

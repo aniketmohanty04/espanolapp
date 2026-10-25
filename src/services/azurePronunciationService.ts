@@ -192,17 +192,17 @@ export async function assessSpanishPronunciationWithAzure(
     };
   }
 
-  // Convert browser recording (WebM/Opus) to genuine 16kHz mono 16-bit PCM WAV
+  // Convert browser recording (WebM, OGG, or non-compliant WAV) to verified 16kHz mono 16-bit PCM WAV
   const { wavBlob, mimeType, isConverted } = await convertAudioBlobToWav(audioBlob, 16000);
 
-  // If conversion failed and format is unsupported (e.g. raw WebM), do not send invalid audio to Azure
-  if (!isConverted && mimeType !== 'audio/wav' && mimeType !== 'audio/ogg') {
+  // If conversion failed, never send unsupported audio to Azure or claim Azure assessment succeeded
+  if (!isConverted) {
     if (validTranscriptFallback) {
       return createOfflineApproximationResult(
         referenceText,
         validTranscriptFallback,
         locale,
-        'La conversión de audio a WAV 16kHz falló. Se utilizó aproximación de texto basada en lo transcrito.'
+        'La conversión de audio a WAV 16kHz mono falló. Se muestra una aproximación local basada en texto.'
       );
     }
     return {
@@ -212,7 +212,7 @@ export async function assessSpanishPronunciationWithAzure(
       locale,
       recognitionStatus: 'AudioConversionFailed',
       words: [],
-      error: 'No se pudo convertir la grabación a un formato WAV compatible y no se detectó texto transcrito.',
+      error: 'No se pudo convertir la grabación a un formato WAV 16kHz mono compatible y no se detectó texto transcrito.',
       errorCode: 'AUDIO_CONVERSION_FAILED',
       guidance: 'Verifica tu micrófono y asegúrate de permitir la grabación de audio en el navegador.'
     };

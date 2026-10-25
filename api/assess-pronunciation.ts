@@ -17,11 +17,16 @@ const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 15;
 
 /**
- * Production Rate Limiter Architecture:
- * 1. Fast in-memory sliding window provides immediate protection against burst floods on warm instances.
- * 2. Cross-instance distributed protection can be persisted via Supabase or configured at the edge layer
- *    via Vercel WAF / Firewall rate-limiting rules.
- * 3. Gracefully degrades without failing if remote persistence is temporarily unreachable.
+ * Rate Limiting Architecture Note:
+ * This in-memory sliding-window limiter provides instance-local protection against rapid burst requests
+ * on a single warm serverless instance.
+ *
+ * IMPORTANT ARCHITECTURAL LIMITATION:
+ * Because serverless execution instances are ephemeral, independently scaled, and do not share memory,
+ * this in-memory Map does NOT provide distributed rate limiting across concurrent serverless instances.
+ * In production deployments, dependable cross-instance abuse prevention should be configured at the
+ * hosting platform or gateway layer (e.g. Vercel Web Application Firewall / Edge Firewall rate-limiting rules,
+ * or API gateway rate limiting), which protects all instances without requiring extra paid infrastructure.
  */
 interface RateLimitEntry {
   timestamps: number[];
@@ -161,6 +166,7 @@ export default async function handler(req: any, res?: any) {
           totalBytes += value.byteLength;
           if (totalBytes > MAX_AUDIO_BYTES + 8192) {
             reader.cancel();
+            try { if (typeof req.destroy === 'function') req.destroy(); } catch { /* ignore */ }
             const err = {
               success: false,
               error: `Request stream exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
@@ -176,6 +182,7 @@ export default async function handler(req: any, res?: any) {
         const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
         totalBytes += buf.length;
         if (totalBytes > MAX_AUDIO_BYTES + 8192) {
+          try { if (typeof req.destroy === 'function') req.destroy(); } catch { /* ignore */ }
           const err = {
             success: false,
             error: `Request stream exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,
@@ -187,6 +194,7 @@ export default async function handler(req: any, res?: any) {
       }
     } else if (req.body && Buffer.isBuffer(req.body)) {
       if (req.body.length > MAX_AUDIO_BYTES + 8192) {
+        try { if (typeof req.destroy === 'function') req.destroy(); } catch { /* ignore */ }
         const err = {
           success: false,
           error: `Request payload exceeded maximum size limit of ${MAX_AUDIO_BYTES / 1024 / 1024}MB.`,

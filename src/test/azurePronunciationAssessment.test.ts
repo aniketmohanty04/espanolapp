@@ -4,8 +4,14 @@ import {
   createOfflineApproximationResult,
   getAssessmentEndpoint
 } from '../services/azurePronunciationService';
-import { encodeMonoWav, resampleAudioBuffer, convertAudioBlobToWav } from '../utils/audioConversion';
+import { encodeMonoWav, resampleAudioBuffer, convertAudioBlobToWav, parseWavHeader } from '../utils/audioConversion';
 import { INITIAL_PROGRESS } from '../services/storageService';
+
+const createValidTestWavBlob = () => {
+  const samples = new Float32Array([0.05, -0.05, 0.1, -0.1, 0.02, -0.02]);
+  const wavBuffer = encodeMonoWav(samples, 16000);
+  return new Blob([wavBuffer], { type: 'audio/wav' });
+};
 
 describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
   beforeEach(() => {
@@ -70,6 +76,57 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         expect(result.wavBlob.type).toBe('audio/webm;codecs=opus');
       }
     });
+
+    it('validates genuine 16kHz mono 16-bit PCM WAV headers thoroughly', () => {
+      const testSamples = new Float32Array([0.1, -0.2, 0.3, -0.1]);
+      const validBuffer = encodeMonoWav(testSamples, 16000);
+      const info = parseWavHeader(validBuffer);
+
+      expect(info.isValid16kMonoPcm).toBe(true);
+      expect(info.isPcm).toBe(true);
+      expect(info.numChannels).toBe(1);
+      expect(info.sampleRate).toBe(16000);
+      expect(info.bitsPerSample).toBe(16);
+      expect(info.dataSize).toBe(testSamples.length * 2);
+    });
+
+    it('rejects non-compliant WAV files (stereo, 44.1kHz, or corrupt headers)', () => {
+      // 1. Truncated buffer
+      expect(parseWavHeader(new ArrayBuffer(20)).isValid16kMonoPcm).toBe(false);
+
+      // 2. 44.1kHz sample rate
+      const buffer44k = encodeMonoWav(new Float32Array([0.1, 0.2]), 44100);
+      const info44k = parseWavHeader(buffer44k);
+      expect(info44k.isValid16kMonoPcm).toBe(false);
+      expect(info44k.sampleRate).toBe(44100);
+
+      // 3. Stereo channel count (modify channels offset 22)
+      const stereoBuffer = encodeMonoWav(new Float32Array([0.1, 0.2]), 16000);
+      new DataView(stereoBuffer).setUint16(22, 2, true);
+      const infoStereo = parseWavHeader(stereoBuffer);
+      expect(infoStereo.isValid16kMonoPcm).toBe(false);
+      expect(infoStereo.numChannels).toBe(2);
+    });
+
+    it('does not blindly trust audio/wav MIME type when WAV header is invalid', async () => {
+      // Create a corrupt blob with MIME type 'audio/wav' but invalid bytes
+      const corruptBlob = new Blob([new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04])], { type: 'audio/wav' });
+      const result = await convertAudioBlobToWav(corruptBlob);
+      // In node/test environment without AudioContext, it refuses to claim conversion succeeded
+      expect(result.isConverted).toBe(false);
+    });
+
+    it('returns AUDIO_CONVERSION_FAILED when audio cannot be converted and no transcript exists', async () => {
+      const corruptBlob = new Blob([new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04])], { type: 'audio/wav' });
+      const result = await assessSpanishPronunciationWithAzure({
+        audioBlob: corruptBlob,
+        referenceText: 'Buenos días',
+        locale: 'es-ES'
+      });
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('AUDIO_CONVERSION_FAILED');
+      expect(result.error).toContain('No se pudo convertir');
+    });
   });
 
   describe('Pronunciation Assessment for Target Spanish Phrases', () => {
@@ -118,7 +175,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         new Response(JSON.stringify(mockAzureResponse), { status: 200, headers: { 'Content-Type': 'application/json' } })
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(1024)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -159,7 +216,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         new Response(JSON.stringify(mockMxResponse), { status: 200, headers: { 'Content-Type': 'application/json' } })
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(1024)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: '¿Cómo te llamas?',
@@ -206,7 +263,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         new Response(JSON.stringify(mockMananaResponse), { status: 200, headers: { 'Content-Type': 'application/json' } })
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(1024)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'mañana',
@@ -247,7 +304,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -265,7 +322,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
     it('handles network failure by delivering transparent local approximation with notice', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network failure'));
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Hola amigo',
@@ -293,7 +350,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Gracias',
@@ -306,7 +363,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
     });
 
     it('rejects empty reference texts with an explicit validation error', async () => {
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: '   ',
@@ -332,7 +389,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
     });
 
     it('never substitutes reference text for missing speech during offline fallback', async () => {
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
 
       // When forceOfflineFallback is true but no transcript was recognized:
       const result = await assessSpanishPronunciationWithAzure({
@@ -360,7 +417,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -389,7 +446,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -417,7 +474,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -479,7 +536,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -503,7 +560,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         )
       );
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Buenos días',
@@ -552,7 +609,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
       abortError.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(abortError);
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const result = await assessSpanishPronunciationWithAzure({
         audioBlob: fakeAudio,
         referenceText: 'Adiós',
@@ -579,7 +636,7 @@ describe('[Mocked Unit] Azure AI Speech Pronunciation Assessment Suite', () => {
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       });
 
-      const fakeAudio = new Blob([new ArrayBuffer(500)], { type: 'audio/wav' });
+      const fakeAudio = createValidTestWavBlob();
       const [res1, res2] = await Promise.all([
         assessSpanishPronunciationWithAzure({ audioBlob: fakeAudio, referenceText: 'Hola', locale: 'es-ES' }),
         assessSpanishPronunciationWithAzure({ audioBlob: fakeAudio, referenceText: 'Mundo', locale: 'es-MX' })
@@ -626,60 +683,43 @@ describe('[Mocked Contract] Backend Request Construction & Protocol Specificatio
   });
 });
 
-/**
- * Synthesizes a valid acoustic speech signal modeling "Buenos días".
- * Emulates vocal fold fundamental frequency (~130Hz) and Spanish vowel formants (F1, F2, F3)
- * with syllable amplitude envelopes (Bue - nos - dí - as).
- */
-function generateSpanishSpeechSamples(sampleRate = 16000, durationSec = 1.4): Float32Array {
-  const totalSamples = Math.round(sampleRate * durationSec);
-  const buffer = new Float32Array(totalSamples);
-  const f0 = 135; // Fundamental voice frequency (pitch)
-  const formants = [
-    { freq: 700, gain: 0.5 },  // F1 (vowel openness)
-    { freq: 1250, gain: 0.3 }, // F2 (front/back tongue resonance)
-    { freq: 2500, gain: 0.15 } // F3 (nasal/palatal Spanish resonance)
-  ];
-
-  for (let i = 0; i < totalSamples; i++) {
-    const t = i / sampleRate;
-    // Syllable envelopes for "Bue - nos - dí - as"
-    const envelope = Math.max(0,
-      Math.sin(Math.PI * (t / 0.35)) * (t < 0.35 ? 1 : 0) +
-      Math.sin(Math.PI * ((t - 0.35) / 0.35)) * (t >= 0.35 && t < 0.70 ? 1 : 0) +
-      Math.sin(Math.PI * ((t - 0.70) / 0.40)) * (t >= 0.70 && t < 1.10 ? 1.2 : 0) +
-      Math.sin(Math.PI * ((t - 1.10) / 0.30)) * (t >= 1.10 ? 0.8 : 0)
-    );
-
-    // Harmonic vocal oscillator
-    let sample = Math.sin(2 * Math.PI * f0 * t);
-    for (const f of formants) {
-      sample += f.gain * Math.sin(2 * Math.PI * f.freq * t);
-    }
-    buffer[i] = sample * envelope * 0.3;
-  }
-  return buffer;
-}
-
-// Conditionally executed suite for live end-to-end integration testing with Azure AI Speech
+// Conditionally executed suite for live end-to-end integration testing against real Azure AI Speech.
+// Requires BOTH real Azure server credentials (AZURE_SPEECH_KEY) AND an authorized genuine Spanish speech recording file (AZURE_TEST_AUDIO_PATH).
+// If either is missing, the live test is cleanly skipped by Vitest instead of fabricating scores or pretending it passed.
 const hasLiveAzureKey = Boolean(
   typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.AZURE_SPEECH_KEY
 );
-describe.skipIf(!hasLiveAzureKey)('[Live Integration] Azure AI Speech Pronunciation Assessment (Real Cloud)', () => {
-  it('connects to real Azure service and evaluates genuine acoustic Spanish speech ("Buenos días")', async () => {
-    const speechSamples = generateSpanishSpeechSamples(16000, 1.4);
-    const wavBuffer = encodeMonoWav(speechSamples, 16000);
-    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+const liveAudioPath = typeof globalThis !== 'undefined'
+  ? ((globalThis as any).process?.env?.AZURE_TEST_AUDIO_PATH || '')
+  : '';
+const canRunLiveIntegration = Boolean(hasLiveAzureKey && liveAudioPath);
+
+describe.skipIf(!canRunLiveIntegration)('[Live Integration] Azure AI Speech Pronunciation Assessment (Real Cloud)', () => {
+  it('connects to real backend and Azure service using a genuine Spanish speech recording', async () => {
+    // Ensure real unmocked network fetch is restored so requests genuinely reach the server and Azure
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+
+    const fs: any = await (new Function('return import("node:fs")')());
+    if (!fs.existsSync(liveAudioPath)) {
+      throw new Error(`Configured audio file not found at: ${liveAudioPath}`);
+    }
+
+    const fileBuffer = fs.readFileSync(liveAudioPath);
+    const audioBlob = new Blob([fileBuffer], { type: 'audio/wav' });
+    const targetText = (globalThis as any).process?.env?.AZURE_TEST_REFERENCE_TEXT || 'Buenos días';
+    const targetLocale = ((globalThis as any).process?.env?.AZURE_TEST_LOCALE as any) || 'es-ES';
 
     const result = await assessSpanishPronunciationWithAzure({
-      audioBlob: wavBlob,
-      referenceText: 'Buenos días',
-      locale: 'es-ES'
+      audioBlob,
+      referenceText: targetText,
+      locale: targetLocale
     });
 
     expect(result.provider).toBe('azure');
     expect(result.isRealAzure).toBe(true);
+    expect(result.success).toBe(true);
     expect(result.scores).toBeDefined();
-    expect(result.scores?.pronunciationScore).toBeGreaterThanOrEqual(0);
+    expect(result.scores!.pronunciationScore).toBeGreaterThan(0);
   });
 });
