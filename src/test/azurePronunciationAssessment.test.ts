@@ -6,6 +6,7 @@ import {
 } from '../services/azurePronunciationService';
 import { encodeMonoWav, resampleAudioBuffer, convertAudioBlobToWav, parseWavHeader } from '../utils/audioConversion';
 import { INITIAL_PROGRESS } from '../services/storageService';
+import apiHandler, { validateWavHeader as backendValidateWav } from '../../api/assess-pronunciation';
 
 const createValidTestWavBlob = () => {
   const samples = new Float32Array([0.05, -0.05, 0.1, -0.1, 0.02, -0.02]);
@@ -730,6 +731,183 @@ describe('[Mocked Contract] Backend Request Construction & Protocol Specificatio
     const pcmHeader = 'audio/wav; codecs=audio/pcm; samplerate=16000';
     expect(pcmHeader).toContain('codecs=audio/pcm');
     expect(pcmHeader).toContain('samplerate=16000');
+  });
+});
+
+describe('[Backend Security] Audio WAV Validation & Guardrails', () => {
+  const originalKey = (globalThis as any).process?.env?.AZURE_SPEECH_KEY;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    if ((globalThis as any).process) {
+      (globalThis as any).process.env.AZURE_SPEECH_KEY = 'test-backend-key-12345';
+      (globalThis as any).process.env.AZURE_SPEECH_REGION = 'eastus';
+    }
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if ((globalThis as any).process) {
+      if (originalKey !== undefined) {
+        (globalThis as any).process.env.AZURE_SPEECH_KEY = originalKey;
+      } else {
+        delete (globalThis as any).process.env.AZURE_SPEECH_KEY;
+      }
+    }
+  });
+
+  const buildCustomWav = (options: {
+    sampleRate?: number;
+    numChannels?: number;
+    bitsPerSample?: number;
+    audioFormat?: number;
+    dataSize?: number;
+    riffSize?: number;
+    chunkSize?: number;
+  }): Uint8Array => {
+    const sampleRate = options.sampleRate ?? 16000;
+    const numChannels = options.numChannels ?? 1;
+    const bitsPerSample = options.bitsPerSample ?? 16;
+    const audioFormat = options.audioFormat ?? 1;
+    const dataSize = options.dataSize ?? 200;
+    const bytesPerSample = Math.ceil(bitsPerSample / 8);
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+
+    const totalLength = 44 + dataSize;
+    const buffer = new ArrayBuffer(totalLength);
+    const view = new DataView(buffer);
+
+    // RIFF
+    view.setUint8(0, 0x52); view.setUint8(1, 0x49); view.setUint8(2, 0x46); view.setUint8(3, 0x46);
+    view.setUint32(4, options.riffSize !== undefined ? options.riffSize : 36 + dataSize, true);
+    view.setUint8(8, 0x57); view.setUint8(9, 0x41); view.setUint8(10, 0x56); view.setUint8(11, 0x45);
+
+    // fmt
+    view.setUint8(12, 0x66); view.setUint8(13, 0x6d); view.setUint8(14, 0x74); view.setUint8(15, 0x20);
+    view.setUint32(16, 16, true);
+    view.setUint16(20, audioFormat, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+
+    // data
+    view.setUint8(36, 0x64); view.setUint8(37, 0x61); view.setUint8(38, 0x74); view.setUint8(39, 0x61);
+    view.setUint32(40, options.chunkSize !== undefined ? options.chunkSize : dataSize, true);
+
+    return new Uint8Array(buffer);
+  };
+
+  const makeBackendRequest = async (audioBytes: Uint8Array) => {
+    const formData = new FormData();
+    formData.append('audio', new Blob([audioBytes.buffer as ArrayBuffer], { type: 'audio/wav' }), 'test.wav');
+    formData.append('referenceText', 'Buenos días');
+    formData.append('locale', 'es-ES');
+
+    const req = new Request('http://localhost/api/assess-pronunciation', {
+      method: 'POST',
+      body: formData
+    });
+
+    const response = await apiHandler(req);
+    const status = response.status;
+    const json = await response.json();
+    return { status, json };
+  };
+
+  it('rejects WAV with valid RIFF signature but incorrect sample rate (44.1 kHz) without calling Azure', async () => {
+    const wav = buildCustomWav({ sampleRate: 44100 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('UNSUPPORTED_SAMPLE_RATE');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('UNSUPPORTED_SAMPLE_RATE');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects WAV with valid RIFF signature but stereo channels (2 channels) without calling Azure', async () => {
+    const wav = buildCustomWav({ numChannels: 2 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('UNSUPPORTED_CHANNEL_COUNT');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('UNSUPPORTED_CHANNEL_COUNT');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects WAV with valid RIFF signature but 24-bit depth without calling Azure', async () => {
+    const wav = buildCustomWav({ bitsPerSample: 24 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('UNSUPPORTED_BIT_DEPTH');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('UNSUPPORTED_BIT_DEPTH');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects WAV with valid RIFF signature but non-PCM format tag (IEEE float) without calling Azure', async () => {
+    const wav = buildCustomWav({ audioFormat: 3 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('UNSUPPORTED_WAV_ENCODING');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('UNSUPPORTED_WAV_ENCODING');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects WAV with truncated RIFF container length without calling Azure', async () => {
+    const wav = buildCustomWav({ riffSize: 80000 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('TRUNCATED_WAV_FILE');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('TRUNCATED_WAV_FILE');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects WAV with truncated data chunk length without calling Azure', async () => {
+    const wav = buildCustomWav({ chunkSize: 80000 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errorCode).toBe('TRUNCATED_WAV_CHUNK');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { status, json } = await makeBackendRequest(wav);
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.errorCode).toBe('TRUNCATED_WAV_CHUNK');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('accepts genuine 16kHz mono 16-bit PCM WAV and confirms validation passes', () => {
+    const wav = buildCustomWav({ sampleRate: 16000, numChannels: 1, bitsPerSample: 16, audioFormat: 1 });
+    const validation = backendValidateWav(wav);
+    expect(validation.isValid).toBe(true);
+    expect(validation.sampleRate).toBe(16000);
+    expect(validation.numChannels).toBe(1);
+    expect(validation.bitsPerSample).toBe(16);
   });
 });
 

@@ -123,6 +123,183 @@ export interface AssessmentResponse {
   guidance?: string;
 }
 
+export interface WavValidationResult {
+  isValid: boolean;
+  error?: string;
+  errorCode?: string;
+  numChannels?: number;
+  sampleRate?: number;
+  bitsPerSample?: number;
+  audioFormat?: number;
+  dataSize?: number;
+}
+
+/**
+ * Validates the binary RIFF/WAVE header and all sub-chunks of incoming audio bytes.
+ * Strictly verifies uncompressed PCM (format 1), mono (1 channel), 16000 Hz, 16-bit depth,
+ * and rejects truncated or malformed chunks before declaring genuine PCM WAV.
+ */
+export function validateWavHeader(bytes: Uint8Array): WavValidationResult {
+  if (bytes.byteLength < 44) {
+    return {
+      isValid: false,
+      error: "El archivo WAV está incompleto o truncado (menos de 44 bytes).",
+      errorCode: "TRUNCATED_WAV_HEADER"
+    };
+  }
+
+  const readAscii = (offset: number, length: number): string => {
+    let str = "";
+    for (let i = 0; i < length; i++) {
+      str += String.fromCharCode(bytes[offset + i]);
+    }
+    return str;
+  };
+
+  const riff = readAscii(0, 4);
+  const wave = readAscii(8, 4);
+  if (riff !== "RIFF" || wave !== "WAVE") {
+    return {
+      isValid: false,
+      error: "Encabezado RIFF/WAVE no válido.",
+      errorCode: "INVALID_WAV_CONTAINER"
+    };
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const riffLength = view.getUint32(4, true);
+  if (bytes.byteLength < riffLength + 8) {
+    return {
+      isValid: false,
+      error: `Archivo WAV truncado: el contenedor RIFF declara ${riffLength + 8} bytes pero solo se recibieron ${bytes.byteLength} bytes.`,
+      errorCode: "TRUNCATED_WAV_FILE"
+    };
+  }
+
+  let offset = 12;
+  let hasFmt = false;
+  let isPcm = false;
+  let numChannels = 0;
+  let sampleRate = 0;
+  let bitsPerSample = 0;
+  let hasData = false;
+  let dataSize = 0;
+
+  while (offset + 8 <= bytes.byteLength) {
+    const chunkId = readAscii(offset, 4);
+    const chunkSize = view.getUint32(offset + 4, true);
+
+    if (offset + 8 + chunkSize > bytes.byteLength) {
+      return {
+        isValid: false,
+        error: `Archivo WAV truncado: el subfragmento "${chunkId}" declara ${chunkSize} bytes pero solo quedan ${bytes.byteLength - offset - 8} bytes.`,
+        errorCode: "TRUNCATED_WAV_CHUNK"
+      };
+    }
+
+    if (chunkId === "fmt ") {
+      hasFmt = true;
+      if (chunkSize < 16) {
+        return {
+          isValid: false,
+          error: 'Subfragmento "fmt " de WAV demasiado corto (menos de 16 bytes).',
+          errorCode: "MALFORMED_WAV_HEADER"
+        };
+      }
+      const audioFormat = view.getUint16(offset + 8, true);
+      isPcm = audioFormat === 1; // 1 = WAVE_FORMAT_PCM
+      numChannels = view.getUint16(offset + 10, true);
+      sampleRate = view.getUint32(offset + 12, true);
+      bitsPerSample = view.getUint16(offset + 22, true);
+
+      if (!isPcm) {
+        return {
+          isValid: false,
+          error: `Formato de audio WAV no compatible (etiqueta: ${audioFormat}). Azure Pronunciation Assessment requiere PCM lineal (formato 1).`,
+          errorCode: "UNSUPPORTED_WAV_ENCODING",
+          audioFormat,
+          numChannels,
+          sampleRate,
+          bitsPerSample
+        };
+      }
+
+      if (numChannels !== 1) {
+        return {
+          isValid: false,
+          error: `Número de canales WAV no admitido (${numChannels}). Azure Pronunciation Assessment requiere audio mono (1 canal).`,
+          errorCode: "UNSUPPORTED_CHANNEL_COUNT",
+          numChannels,
+          sampleRate,
+          bitsPerSample
+        };
+      }
+
+      if (sampleRate !== 16000) {
+        return {
+          isValid: false,
+          error: `Frecuencia de muestreo WAV no admitida (${sampleRate} Hz). Azure Pronunciation Assessment requiere exactamente 16000 Hz.`,
+          errorCode: "UNSUPPORTED_SAMPLE_RATE",
+          numChannels,
+          sampleRate,
+          bitsPerSample
+        };
+      }
+
+      if (bitsPerSample !== 16) {
+        return {
+          isValid: false,
+          error: `Profundidad de bits WAV no admitida (${bitsPerSample}-bit). Azure Pronunciation Assessment requiere exactamente PCM de 16 bits.`,
+          errorCode: "UNSUPPORTED_BIT_DEPTH",
+          numChannels,
+          sampleRate,
+          bitsPerSample
+        };
+      }
+    } else if (chunkId === "data") {
+      hasData = true;
+      dataSize = chunkSize;
+
+      if (dataSize <= 0) {
+        return {
+          isValid: false,
+          error: "El subfragmento de datos WAV está vacío (0 muestras de audio).",
+          errorCode: "EMPTY_AUDIO"
+        };
+      }
+
+      if (bitsPerSample === 16 && dataSize % 2 !== 0) {
+        return {
+          isValid: false,
+          error: "Tamaño de subfragmento de datos WAV incongruente para audio de 16 bits (número impar de bytes).",
+          errorCode: "MALFORMED_WAV_DATA"
+        };
+      }
+    }
+
+    offset += 8 + chunkSize;
+    if (chunkSize % 2 !== 0) {
+      offset += 1; // 16-bit word alignment
+    }
+  }
+
+  if (!hasFmt || !hasData) {
+    return {
+      isValid: false,
+      error: 'Estructura WAV incompleta: falta el subfragmento "fmt " o "data".',
+      errorCode: "MALFORMED_WAV_HEADER"
+    };
+  }
+
+  return {
+    isValid: true,
+    numChannels,
+    sampleRate,
+    bitsPerSample,
+    dataSize
+  };
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -323,7 +500,19 @@ serve(async (req: Request) => {
 
     let audioContentType = "";
     if (isRiffWav) {
-      // Documented content type for 16 kHz, mono, 16-bit PCM WAV
+      const wavValidation = validateWavHeader(audioBytes);
+      if (!wavValidation.isValid) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: wavValidation.error || "Archivo WAV no compatible o malformado.",
+            errorCode: wavValidation.errorCode || "INVALID_WAV_FORMAT",
+            guidance: "El archivo WAV debe ser PCM lineal de 16-bit, 16000 Hz y mono (1 canal)."
+          }),
+          { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      // Documented content type for genuine 16 kHz, mono, 16-bit PCM WAV
       audioContentType = "audio/wav; codecs=audio/pcm; samplerate=16000";
     } else if (isOggOpus) {
       audioContentType = "audio/ogg; codecs=opus";
