@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { PlayerProgress, PlayerCharacter, PlayerProfile, GameScreen, Question, City, Level } from '../types';
-import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from '../services/storageService';
+import { PlayerProgress, PlayerCharacter, PlayerProfile, GameScreen, Question } from '../types';
+import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE } from '../services/storageService';
 import { authDatabaseService } from '../services/authDatabaseService';
 import { supabaseService } from '../services/supabaseClient';
 import { soundService } from '../services/soundService';
-import { ALL_CITIES, getNextCity } from '../data/citiesData';
+import { getCityById, getNextCity } from '../data/citiesData';
 import confetti from 'canvas-confetti';
 
 export const REWARD_CONFIG = {
@@ -698,7 +698,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (passed) {
         // Enforce that all 10 levels of this city are completed before unlocking next city
-        const cityCompletedCount = Object.keys(prev.completedLevels).filter(id => id.startsWith(`${cityId}-`)).length;
+        const cityObj = getCityById(cityId);
+        const cityCompletedCount = cityObj ? cityObj.levels.filter(l => Boolean(prev.completedLevels[l.id])).length : 0;
         const previouslyPassed = Boolean(prev.completedBosses[cityId]?.passed);
 
         if (cityCompletedCount >= 10 || previouslyPassed) {

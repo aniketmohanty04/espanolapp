@@ -190,6 +190,32 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   const isCityBossDone = Boolean(progress.completedBosses[selectedCity.id]?.passed);
   const isCityAllLevelsDone = selectedCity.levels.every(l => Boolean(progress.completedLevels[l.id]));
 
+  // When all 10 levels of the selected city are finished and boss is not yet passed, auto-select Boss
+  useEffect(() => {
+    const cityAllDone = selectedCity.levels.every(l => Boolean(progress.completedLevels[l.id]));
+    const cityBossDone = Boolean(progress.completedBosses[selectedCity.id]?.passed);
+    if (cityAllDone && !cityBossDone) {
+      setIsBossSelected(true);
+    }
+  }, [selectedCity.id, selectedCity.levels, progress.completedLevels, progress.completedBosses]);
+
+  // Keep selected city synced with newly unlocked cities if current city's boss is defeated
+  useEffect(() => {
+    const unlocked = progress.unlockedCityIds || ['madrid'];
+    const latestUnlockedId = unlocked[unlocked.length - 1];
+    if (latestUnlockedId && latestUnlockedId !== selectedCityId) {
+      if (progress.completedBosses[selectedCityId]?.passed) {
+        setSelectedCityId(latestUnlockedId);
+        const latestCity = getCityById(latestUnlockedId);
+        if (latestCity) {
+          const firstUnfinished = latestCity.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
+          setSelectedLevelIdx(firstUnfinished !== -1 ? firstUnfinished : 0);
+          setIsBossSelected(false);
+        }
+      }
+    }
+  }, [progress.unlockedCityIds, progress.completedBosses, progress.completedLevels, selectedCityId]);
+
   // Scroll Stepper left/right
   const handleScrollStepper = (direction: 'left' | 'right') => {
     if (stepperRef.current) {
@@ -684,8 +710,6 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                     if (isUnlocked && isSelected) {
                       if (cityAllDone && !cityBossDone && city.bossMission) {
                         onOpenBoss(city.id);
-                      } else if (idx === 0) {
-                        onStartJourney();
                       } else {
                         onSelectCityPath(city.id);
                       }
@@ -774,11 +798,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                           onOpenBoss(city.id);
                           return;
                         }
-                        if (idx === 0) {
-                          onStartJourney();
-                        } else {
-                          onSelectCityPath(city.id);
-                        }
+                        onSelectCityPath(city.id);
                       }}
                       className={`w-full px-4 py-3 flex items-center justify-between text-xs font-black transition-colors cursor-pointer border-t border-[#F2ECE1] ${
                         isCompleted && !isBossDone
@@ -793,7 +813,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                             <span>DESAFÍO DEL JEFE</span>
                           </>
                         ) : (
-                          <span>{idx === 0 ? 'START HERE' : 'EXPLORE CITY'}</span>
+                          <span>{idx === 0 && !isCompleted && !isBossDone ? 'START HERE' : 'EXPLORE CITY'}</span>
                         )}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 text-[#E05615]" />
@@ -960,6 +980,8 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                       className={`w-7 h-7 rounded-full font-black text-xs transition-transform flex items-center justify-center ${
                         !isUnlocked
                           ? 'bg-[#2E1B12] text-slate-600 cursor-not-allowed opacity-50 border border-white/5'
+                          : isCurrent && isDone
+                          ? 'bg-emerald-600 text-white scale-110 ring-2 ring-[#E05615] shadow-lg'
                           : isCurrent
                           ? 'bg-[#E05615] text-white scale-110 shadow'
                           : isDone

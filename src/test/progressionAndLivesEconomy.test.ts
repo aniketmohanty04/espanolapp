@@ -164,6 +164,74 @@ describe('Progression & Lives Economy Suite', () => {
 
       expect(lockExplanation).toBe('Derrota al Jefe de Madrid (80% req.)');
     });
+
+    it('simulates full sequential progression across all 15 cities and unlocks every city up to Santiago', () => {
+      // Start with only Madrid unlocked
+      const testProg = {
+        unlockedCityIds: ['madrid'],
+        completedLevels: {} as Record<string, any>,
+        completedBosses: {} as Record<string, any>
+      };
+
+      for (let i = 0; i < ALL_CITIES.length; i++) {
+        const city = ALL_CITIES[i];
+        expect(testProg.unlockedCityIds).toContain(city.id);
+
+        // 1. Complete levels 1-10
+        city.levels.forEach(lvl => {
+          testProg.completedLevels[lvl.id] = { stars: 3, scorePercent: 100, completedAt: new Date().toISOString() };
+        });
+
+        const nextCity = ALL_CITIES[i + 1];
+
+        // 2. Passing boss with >= 80% unlocks next city
+        const passingScore = 85;
+        const passed = passingScore >= 80;
+        testProg.completedBosses[city.id] = { scorePercent: passingScore, passed, completedAt: new Date().toISOString() };
+
+        const cityObj = getCityById(city.id)!;
+        const cityCompletedCount = cityObj.levels.filter(l => Boolean(testProg.completedLevels[l.id])).length;
+        expect(cityCompletedCount).toBe(10);
+
+        if (passed && cityCompletedCount >= 10 && nextCity) {
+          testProg.unlockedCityIds.push(nextCity.id);
+        }
+
+        if (nextCity) {
+          expect(testProg.unlockedCityIds).toContain(nextCity.id);
+        }
+      }
+
+      // At the end, all 15 cities are unlocked!
+      expect(testProg.unlockedCityIds.length).toBe(15);
+      expect(testProg.unlockedCityIds[14]).toBe('santiago');
+    });
+
+    it('verifies module boundary transitions (M1->M2, M2->M3, M3->M4, M4->M5)', () => {
+      const salamanca = getCityById('salamanca')!;
+      const segovia = getCityById('segovia')!;
+      expect(salamanca.moduleIndex).toBe(1);
+      expect(segovia.moduleIndex).toBe(2);
+      expect(segovia.number).toBe(salamanca.number + 1);
+
+      const granada = getCityById('granada')!;
+      const cordoba = getCityById('cordoba')!;
+      expect(granada.moduleIndex).toBe(2);
+      expect(cordoba.moduleIndex).toBe(3);
+      expect(cordoba.number).toBe(granada.number + 1);
+
+      const cadiz = getCityById('cadiz')!;
+      const valencia = getCityById('valencia')!;
+      expect(cadiz.moduleIndex).toBe(3);
+      expect(valencia.moduleIndex).toBe(4);
+      expect(valencia.number).toBe(cadiz.number + 1);
+
+      const zaragoza = getCityById('zaragoza')!;
+      const bilbao = getCityById('bilbao')!;
+      expect(zaragoza.moduleIndex).toBe(4);
+      expect(bilbao.moduleIndex).toBe(5);
+      expect(bilbao.number).toBe(zaragoza.number + 1);
+    });
   });
 
   describe('3-Lives Economy (Max 3, 500 Coins Refill, 15m Passive Regen)', () => {
