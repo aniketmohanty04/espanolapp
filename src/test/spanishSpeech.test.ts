@@ -69,7 +69,7 @@ describe('Spanish Speech Service & Text Sanitization', () => {
     it('formats Spanish text with gentle pauses between words for clear learner cadence', () => {
       const raw = '¡Buenos días, ¿cómo estás?!';
       const paused = formatSpanishWithWordPauses(raw);
-      expect(paused).toBe('Buenos , días, cómo , estás?!');
+      expect(paused).toBe('Buenos, días, cómo, estás?!');
     });
 
     it('handles single word strings without trailing commas', () => {
@@ -156,7 +156,7 @@ describe('Spanish Speech Service & Text Sanitization', () => {
       vi.advanceTimersByTime(60);
       expect(mockSpeak).toHaveBeenCalled();
       const callArg = mockSpeak.mock.calls[0][0];
-      expect(callArg.text).toBe(', Buenos , días');
+      expect(callArg.text).toBe(', Buenos, días');
       expect(callArg.rate).toBeLessThanOrEqual(0.75);
     });
 
@@ -168,12 +168,12 @@ describe('Spanish Speech Service & Text Sanitization', () => {
 
     it('generates streaming native Spanish audio URL for guaranteed authentic pronunciation', () => {
       const urlEs = getSpanishAudioUrl('María es profesora', 'es-ES');
-      expect(urlEs).toContain('tl=es-ES');
-      expect(urlEs).toContain('client=tw-ob');
+      expect(urlEs).toContain('/api/spanish-tts');
+      expect(urlEs).toContain('lang=es-ES');
       expect(urlEs).toContain('Mar%C3%ADa%20es%20profesora');
 
       const urlMx = getSpanishAudioUrl('Hola amigo', 'es-MX');
-      expect(urlMx).toContain('tl=es-MX');
+      expect(urlMx).toContain('lang=es-MX');
     });
 
     it('respects Mexican Spanish locale when es-MX is requested', () => {
@@ -186,6 +186,13 @@ describe('Spanish Speech Service & Text Sanitization', () => {
       expect(voice).toBeDefined();
       expect(voice?.lang).toBe('es-MX');
       expect(voice?.name).toContain('Sabina');
+    });
+
+    it('formatSpanishWithWordPauses avoids inserting commas after connector words like "es"', () => {
+      const paused = formatSpanishWithWordPauses('María es profesora');
+      expect(paused).not.toContain('es,');
+      expect(paused).not.toContain('es ,');
+      expect(paused).toBe('María, es profesora');
     });
   });
 });

@@ -80,8 +80,10 @@ export function formatSpanishWithWordPauses(raw: string): string {
       if (i === tokens.length - 1) return word;
       // If word already ends in sentence punctuation, preserve it
       if (/[,.:;!?¡¿]$/.test(word)) return word;
+      // Never insert comma after 1-2 letter connector words to avoid acronym spelling
+      if (/^(es|el|la|un|de|en|y|a|al|o|se|te|me|su|mi)$/i.test(word)) return word;
       // Insert soft pause separator
-      return `${word} ,`;
+      return `${word},`;
     })
     .join(' ');
 }
@@ -260,7 +262,7 @@ export function getSpanishPhoneticGuide(text: string): string {
 export function getSpanishAudioUrl(text: string, lang: string = 'es-ES'): string {
   const cleaned = cleanSpanishTextForSpeech(text);
   const tl = lang.toLowerCase().startsWith('es-mx') ? 'es-MX' : 'es-ES';
-  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encodeURIComponent(cleaned)}`;
+  return `/api/spanish-tts?text=${encodeURIComponent(cleaned)}&lang=${tl}`;
 }
 
 // Keep active reference to prevent Chromium garbage collection from abruptly cutting speech
@@ -310,13 +312,20 @@ function speakViaSpeechSynthesis(
     // Chromium audio pipeline reset delay (60ms)
     speechTimeoutId = setTimeout(() => {
       try {
-        const baseText = options.pauseBetweenWords
+        let baseText = options.pauseBetweenWords
           ? formatSpanishWithWordPauses(cleaned)
           : cleaned;
-        const textToSpeak = `, ${baseText}`;
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
         const voice = spanishVoice || getBestSpanishVoice(options.lang);
+        // If no Spanish voice is available and we must fall back to an English OS voice,
+        // phonetically adapt "es" -> "ess" so Microsoft David never spells out the letters "E-S"!
+        if (!voice) {
+          baseText = baseText.replace(/\bes\b/gi, 'ess');
+        }
+
+        const textToSpeak = voice ? `, ${baseText}` : baseText;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
         if (voice) {
           utterance.voice = voice;
           utterance.lang = voice.lang;
