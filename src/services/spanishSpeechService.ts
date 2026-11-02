@@ -23,8 +23,11 @@
 export function cleanSpanishTextForSpeech(raw: string): string {
   if (!raw || typeof raw !== 'string') return '';
 
+  // 0. Normalize Unicode (NFC) and repair any decomposed/dotless accented letters (e.g. 'Mar ı ˊ a' -> 'María')
+  let text = raw.normalize('NFC').replace(/ı[\u0301\u02CA\u00B4]|ı/g, 'í').replace(/i[\u0301\u02CA\u00B4]/g, 'í');
+
   // 1. Take primary sentence before newlines
-  let text = raw.split('\n')[0].trim();
+  text = text.split('\n')[0].trim();
 
   // 2. Remove inline example markers like 'Ejemplo: ...' or 'Example: ...'
   text = text.replace(/(?:Ejemplo|Example|Ex)\s*:\s*.*$/i, '').trim();
