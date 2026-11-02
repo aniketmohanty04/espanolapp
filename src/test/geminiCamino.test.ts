@@ -17,9 +17,8 @@ describe('Gemini Camino AI Service', () => {
     vi.restoreAllMocks();
   });
 
-  it('provides the default active key configuration and correct model identifier', () => {
-    expect(DEFAULT_GEMINI_API_KEY.startsWith('AQ.')).toBe(true);
-    expect(DEFAULT_GEMINI_API_KEY.length).toBeGreaterThan(40);
+  it('provides the default key configuration and correct model identifier', () => {
+    expect(typeof DEFAULT_GEMINI_API_KEY).toBe('string');
     expect(['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.8-flash']).toContain(GEMINI_MODEL);
   });
 
@@ -42,6 +41,7 @@ describe('Gemini Camino AI Service', () => {
   });
 
   it('handles successful Gemini API response and returns structured Camino format', async () => {
+    setGeminiApiKey('mock-gemini-test-key-for-test');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({

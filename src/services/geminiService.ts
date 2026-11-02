@@ -5,9 +5,8 @@ import { authDatabaseService } from './authDatabaseService';
  * Integrated with Google Gemini 3.8 Flash API.
  */
 
-// Fallback key assembled dynamically to prevent repository push protection triggers
-const KEY_SEGMENTS = ['AQ', 'Ab8RN6KgvPsYYRtPI1BLEu', 'AcsEyxbyO_vjvDk56UjhUvrheVw'];
-export const DEFAULT_GEMINI_API_KEY = `${KEY_SEGMENTS[0]}.${KEY_SEGMENTS[1]}-${KEY_SEGMENTS[2]}`;
+// Default key empty: API key is securely injected via VITE_GEMINI_API_KEY environment variable
+export const DEFAULT_GEMINI_API_KEY = '';
 export const DEFAULT_GEMINI_MODEL = 'gemini-flash-lite-latest';
 export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
 export const GEMINI_FALLBACK_MODELS = [
@@ -86,7 +85,17 @@ export function getGeminiApiKey(): string {
   const local = getStorageItem('gemini_api_key');
   if (local && local.trim().length > 0) return local.trim();
 
-  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  let envKey = '';
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) {
+      envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    } else if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_GEMINI_API_KEY) {
+      envKey = (globalThis as any).process.env.VITE_GEMINI_API_KEY;
+    }
+  } catch {
+    // fallback
+  }
+
   if (envKey && typeof envKey === 'string' && envKey.trim().length > 0) {
     return envKey.trim();
   }
@@ -110,6 +119,7 @@ export function setGeminiApiKey(key: string | null): void {
  */
 export function getMaskedApiKey(): string {
   const key = getGeminiApiKey();
+  if (!key) return '';
   if (key.length <= 10) return '••••••••';
   return `${key.substring(0, 7)}...${key.substring(key.length - 6)}`;
 }
