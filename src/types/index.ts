@@ -74,6 +74,7 @@ export interface Question {
   options?: string[];
   correctAnswer: string | string[]; // Single string or array of acceptable answers
   explanation: string;
+  englishExplanation?: string; // Detailed English explanation and grammar rules
   hints: string[];
   vocabularyHints?: VocabularyHint[]; // 2–4 keyword hints for paid "Pista de vocabulario"
   syllabusRef: string; // e.g. "M1.Alphabet", "M2.SerVsEstar"

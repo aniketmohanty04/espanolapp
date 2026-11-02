@@ -662,6 +662,7 @@ export const MODULE1_CITIES: City[] = [
             options: ['María es profesora', 'María es profesor', 'María está profesora', 'María tiene profesora'],
             correctAnswer: 'María es profesora',
             explanation: 'Las profesiones masculinas terminadas en consonante forman el femenino añadiendo -a (profesor -> profesora, doctor -> doctora).',
+            englishExplanation: 'Grammar Rule: In Spanish, masculine professions ending in a consonant form the feminine by adding "-a" (profesor -> profesora, doctor -> doctora). Also, with the verb SER, basic professions do not use indefinite articles ("María es profesora", not "es una profesora").',
             hints: ['Añade la vocal -a al final.'],
             syllabusRef: 'M1-PROF',
             difficulty: 'medium'
@@ -675,6 +676,7 @@ export const MODULE1_CITIES: City[] = [
             options: ['Él es un arquitecto', 'Él es arquitecto', 'Él está arquitecto', 'Él tiene arquitecto'],
             correctAnswer: 'Él es arquitecto',
             explanation: 'En español, al expresar la profesión con el verbo SER normalmente no se utiliza artículo indefinido: "Soy profesor", "Es arquitecto".',
+            englishExplanation: 'Grammar Rule: When expressing a profession or occupation with the verb SER in Spanish, indefinite articles ("un" / "una") are omitted: say "Él es arquitecto" (He is an architect) or "Soy profesor" (I am a teacher). Do not use "un" unless an adjective modifies the noun.',
             hints: ['En español no se dice "un" para la profesión básica.'],
             syllabusRef: 'M1-PROF',
             difficulty: 'medium'

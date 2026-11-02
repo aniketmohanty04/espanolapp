@@ -21,6 +21,7 @@ import {
   Mic
 } from 'lucide-react';
 import { PronunciationTrainerModal } from './PronunciationTrainerModal';
+import { getEnglishGrammarExplanation } from '../utils/grammarExplanationService';
 import { normalizeSpanishForComparison, calculateWordSimilarity } from '../services/spanishVoiceRecognitionService';
 
 interface BossMissionModalProps {
@@ -717,6 +718,19 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                     </p>
                   )}
 
+                  {/* Rich English Grammar Rule Explanation */}
+                  {showFullTranslation && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-amber-950 animate-fadeIn">
+                      <div className="flex items-center space-x-1.5 font-bold text-xs text-[#B4400C] mb-1">
+                        <Sparkles className="w-3.5 h-3.5 text-[#E05615] fill-amber-400" />
+                        <span>Regla gramatical en inglés (English Explanation & Rules):</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-medium leading-relaxed text-[#24140E]">
+                        {getEnglishGrammarExplanation(currentQuestion)}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Quick Translation Toggle in Feedback */}
                   <div className="mt-3 pt-2.5 border-t border-black/10 flex flex-wrap items-center justify-between gap-2">
                     <button
@@ -726,7 +740,7 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                       className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 px-3.5 py-1.5 rounded-full border border-amber-300 transition-colors cursor-pointer shadow-xs active:scale-95"
                     >
                       <Languages className="w-3.5 h-3.5 text-[#E05615]" />
-                      <span>{showFullTranslation ? 'Ocultar traducción' : 'Traducir pregunta al inglés'}</span>
+                      <span>{showFullTranslation ? 'Ocultar traducción y reglas' : 'Traducir pregunta y ver reglas en inglés'}</span>
                     </button>
                     <span className="text-[11px] font-semibold text-[#7A6B60]">0 🪙 (Gratuito tras responder)</span>
                   </div>
@@ -737,12 +751,12 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
               {hasSubmitted && showFullTranslation && (
                 <div 
                   data-testid="full-translation-panel"
-                  className="p-4 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-[#24140E] shadow-sm animate-fadeIn"
+                  className="p-4 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-[#24140E] shadow-sm animate-fadeIn space-y-3"
                 >
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-amber-200/80">
+                  <div className="flex items-center justify-between pb-2 border-b border-amber-200/80">
                     <div className="flex items-center space-x-2 text-amber-950 font-black text-xs sm:text-sm">
                       <Languages className="w-4 h-4 text-[#E05615]" />
-                      <span>Traducción al inglés de la pregunta:</span>
+                      <span>Traducción y Reglas en Inglés (English Translation & Rules):</span>
                     </div>
                     <button
                       type="button"
@@ -754,12 +768,27 @@ export const BossMissionModal: React.FC<BossMissionModalProps> = ({
                     </button>
                   </div>
 
-                  <p className="text-sm sm:text-base font-bold text-[#24140E] leading-relaxed">
-                    "{questionEnglishText}"
-                  </p>
+                  <div>
+                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wide block mb-0.5">
+                      Pregunta en inglés (Question in English):
+                    </span>
+                    <p className="text-sm sm:text-base font-bold text-[#24140E] leading-relaxed">
+                      "{questionEnglishText}"
+                    </p>
+                  </div>
 
-                  <div className="mt-2.5 text-[11px] text-[#7A6B60] font-medium flex items-center justify-between">
-                    <span>💡 Comprensión de la consigna en inglés. No revela la clave de respuestas.</span>
+                  <div className="p-3 rounded-xl bg-amber-100/70 border border-amber-300">
+                    <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide flex items-center space-x-1 mb-1">
+                      <Sparkles className="w-3.5 h-3.5 text-[#E05615] fill-amber-400" />
+                      <span>Regla Gramatical Oficial (Grammar Rule):</span>
+                    </span>
+                    <p className="text-xs sm:text-sm font-semibold text-[#24140E] leading-relaxed">
+                      {getEnglishGrammarExplanation(currentQuestion)}
+                    </p>
+                  </div>
+
+                  <div className="pt-1 text-[11px] text-[#7A6B60] font-medium flex items-center justify-between border-t border-amber-200/60">
+                    <span>💡 Explicación completa con reglas para principiantes.</span>
                     <span className="text-emerald-700 font-bold">✓ Costo: 0 monedas</span>
                   </div>
                 </div>

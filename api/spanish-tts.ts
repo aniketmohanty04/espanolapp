@@ -6,9 +6,19 @@ export default async function handler(req: any, res: any) {
   // Support CORS preflight
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  // Support HEAD requests for media player pre-checks
+  if (req.method === 'HEAD') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     res.end();
     return;
   }
@@ -16,7 +26,7 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     res.statusCode = 405;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Method not allowed. Use GET.' }));
+    res.end(JSON.stringify({ error: 'Method not allowed. Use GET or HEAD.' }));
     return;
   }
 
