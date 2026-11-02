@@ -38,13 +38,15 @@ interface LevelModalProps {
   cityId: string;
   onClose: () => void;
   onCompleteLevel: () => void;
+  onOpenBoss?: (cityId: string) => void;
 }
 
 export const LevelModal: React.FC<LevelModalProps> = ({
   level,
   cityId,
   onClose,
-  onCompleteLevel
+  onCompleteLevel,
+  onOpenBoss
 }) => {
   const { 
     progress, 
@@ -447,7 +449,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
           <div className="relative inline-block mb-3">
             <div className="px-8 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 text-white font-black text-lg sm:text-2xl shadow-xl border-2 border-amber-300 uppercase tracking-wider glow-gold flex items-center space-x-2">
               <Sparkles className="w-5 h-5 text-amber-300" />
-              <span>¡Nivel Completado!</span>
+              <span>{level.levelNumber === 10 ? '¡10/10 Niveles Completados!' : '¡Nivel Completado!'}</span>
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
           </div>
@@ -455,6 +457,19 @@ export const LevelModal: React.FC<LevelModalProps> = ({
           <p className="text-xs sm:text-sm text-[#6B584D] font-bold mb-4">
             {level.title} • {level.subtitle}
           </p>
+
+          {level.levelNumber === 10 && (
+            <div className="my-3 p-3.5 rounded-2xl bg-amber-500/15 border-2 border-amber-400 text-amber-900 text-xs sm:text-sm font-bold animate-pulse">
+              <div className="flex items-center justify-center space-x-2 text-amber-700 font-black text-sm mb-1 uppercase tracking-wider">
+                <span>👑</span>
+                <span>¡Desafío del Jefe Desbloqueado!</span>
+                <span>👑</span>
+              </div>
+              <p className="text-[#6B584D]">
+                Has superado los 10 niveles de esta ciudad. Supera el Desafío del Jefe con un 80% de aciertos para desbloquear la siguiente ciudad.
+              </p>
+            </div>
+          )}
 
           {/* Center Area: Cheering Traveler Hero + 3 Gold Stars (Panel 11) */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 my-2">
@@ -497,14 +512,26 @@ export const LevelModal: React.FC<LevelModalProps> = ({
 
           </div>
 
-          {/* Green Continue Button (Panel 11) */}
-          <div className="mt-6 pt-2">
+          {/* Green Continue Button / Boss Challenge CTA (Panel 11) */}
+          <div className="mt-6 pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {level.levelNumber === 10 && onOpenBoss && (
+              <button
+                onClick={() => {
+                  onCompleteLevel();
+                  onOpenBoss(cityId);
+                }}
+                className="w-full sm:w-auto py-4 px-8 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-[#E05615] hover:from-amber-400 hover:to-orange-500 text-white font-black text-base sm:text-lg shadow-xl hover:scale-105 active:scale-95 transition-all border-2 border-amber-300 glow-gold flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <span>👑 Enfrentar al Jefe</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={() => {
                 onCompleteLevel();
                 onClose();
               }}
-              className="w-full sm:w-72 py-4 px-8 rounded-full bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 hover:from-emerald-500 hover:to-green-500 text-white font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all border-2 border-emerald-400 glow-gold mx-auto flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto py-4 px-8 rounded-full bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 hover:from-emerald-500 hover:to-green-500 text-white font-black text-base sm:text-lg shadow-xl hover:scale-105 active:scale-95 transition-all border-2 border-emerald-400 glow-gold flex items-center justify-center space-x-2 cursor-pointer"
             >
               <span>Continuar</span>
               <ArrowRight className="w-5 h-5" />

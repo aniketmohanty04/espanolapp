@@ -18,7 +18,8 @@ import { FinalAssessmentModal } from './components/FinalAssessmentModal';
 import { JourneyHub } from './components/JourneyHub';
 import { OutOfLivesModal } from './components/OutOfLivesModal';
 import { FloatingChatbot } from './components/FloatingChatbot';
-import { getCityById, getLevelById, ALL_CITIES } from './data/citiesData';
+import { getCityById, getLevelById, getNextCity, ALL_CITIES } from './data/citiesData';
+import { Level } from './types';
 
 const GameMain: React.FC = () => {
   const { 
@@ -188,19 +189,53 @@ const GameMain: React.FC = () => {
                 setShowOutOfLivesModal(true);
                 return;
               }
-              const firstCity = ALL_CITIES[0];
-              const unfinished = firstCity.levels.find(l => !progress.completedLevels[l.id]) || firstCity.levels[0];
-              const unfinishedIdx = firstCity.levels.findIndex(l => l.id === unfinished.id);
-              if (unfinishedIdx > 0 && !progress.completedLevels[firstCity.levels[unfinishedIdx - 1].id]) {
+              const unlockedIds = progress.unlockedCityIds || ['madrid'];
+              const currentCityId = unlockedIds[unlockedIds.length - 1] || 'madrid';
+              const currentCity = getCityById(currentCityId) || ALL_CITIES[0];
+
+              const unfinished = currentCity.levels.find(l => !progress.completedLevels[l.id]);
+              if (unfinished) {
+                const unfinishedIdx = currentCity.levels.findIndex(l => l.id === unfinished.id);
+                if (unfinishedIdx > 0 && !progress.completedLevels[currentCity.levels[unfinishedIdx - 1].id]) {
+                  return;
+                }
+                setActiveCityId(currentCity.id);
+                setActiveLevelId(unfinished.id);
                 return;
               }
-              setActiveCityId(firstCity.id);
-              setActiveLevelId(unfinished.id);
+
+              // All 10 levels completed! Check boss
+              const isBossDone = Boolean(progress.completedBosses[currentCity.id]?.passed);
+              if (!isBossDone && currentCity.bossMission) {
+                setActiveBossCityId(currentCity.id);
+                return;
+              }
+
+              // If boss is done, check if next city is unlocked
+              const nextCity = getNextCity(currentCity.id);
+              if (nextCity && progress.unlockedCityIds.includes(nextCity.id)) {
+                const nextUnfinished = nextCity.levels.find((l: Level) => !progress.completedLevels[l.id]) || nextCity.levels[0];
+                setActiveCityId(nextCity.id);
+                setActiveLevelId(nextUnfinished.id);
+                return;
+              }
+
+              setActiveCityId(currentCity.id);
+              setActiveLevelId(currentCity.levels[0].id);
             }}
             onOpenMap={() => setHomeViewMode('world-map')}
             onSelectCityPath={(cityId) => {
               if (progress.unlockedCityIds.includes(cityId)) {
                 setActiveCityId(cityId);
+              }
+            }}
+            onOpenBoss={(cityId) => {
+              const targetCity = getCityById(cityId);
+              if (!targetCity) return;
+              const completedCount = targetCity.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+              const isBossPassed = Boolean(progress.completedBosses[targetCity.id]?.passed);
+              if (completedCount >= 10 || isBossPassed) {
+                setActiveBossCityId(targetCity.id);
               }
             }}
             onPlayLevel={(cityId, levelId) => {
@@ -243,6 +278,10 @@ const GameMain: React.FC = () => {
           cityId={activeCity.id}
           onClose={() => setActiveLevelId(null)}
           onCompleteLevel={() => setActiveLevelId(null)}
+          onOpenBoss={(cId) => {
+            setActiveLevelId(null);
+            setActiveBossCityId(cId);
+          }}
         />
       )}
 

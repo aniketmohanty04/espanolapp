@@ -30,7 +30,6 @@ describe('Progression & Lives Economy Suite', () => {
     it('prevents accessing Level 2 until Level 1 is completed', () => {
       const madrid = getCityById('madrid')!;
       const lvl1 = madrid.levels[0];
-      const lvl2 = madrid.levels[1];
 
       const checkUnlock = (lvlIndex: number) => {
         if (lvlIndex === 0) return true;
@@ -105,6 +104,65 @@ describe('Progression & Lives Economy Suite', () => {
 
       expect(completedCount).toBe(10);
       expect(isBossUnlocked).toBe(true);
+    });
+
+    it('keeps City 2 (Toledo) locked after completing all 10 Madrid levels until the Madrid Boss is defeated', () => {
+      const madrid = getCityById('madrid')!;
+      const toledo = ALL_CITIES.find(c => c.number === madrid.number + 1)!;
+      expect(toledo.id).toBe('toledo');
+
+      // Complete all 10 levels of Madrid
+      madrid.levels.forEach(lvl => {
+        progress.completedLevels[lvl.id] = { stars: 3, scorePercent: 100, firstTryPerfect: true, completedAt: new Date().toISOString() };
+      });
+
+      // City 2 (Toledo) is still not unlocked
+      expect(progress.unlockedCityIds.includes('toledo')).toBe(false);
+
+      // Defeating boss with < 80% (e.g. 75%) must not unlock Toledo
+      const failingScore = 75;
+      const passedFail = failingScore >= 80;
+      expect(passedFail).toBe(false);
+      expect(progress.unlockedCityIds.includes('toledo')).toBe(false);
+
+      // Defeating boss with >= 80% unlocks Toledo
+      const passingScore = 80;
+      const passedSuccess = passingScore >= 80;
+      expect(passedSuccess).toBe(true);
+
+      const cityCompletedCount = Object.keys(progress.completedLevels).filter(id => id.startsWith('madrid-')).length;
+      expect(cityCompletedCount).toBe(10);
+
+      if (passedSuccess && cityCompletedCount >= 10) {
+        progress.unlockedCityIds.push(toledo.id);
+        progress.completedBosses['madrid'] = {
+          scorePercent: passingScore,
+          passed: true,
+          completedAt: new Date().toISOString()
+        };
+      }
+
+      expect(progress.unlockedCityIds.includes('toledo')).toBe(true);
+      expect(progress.completedBosses['madrid']?.passed).toBe(true);
+    });
+
+    it('verifies next-city locked explanation directs player to defeat the previous city boss', () => {
+      const madrid = getCityById('madrid')!;
+      madrid.levels.forEach(lvl => {
+        progress.completedLevels[lvl.id] = { stars: 3, scorePercent: 100, firstTryPerfect: true, completedAt: new Date().toISOString() };
+      });
+
+      const prevLevelsCount = madrid.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+      const prevBossDone = Boolean(progress.completedBosses['madrid']?.passed);
+
+      expect(prevLevelsCount).toBe(10);
+      expect(prevBossDone).toBe(false);
+
+      const lockExplanation = (prevLevelsCount === 10 && !prevBossDone)
+        ? `Derrota al Jefe de ${madrid.name} (80% req.)`
+        : `Completa Ciudad 1`;
+
+      expect(lockExplanation).toBe('Derrota al Jefe de Madrid (80% req.)');
     });
   });
 

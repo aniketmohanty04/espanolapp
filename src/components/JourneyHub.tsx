@@ -33,6 +33,7 @@ interface JourneyHubProps {
   onOpenMap: () => void;
   onSelectCityPath: (cityId: string) => void;
   onPlayLevel: (cityId: string, levelId: string) => void;
+  onOpenBoss: (cityId: string) => void;
   onOpenFestival: () => void;
   onOpenNotebook: () => void;
   onOpenStudyPlan: () => void;
@@ -96,6 +97,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   onOpenMap,
   onSelectCityPath,
   onPlayLevel,
+  onOpenBoss,
   onOpenFestival,
   onOpenNotebook,
   onOpenStudyPlan,
@@ -110,6 +112,17 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
     const unlocked = progress.unlockedCityIds;
     return (unlocked && unlocked.length > 0) ? unlocked[unlocked.length - 1] : 'madrid';
   });
+
+  const [isBossSelected, setIsBossSelected] = useState<boolean>(() => {
+    const initialCityId = (progress.unlockedCityIds && progress.unlockedCityIds.length > 0) 
+      ? progress.unlockedCityIds[progress.unlockedCityIds.length - 1] 
+      : 'madrid';
+    const city = getCityById(initialCityId) || ALL_CITIES[0];
+    const allDone = city.levels.every(lvl => Boolean(progress.completedLevels[lvl.id]));
+    const bossPassed = Boolean(progress.completedBosses[city.id]?.passed);
+    return allDone && !bossPassed;
+  });
+
   const [selectedLevelIdx, setSelectedLevelIdx] = useState<number>(() => {
     const initialCityId = (progress.unlockedCityIds && progress.unlockedCityIds.length > 0) 
       ? progress.unlockedCityIds[progress.unlockedCityIds.length - 1] 
@@ -174,6 +187,8 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 
   const isLevelCompleted = Boolean(progress.completedLevels[activeLevel.id]);
   const isCityUnlocked = progress.unlockedCityIds.includes(selectedCity.id);
+  const isCityBossDone = Boolean(progress.completedBosses[selectedCity.id]?.passed);
+  const isCityAllLevelsDone = selectedCity.levels.every(l => Boolean(progress.completedLevels[l.id]));
 
   // Scroll Stepper left/right
   const handleScrollStepper = (direction: 'left' | 'right') => {
@@ -580,7 +595,15 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                   const targetCity = modCities.find(c => progress.unlockedCityIds.includes(c.id)) || modCities[0];
                   if (targetCity) {
                     setSelectedCityId(targetCity.id);
-                    setSelectedLevelIdx(0);
+                    const targetAllDone = targetCity.levels.every(l => Boolean(progress.completedLevels[l.id]));
+                    const targetBossDone = Boolean(progress.completedBosses[targetCity.id]?.passed);
+                    if (targetAllDone && !targetBossDone) {
+                      setIsBossSelected(true);
+                    } else {
+                      setIsBossSelected(false);
+                      const firstUnfinished = targetCity.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
+                      setSelectedLevelIdx(firstUnfinished !== -1 ? firstUnfinished : 0);
+                    }
                     if (stepperRef.current) {
                       const cardIndex = ALL_CITIES.findIndex(c => c.id === targetCity.id);
                       stepperRef.current.scrollTo({ left: cardIndex * 280, behavior: 'smooth' });
@@ -648,11 +671,20 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                   key={city.id}
                   onClick={() => {
                     setSelectedCityId(city.id);
-                    const firstUnfinished = city.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
-                    setSelectedLevelIdx(firstUnfinished !== -1 ? firstUnfinished : 0);
+                    const cityAllDone = city.levels.every(l => Boolean(progress.completedLevels[l.id]));
+                    const cityBossDone = Boolean(progress.completedBosses[city.id]?.passed);
+                    if (cityAllDone && !cityBossDone) {
+                      setIsBossSelected(true);
+                    } else {
+                      setIsBossSelected(false);
+                      const firstUnfinished = city.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
+                      setSelectedLevelIdx(firstUnfinished !== -1 ? firstUnfinished : 0);
+                    }
                     // Only launch if city is already unlocked!
                     if (isUnlocked && isSelected) {
-                      if (idx === 0) {
+                      if (cityAllDone && !cityBossDone && city.bossMission) {
+                        onOpenBoss(city.id);
+                      } else if (idx === 0) {
                         onStartJourney();
                       } else {
                         onSelectCityPath(city.id);
@@ -685,9 +717,14 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                         </span>
                       </div>
 
-                      {isBossDone || isCompleted ? (
-                        <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow">
+                      {isBossDone ? (
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow" title="Ciudad y Jefe Completados">
                           <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                      ) : isCompleted ? (
+                        <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black text-[10px] flex items-center space-x-1 shadow animate-pulse" title="¡10 niveles completados! Falta el Desafío del Jefe">
+                          <span>👑</span>
+                          <span>JEFE</span>
                         </div>
                       ) : !isUnlocked ? (
                         <div className="w-6 h-6 rounded-full bg-slate-900/80 text-amber-400 flex items-center justify-center backdrop-blur-xs border border-slate-700">
@@ -733,16 +770,31 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (isCompleted && !isBossDone && city.bossMission) {
+                          onOpenBoss(city.id);
+                          return;
+                        }
                         if (idx === 0) {
                           onStartJourney();
                         } else {
                           onSelectCityPath(city.id);
                         }
                       }}
-                      className="w-full px-4 py-3 bg-white hover:bg-orange-50/50 flex items-center justify-between text-xs font-black text-[#E05615] transition-colors cursor-pointer border-t border-[#F2ECE1]"
+                      className={`w-full px-4 py-3 flex items-center justify-between text-xs font-black transition-colors cursor-pointer border-t border-[#F2ECE1] ${
+                        isCompleted && !isBossDone
+                          ? 'bg-amber-50 hover:bg-amber-100 text-[#C2410C]'
+                          : 'bg-white hover:bg-orange-50/50 text-[#E05615]'
+                      }`}
                     >
-                      <span>
-                        {idx === 0 ? 'START HERE' : 'EXPLORE CITY'}
+                      <span className="flex items-center space-x-1.5">
+                        {isCompleted && !isBossDone ? (
+                          <>
+                            <span>👑</span>
+                            <span>DESAFÍO DEL JEFE</span>
+                          </>
+                        ) : (
+                          <span>{idx === 0 ? 'START HERE' : 'EXPLORE CITY'}</span>
+                        )}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 text-[#E05615]" />
                     </button>
@@ -755,7 +807,19 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                         <Lock className="w-3.5 h-3.5 text-slate-400" />
                         <span>BLOQUEADO</span>
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium">Completa Ciudad {city.number - 1}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {(() => {
+                          const prevCity = idx > 0 ? ALL_CITIES[idx - 1] : null;
+                          if (prevCity) {
+                            const prevLevelsCount = prevCity.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+                            const prevBossDone = Boolean(progress.completedBosses[prevCity.id]?.passed);
+                            if (prevLevelsCount === 10 && !prevBossDone) {
+                              return `Derrota al Jefe de ${prevCity.name} (80% req.)`;
+                            }
+                          }
+                          return `Completa Ciudad ${city.number - 1}`;
+                        })()}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -787,11 +851,13 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                     MÓDULO {selectedCity.moduleIndex} ({((selectedCity.number - 1) % 3) + 1}/3)
                   </span>
                   <span className="text-xs font-black tracking-[0.2em] uppercase text-[#E08A5B]">
-                    MISSION {String(activeLevel.levelNumber).padStart(2, '0')}
+                    {isBossSelected ? 'DESAFÍO DEL JEFE' : `MISSION ${String(activeLevel.levelNumber).padStart(2, '0')}`}
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-sm text-slate-300">
-                  {String(activeLevel.levelNumber).padStart(2, '0')}
+                <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm ${
+                  isBossSelected ? 'border-amber-400 bg-amber-400/20 text-amber-300' : 'border-white/20 text-slate-300'
+                }`}>
+                  {isBossSelected ? '👑' : String(activeLevel.levelNumber).padStart(2, '0')}
                 </div>
               </div>
 
@@ -800,13 +866,26 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-slate-300 font-bold">
                   📍 {selectedCity.name}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold">
-                  📖 {activeLevel.syllabusTopic}
-                </span>
-                {selectedCity.number % 3 === 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black">
-                    🏆 Cierre de Módulo {selectedCity.moduleIndex}
-                  </span>
+                {isBossSelected && selectedCity.bossMission ? (
+                  <>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold">
+                      🏆 Requisito: 80% Aciertos
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                      👤 {selectedCity.bossMission.characterName}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold">
+                      📖 {activeLevel.syllabusTopic}
+                    </span>
+                    {selectedCity.number % 3 === 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black">
+                        🏆 Cierre de Módulo {selectedCity.moduleIndex}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -825,22 +904,48 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 </div>
               )}
 
-              {/* Mission Title */}
+              {/* Banner when all 10 levels are completed but boss not yet passed */}
+              {isCityUnlocked && isCityAllLevelsDone && !isCityBossDone && !isBossSelected && (
+                <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-2 border-amber-400/50 flex items-center justify-between gap-3 animate-pulse">
+                  <div className="flex items-center space-x-2.5 text-xs">
+                    <span className="text-2xl">👑</span>
+                    <div>
+                      <div className="font-black text-amber-300 uppercase tracking-wider text-[11px]">
+                        ¡10 Niveles Completados en {selectedCity.name}!
+                      </div>
+                      <div className="text-slate-200 text-xs mt-0.5">
+                        Derrota a {selectedCity.bossMission?.characterName || 'el Jefe'} (80% req.) para desbloquear la siguiente ciudad.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsBossSelected(true)}
+                    className="px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shrink-0 shadow transition-transform hover:scale-105 cursor-pointer"
+                  >
+                    Ver Jefe 👑
+                  </button>
+                </div>
+              )}
+
+              {/* Mission / Boss Title */}
               <h3 className="text-3xl sm:text-4xl font-black font-serif tracking-tight leading-tight text-white mb-4">
-                {activeLevel.title}
+                {isBossSelected && selectedCity.bossMission ? selectedCity.bossMission.title : activeLevel.title}
               </h3>
 
-              {/* Mission Scenario / Description */}
+              {/* Mission / Boss Scenario / Description */}
               <p className="text-sm sm:text-base text-slate-300 font-normal leading-relaxed mb-6">
-                {activeLevel.description || `A stranger asks you where you are going. Choose the words that will get you through ${selectedCity.name}.`}
+                {isBossSelected && selectedCity.bossMission
+                  ? (selectedCity.bossMission.scenario || `Evalúa todo lo aprendido en ${selectedCity.name} frente a ${selectedCity.bossMission.characterName}. Obtén al menos un 80% de aciertos para desbloquear la siguiente ciudad.`)
+                  : (activeLevel.description || `A stranger asks you where you are going. Choose the words that will get you through ${selectedCity.name}.`)}
               </p>
 
-              {/* Level Quick Selector (1 to 10 in current city) - Strictly locked sequentially */}
+              {/* Level Quick Selector (1 to 10 in current city + Boss) */}
               <div className="flex items-center space-x-1.5 mb-6 overflow-x-auto py-1">
                 {selectedCity.levels.map((lvl, lIdx) => {
                   const isDone = Boolean(progress.completedLevels[lvl.id]);
                   const isUnlocked = isCityUnlocked && (lIdx === 0 || Boolean(progress.completedLevels[selectedCity.levels[lIdx - 1]?.id]));
-                  const isCurrent = lIdx === selectedLevelIdx;
+                  const isCurrent = !isBossSelected && lIdx === selectedLevelIdx;
 
                   return (
                     <button
@@ -848,6 +953,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                       disabled={!isUnlocked}
                       onClick={() => {
                         if (isUnlocked) {
+                          setIsBossSelected(false);
                           setSelectedLevelIdx(lIdx);
                         }
                       }}
@@ -866,6 +972,44 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                     </button>
                   );
                 })}
+
+                {/* 11th Item: Boss Mission Button */}
+                {selectedCity.bossMission && (() => {
+                  const isBossUnlocked = isCityUnlocked && (isCityAllLevelsDone || isCityBossDone);
+                  const isCurrent = isBossSelected;
+
+                  return (
+                    <button
+                      key="boss-btn"
+                      disabled={!isBossUnlocked}
+                      onClick={() => {
+                        if (isBossUnlocked) {
+                          setIsBossSelected(true);
+                        }
+                      }}
+                      className={`px-2.5 h-7 rounded-full font-black text-xs transition-all flex items-center space-x-1 shrink-0 ${
+                        !isBossUnlocked
+                          ? 'bg-[#2E1B12] text-slate-600 cursor-not-allowed opacity-50 border border-white/5'
+                          : isCurrent
+                          ? 'bg-gradient-to-r from-amber-500 to-[#E05615] text-white scale-110 shadow-lg shadow-orange-500/30 ring-2 ring-amber-300'
+                          : isCityBossDone
+                          ? 'bg-emerald-600 text-white cursor-pointer'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-400/40 hover:bg-amber-500/30 cursor-pointer animate-pulse'
+                      }`}
+                      title={
+                        !isBossUnlocked
+                          ? `Jefe bloqueado (completa los 10 niveles de ${selectedCity.name})`
+                          : isCityBossDone
+                          ? `Jefe ${selectedCity.bossMission.characterName} superado (clic para reintentar)`
+                          : `¡Desafío del Jefe: ${selectedCity.bossMission.characterName}! (80% requerido para desbloquear la siguiente ciudad)`
+                      }
+                    >
+                      <span>👑</span>
+                      <span className="text-[10px] font-black">Jefe</span>
+                      {isCityBossDone && <CheckCircle2 className="w-3 h-3 text-emerald-200 ml-0.5" />}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
 
@@ -876,18 +1020,58 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
               <div className="flex items-center space-x-3 text-xs sm:text-sm font-black text-[#F5C296]">
                 <span className="flex items-center space-x-1">
                   <span>🪙</span>
-                  <span>+{activeLevel.coinReward || 100}</span>
+                  <span>+{isBossSelected && selectedCity.bossMission ? (selectedCity.bossMission.coinReward || 500) : (activeLevel.coinReward || 100)}</span>
                 </span>
                 <span>•</span>
                 <span className="flex items-center space-x-1 text-[#93C5FD]">
                   <span>✨</span>
-                  <span>+{activeLevel.xpReward || 80} XP</span>
+                  <span>+{isBossSelected && selectedCity.bossMission ? (selectedCity.bossMission.xpReward || 200) : (activeLevel.xpReward || 80)} XP</span>
                 </span>
+                {isBossSelected && selectedCity.bossMission?.badgeName && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center space-x-1 text-amber-300">
+                      <span>🏅</span>
+                      <span>{selectedCity.bossMission.badgeName}</span>
+                    </span>
+                  </>
+                )}
               </div>
 
-              {/* Play Mission Primary Button (Golden Amber Pill) */}
+              {/* Action Buttons */}
               <div className="flex items-center space-x-2">
                 {(() => {
+                  if (isBossSelected && selectedCity.bossMission) {
+                    const isBossUnlocked = isCityUnlocked && (isCityAllLevelsDone || isCityBossDone);
+                    return (
+                      <>
+                        <button
+                          onClick={() => onSelectCityPath(selectedCity.id)}
+                          className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
+                          title="Ver sendero completo"
+                        >
+                          Sendero 🛤️
+                        </button>
+                        <button
+                          disabled={!isBossUnlocked}
+                          onClick={() => {
+                            if (isBossUnlocked) {
+                              onOpenBoss(selectedCity.id);
+                            }
+                          }}
+                          className={`px-6 py-3 rounded-full font-black text-sm shadow-xl transition-transform flex items-center space-x-2 ${
+                            !isBossUnlocked
+                              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                              : 'bg-gradient-to-r from-amber-500 via-orange-500 to-[#E05615] hover:from-amber-400 hover:to-orange-500 text-white hover:scale-105 active:scale-95 cursor-pointer border border-amber-300'
+                          }`}
+                        >
+                          <span>{isCityBossDone ? '👑 Reintentar Jefe' : '👑 Enfrentar al Jefe (80% req.)'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </>
+                    );
+                  }
+
                   const isCurrentLevelUnlocked = isCityUnlocked && (selectedLevelIdx === 0 || Boolean(progress.completedLevels[selectedCity.levels[selectedLevelIdx - 1]?.id]));
                   const hasLives = (progress.stats.lives ?? 3) > 0;
 
@@ -967,11 +1151,25 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                       >
                         Sendero 🛤️
                       </button>
+                      {isCityAllLevelsDone && !isCityBossDone && selectedCity.bossMission && (
+                        <button
+                          onClick={() => onOpenBoss(selectedCity.id)}
+                          className="px-5 py-3 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-[#E05615] hover:from-amber-400 hover:to-orange-500 text-white font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-1.5 cursor-pointer border border-amber-300 animate-pulse"
+                          title="Enfrentar al Jefe para desbloquear la siguiente ciudad"
+                        >
+                          <span>👑</span>
+                          <span>Enfrentar al Jefe</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => onPlayLevel(selectedCity.id, activeLevel.id)}
-                        className="px-6 py-3 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-2 cursor-pointer"
+                        className={`px-6 py-3 rounded-full font-black text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center space-x-2 cursor-pointer ${
+                          isLevelCompleted && isCityAllLevelsDone
+                            ? 'bg-white/20 hover:bg-white/30 text-white'
+                            : 'bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E]'
+                        }`}
                       >
-                        <span>Play mission</span>
+                        <span>{isLevelCompleted ? 'Replay mission' : 'Play mission'}</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </>
