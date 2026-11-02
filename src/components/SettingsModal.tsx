@@ -12,13 +12,10 @@ import {
   AlertTriangle,
   Bot,
   Sparkles,
-  Key,
-  Check,
   LogOut,
   UserCheck,
   Cloud
 } from 'lucide-react';
-import { getMaskedApiKey, getGeminiApiKey, setGeminiApiKey, DEFAULT_GEMINI_API_KEY } from '../services/geminiService';
 import { supabaseService } from '../services/supabaseClient';
 
 interface SettingsModalProps {
@@ -43,9 +40,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resetConfirm, setResetConfirm] = useState<boolean>(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
-  const [isEditingKey, setIsEditingKey] = useState<boolean>(false);
-  const [apiKeyInput, setApiKeyInput] = useState<string>('');
-  const [keySavedMessage, setKeySavedMessage] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,7 +148,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* Camino AI Companion Configuration */}
+          {/* Camino AI Companion */}
           <div className="p-4 rounded-2xl bg-white border-2 border-emerald-300/80 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -174,67 +168,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Sparkles className="w-4 h-4 text-emerald-600" />
             </div>
 
-            <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EADFCF] flex items-center justify-between text-xs">
+            <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between text-xs">
               <div className="flex items-center space-x-2">
-                <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-[#7A6B60] text-[11px] font-bold">Clave API:</span>
-                <span className="font-mono text-emerald-700 text-xs font-bold">{getMaskedApiKey()}</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[#365314] text-[11px] font-bold">Estado del Tutor:</span>
+                <span className="text-emerald-800 text-xs font-semibold">Conectado y listo para ayudarte</span>
               </div>
-              <button
-                onClick={() => {
-                  setIsEditingKey(!isEditingKey);
-                  setApiKeyInput(getGeminiApiKey());
-                }}
-                className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 text-[#24140E] text-[11px] font-bold border border-[#E0D5C7] transition-colors"
-              >
-                {isEditingKey ? 'Cerrar' : 'Modificar'}
-              </button>
+              <span className="text-[10px] font-black text-emerald-700 bg-white/80 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                ✓ En línea
+              </span>
             </div>
-
-            {isEditingKey && (
-              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EADFCF] space-y-2">
-                <p className="text-[11px] text-[#524136] font-medium">
-                  Introduce tu clave de API para Camino AI:
-                </p>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Introduce tu clave API de IA..."
-                    className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-[#E0D5C7] text-[#24140E] font-mono text-xs focus:outline-none focus:border-[#E05615]"
-                  />
-                  <button
-                    onClick={() => {
-                      setGeminiApiKey(apiKeyInput);
-                      setIsEditingKey(false);
-                      setKeySavedMessage('¡Clave guardada con éxito!');
-                      setTimeout(() => setKeySavedMessage(null), 3000);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center space-x-1 shadow-xs"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Guardar</span>
-                  </button>
-                </div>
-                <button
-                  onClick={() => {
-                    setGeminiApiKey(null);
-                    setApiKeyInput(DEFAULT_GEMINI_API_KEY);
-                    setIsEditingKey(false);
-                    setKeySavedMessage('¡Clave predeterminada restaurada!');
-                    setTimeout(() => setKeySavedMessage(null), 3000);
-                  }}
-                  className="text-[10px] text-[#7A6B60] hover:text-[#E05615] underline font-bold"
-                >
-                  Restaurar clave predeterminada
-                </button>
-              </div>
-            )}
-
-            {keySavedMessage && (
-              <p className="text-[11px] text-emerald-700 font-bold">{keySavedMessage}</p>
-            )}
           </div>
 
           {/* Backup: Export / Import */}
