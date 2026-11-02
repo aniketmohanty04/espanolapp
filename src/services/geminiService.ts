@@ -1,5 +1,11 @@
 import { supabaseService } from './supabaseClient';
 import { authDatabaseService } from './authDatabaseService';
+import {
+  recordCaminoLearnedResponse,
+  findTrainedCaminoResponse,
+  getCaminoTrainingExemplars,
+  enforceProperSpanishPedagogy
+} from './caminoKnowledgeService';
 /**
  * Gemini AI Service for Camino — The Spanish Guide in ¡Aventura Española!
  * Integrated with Google Gemini 3.8 Flash API.
@@ -230,6 +236,7 @@ Instruction: Clarify why the answer is correct or incorrect, explain relevant gr
 
   const systemInstruction = `You are Camino (🤖), the dedicated and expert Spanish Teacher (Profesor de Español) in the adventure game "¡Aventura Española!".
 The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).${curriculumTopic}${levelTitle}${reviewContext}
+${getCaminoTrainingExemplars(userQuery)}
 
 YOUR STRICT MANDATE AS A SPANISH TEACHER:
 1. PRIMARY TEACHING LANGUAGE — EXPLAIN IN ENGLISH WITH SPANISH RULES & EXAMPLES:
@@ -365,7 +372,7 @@ JSON OUTPUT SCHEMA:
 
       // Handle serverless proxy response format
       if (data.text || data.spanishText) {
-        return {
+        const result = enforceProperSpanishPedagogy({
           text: data.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
           spanishText: data.spanishText || undefined,
           pronunciation: data.pronunciation || undefined,
@@ -376,7 +383,12 @@ JSON OUTPUT SCHEMA:
               : undefined,
           practicePrompt: data.practicePrompt || undefined,
           source: 'gemini'
-        };
+        });
+
+        // Train Camino by storing verified pedagogical answer into memory and knowledge base
+        recordCaminoLearnedResponse(userQuery, result, context?.syllabusTopic);
+
+        return result;
       }
 
       // Handle direct mock test format with candidates
@@ -386,7 +398,7 @@ JSON OUTPUT SCHEMA:
           const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
           const parsed = JSON.parse(cleaned);
 
-          return {
+          const result = enforceProperSpanishPedagogy({
             text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
             spanishText: parsed.spanishText || undefined,
             pronunciation: parsed.pronunciation || undefined,
@@ -397,7 +409,11 @@ JSON OUTPUT SCHEMA:
                 : undefined,
             practicePrompt: parsed.practicePrompt || undefined,
             source: 'gemini'
-          };
+          });
+
+          recordCaminoLearnedResponse(userQuery, result, context?.syllabusTopic);
+
+          return result;
         } catch {
           return {
             text: rawText,
@@ -410,7 +426,16 @@ JSON OUTPUT SCHEMA:
     console.warn('Camino server proxy error, falling back to offline intelligent engine:', err);
   }
 
-  // If serverless proxy failed, timed out, or offline, use intelligent offline Spanish teacher engine
+  // 1. Check if Camino has trained knowledge on this question
+  const trained = findTrainedCaminoResponse(userQuery, context?.chatHistory);
+  if (trained) {
+    return {
+      ...trained,
+      source: 'fallback'
+    };
+  }
+
+  // 2. Fall back to intelligent offline Spanish teacher engine
   return getFallbackCaminoResponse(userQuery, context);
 }
 

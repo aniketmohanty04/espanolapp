@@ -7,9 +7,11 @@ import {
   GEMINI_MODEL,
   askCaminoGemini 
 } from '../services/geminiService';
+import { resetCaminoKnowledge } from '../services/caminoKnowledgeService';
 
 describe('Gemini Camino AI Service', () => {
   beforeEach(() => {
+    resetCaminoKnowledge();
     setGeminiApiKey(null);
   });
 

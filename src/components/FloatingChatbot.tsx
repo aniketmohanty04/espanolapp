@@ -57,6 +57,56 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   }
 ];
 
+export function formatTeacherText(content: string): React.ReactNode {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+
+  return lines.map((line, lineIdx) => {
+    const parts: React.ReactNode[] = [];
+    const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = tokenRegex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.substring(lastIndex, match.index));
+      }
+      const token = match[0];
+      if (token.startsWith('**') && token.endsWith('**')) {
+        parts.push(
+          <strong key={`${lineIdx}-${match.index}`} className="font-bold text-[#1F1610]">
+            {token.slice(2, -2)}
+          </strong>
+        );
+      } else if (token.startsWith('*') && token.endsWith('*')) {
+        parts.push(
+          <em key={`${lineIdx}-${match.index}`} className="italic text-[#4A3B32]">
+            {token.slice(1, -1)}
+          </em>
+        );
+      }
+      lastIndex = tokenRegex.lastIndex;
+    }
+
+    if (lastIndex < line.length) {
+      parts.push(line.substring(lastIndex));
+    }
+
+    const trimmed = line.trim();
+    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
+
+    return (
+      <span
+        key={lineIdx}
+        className={`block leading-relaxed ${isBullet ? 'pl-2 py-0.5 text-slate-800' : 'py-0.5'}`}
+      >
+        {parts.length > 0 ? parts : line}
+      </span>
+    );
+  });
+}
+
 export interface FloatingChatbotProps {
   quizContextOverride?: ActiveQuizState | null;
 }
@@ -564,7 +614,13 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                       }`}
                     >
                       {/* Teacher primary text */}
-                      <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
+                      <div className="leading-relaxed">
+                        {msg.sender === 'user' ? (
+                          <p className="whitespace-pre-line">{msg.text}</p>
+                        ) : (
+                          formatTeacherText(msg.text)
+                        )}
+                      </div>
 
                       {/* Spanish phrase box with audio playback */}
                       {msg.spanishText && (
