@@ -562,7 +562,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                         <div className="mt-2 p-2 bg-[#F6F0E6] border border-[#E6DAC8] rounded-xl flex items-start justify-between space-x-2 text-[#24140E]">
                           <div className="space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#C2410C]">Español</span>
-                            <p className="font-bold text-xs sm:text-sm text-[#8B2500] leading-snug">{msg.spanishText}</p>
+                            <p className="font-bold text-xs sm:text-sm text-[#8B2500] leading-snug whitespace-pre-line">{msg.spanishText}</p>
                             {msg.pronunciation && (
                               <p className="text-[10px] text-[#7A6B60] italic">🗣 {msg.pronunciation}</p>
                             )}

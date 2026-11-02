@@ -175,10 +175,11 @@ CRITICAL PEDAGOGICAL MANDATE:
 - NEVER speak exclusively in advanced Spanish paragraphs. If you answer in pure Spanish, the student cannot understand your lesson!
 - Use ENGLISH for the teacher explanation ("text"), pedagogical breakdown ("englishText"), and error explanation ("correctionNotice").
 - Use SPANISH strictly for the target vocabulary, phrases, examples, and practice exercises ("spanishText").
+- When the student asks for a list, all forms, or multiple examples, provide a full, structured, bulleted list with clear English translations rather than just 1 or 2 words.
 - Output strictly a JSON object with: { "text", "spanishText", "pronunciation", "englishText", "correctionNotice", "practicePrompt" }.`;
 
     const effectiveSystemInstruction = systemInstruction
-      ? `${systemInstruction}\n\nCRITICAL PEDAGOGICAL MANDATE: The student is an English speaker learning A1 Spanish. All pedagogical explanations ("text", "englishText") MUST be written primarily in clear ENGLISH with Spanish examples and target vocabulary highlighted. NEVER speak exclusively in advanced Spanish paragraphs.`
+      ? `${systemInstruction}\n\nCRITICAL PEDAGOGICAL MANDATE: The student is an English speaker learning A1 Spanish. All pedagogical explanations ("text", "englishText") MUST be written primarily in clear ENGLISH with Spanish examples and target vocabulary highlighted. NEVER speak exclusively in advanced Spanish paragraphs. When the student asks for a list, all forms, or multiple examples, provide a full, structured, bulleted list with translations rather than just 1 or 2 words.`
       : defaultSystemInstruction;
 
     for (const model of CANDIDATE_MODELS) {
