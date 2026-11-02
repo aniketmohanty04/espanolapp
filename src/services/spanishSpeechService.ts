@@ -265,7 +265,7 @@ export function getSpanishPhoneticGuide(text: string): string {
 export function getSpanishAudioUrl(text: string, lang: string = 'es-ES'): string {
   const cleaned = cleanSpanishTextForSpeech(text);
   const tl = lang.toLowerCase().startsWith('es-mx') ? 'es-MX' : 'es-ES';
-  return `/api/spanish-tts?text=${encodeURIComponent(cleaned)}&lang=${tl}`;
+  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encodeURIComponent(cleaned)}`;
 }
 
 // Keep active reference to prevent Chromium garbage collection from abruptly cutting speech
@@ -303,6 +303,14 @@ function speakViaSpeechSynthesis(
 ): boolean {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
 
+  // STRICT GUARD: If no genuine Spanish voice exists, never let an English synthesizer (like Microsoft David)
+  // butcher Spanish words with an American English accent.
+  const voice = spanishVoice || getBestSpanishVoice(options.lang);
+  if (!voice) {
+    options.onError?.(new Error('No authentic Spanish voice available in speechSynthesis.'));
+    return false;
+  }
+
   try {
     if (speechTimeoutId) {
       clearTimeout(speechTimeoutId);
@@ -315,26 +323,14 @@ function speakViaSpeechSynthesis(
     // Chromium audio pipeline reset delay (60ms)
     speechTimeoutId = setTimeout(() => {
       try {
-        let baseText = options.pauseBetweenWords
+        const baseText = options.pauseBetweenWords
           ? formatSpanishWithWordPauses(cleaned)
           : cleaned;
-
-        const voice = spanishVoice || getBestSpanishVoice(options.lang);
-        // If no Spanish voice is available and we must fall back to an English OS voice,
-        // phonetically adapt "es" -> "ess" so Microsoft David never spells out the letters "E-S"!
-        if (!voice) {
-          baseText = baseText.replace(/\bes\b/gi, 'ess');
-        }
-
-        const textToSpeak = voice ? `, ${baseText}` : baseText;
+        const textToSpeak = `, ${baseText}`;
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-        if (voice) {
-          utterance.voice = voice;
-          utterance.lang = voice.lang;
-        } else {
-          utterance.lang = options.lang || 'es-ES';
-        }
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
 
         // Calibrated beginner rate: slower, calmer cadence (0.74 if pauseBetweenWords, 0.80 standard)
         const defaultRate = options.pauseBetweenWords ? 0.74 : 0.80;
@@ -374,6 +370,86 @@ function speakViaSpeechSynthesis(
   }
 }
 
+/**
+ * Plays authentic native Spanish audio using direct audio streaming.
+ * Tries direct Google Translate TTS (with no-referrer), same-origin proxy, and mirrors.
+ */
+function playNativeAudioStream(
+  cleaned: string,
+  lang: string,
+  options: SpeakSpanishOptions,
+  spanishVoice: SpeechSynthesisVoice | null
+): boolean {
+  if (typeof document === 'undefined') return false;
+
+  const tl = lang.toLowerCase().startsWith('es-mx') ? 'es-MX' : 'es-ES';
+  const encoded = encodeURIComponent(cleaned);
+
+  // Candidate URLs in priority order:
+  // 1. Direct Google Translate TTS with no-referrer
+  // 2. Same-origin backend proxy (/api/spanish-tts)
+  // 3. Alternative global mirror
+  const candidateUrls = [
+    `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encoded}`,
+    `/api/spanish-tts?text=${encoded}&lang=${tl}`,
+    `https://translate.google.com.hk/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encoded}`
+  ];
+
+  let urlIndex = 0;
+
+  function tryNextAudio() {
+    if (urlIndex >= candidateUrls.length) {
+      if (activeAudio) activeAudio = null;
+      // If candidate audio streams failed, check if a genuine Spanish OS voice exists
+      if (spanishVoice) {
+        speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+      } else {
+        options.onError?.(new Error('Audio playback failed'));
+      }
+      return;
+    }
+
+    const currentUrl = candidateUrls[urlIndex++];
+    try {
+      const audio = document.createElement('audio');
+      // CRITICAL: Set referrerpolicy to 'no-referrer' so media servers never reject the request!
+      audio.setAttribute('referrerpolicy', 'no-referrer');
+      (audio as any).referrerPolicy = 'no-referrer';
+      audio.src = currentUrl;
+      activeAudio = audio;
+
+      if (options.rate && options.rate !== 1.0) {
+        audio.playbackRate = options.rate;
+      }
+
+      audio.onplay = () => {
+        options.onStart?.();
+      };
+
+      audio.onended = () => {
+        if (activeAudio === audio) activeAudio = null;
+        options.onEnd?.();
+      };
+
+      audio.onerror = () => {
+        tryNextAudio();
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          tryNextAudio();
+        });
+      }
+    } catch {
+      tryNextAudio();
+    }
+  }
+
+  tryNextAudio();
+  return true;
+}
+
 export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): boolean {
   if (typeof window === 'undefined') return false;
 
@@ -385,50 +461,21 @@ export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): b
   const lang = options.lang || 'es-ES';
   const spanishVoice = getBestSpanishVoice(lang);
 
-  // If preferNativeAudio is set OR no genuine native Spanish voice exists locally in this browser/OS,
-  // play authentic native Spanish audio via HTML5 Audio element!
+  // ALWAYS prefer authentic native audio stream unless an authentic Spanish OS voice is specifically requested
   const hasLocalSpanishVoice = Boolean(spanishVoice);
   const shouldUseNativeAudio = Boolean(
-    (options.preferNativeAudio || !hasLocalSpanishVoice) &&
-    typeof Audio !== 'undefined'
+    options.preferNativeAudio || !hasLocalSpanishVoice || typeof Audio !== 'undefined'
   );
 
-  if (shouldUseNativeAudio) {
-    try {
-      const audioUrl = getSpanishAudioUrl(cleaned, lang);
-      const audio = new Audio(audioUrl);
-      activeAudio = audio;
-      if (options.rate && options.rate !== 1.0) {
-        audio.playbackRate = options.rate;
-      }
-      audio.onplay = () => {
-        options.onStart?.();
-      };
-      audio.onended = () => {
-        if (activeAudio === audio) activeAudio = null;
-        options.onEnd?.();
-      };
-      audio.onerror = () => {
-        if (activeAudio === audio) activeAudio = null;
-        // Fall back to SpeechSynthesis if Audio element fails or is offline
-        speakViaSpeechSynthesis(cleaned, options, spanishVoice);
-      };
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          if (activeAudio === audio) activeAudio = null;
-          // Fall back to SpeechSynthesis if Audio playback was blocked by autoplay
-          speakViaSpeechSynthesis(cleaned, options, spanishVoice);
-        });
-      }
-      return true;
-    } catch {
-      // Audio element failed, fall back to speechSynthesis
-    }
+  if (shouldUseNativeAudio && typeof document !== 'undefined') {
+    return playNativeAudioStream(cleaned, lang, options, spanishVoice);
   }
 
-  return speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+  if (spanishVoice) {
+    return speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+  }
+
+  return false;
 }
 
 export function stopSpanishSpeech(): void {

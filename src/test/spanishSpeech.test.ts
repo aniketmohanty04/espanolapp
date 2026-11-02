@@ -168,12 +168,12 @@ describe('Spanish Speech Service & Text Sanitization', () => {
 
     it('generates streaming native Spanish audio URL for guaranteed authentic pronunciation', () => {
       const urlEs = getSpanishAudioUrl('María es profesora', 'es-ES');
-      expect(urlEs).toContain('/api/spanish-tts');
-      expect(urlEs).toContain('lang=es-ES');
+      expect(urlEs).toContain('tl=es-ES');
+      expect(urlEs).toContain('translate.google.com');
       expect(urlEs).toContain('Mar%C3%ADa%20es%20profesora');
 
       const urlMx = getSpanishAudioUrl('Hola amigo', 'es-MX');
-      expect(urlMx).toContain('lang=es-MX');
+      expect(urlMx).toContain('tl=es-MX');
     });
 
     it('respects Mexican Spanish locale when es-MX is requested', () => {
