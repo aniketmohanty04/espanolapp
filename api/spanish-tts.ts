@@ -2,6 +2,9 @@
 // High-fidelity native Spanish text-to-speech audio endpoint.
 // Proxies upstream neural Spanish audio with server-side headers, avoiding browser Referer blocks.
 
+declare const Buffer: any;
+declare const process: any;
+
 export default async function handler(req: any, res: any) {
   // Support CORS preflight
   if (req.method === 'OPTIONS') {
