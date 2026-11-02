@@ -1,3 +1,5 @@
+import { supabaseService } from './supabaseClient';
+import { authDatabaseService } from './authDatabaseService';
 /**
  * Gemini AI Service for Camino — The Spanish Guide in ¡Aventura Española!
  * Integrated with Google Gemini 3.8 Flash API.
@@ -116,10 +118,79 @@ export function getMaskedApiKey(): string {
  * Calls Gemini API with automatic model failover to generate an intelligent, Spanish Teacher response.
  * Strictly acts as a dedicated Spanish Teacher (Profesor de Español).
  */
+export interface RateLimitStatus {
+  allowed: boolean;
+  remaining: number;
+  resetInSeconds: number;
+}
+
+export function getRateLimitUserId(): string {
+  try {
+    const email = authDatabaseService.getCurrentSessionEmail();
+    if (email && email.trim()) {
+      return email.trim().toLowerCase();
+    }
+    if (typeof localStorage !== 'undefined') {
+      let anonId = localStorage.getItem('aventura_device_anon_id');
+      if (!anonId) {
+        anonId = 'anon_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+        localStorage.setItem('aventura_device_anon_id', anonId);
+      }
+      return anonId;
+    }
+  } catch {
+    // fallback
+  }
+  return 'anon_guest_user';
+}
+
+export async function checkGeminiRateLimit(userIdOverride?: string): Promise<RateLimitStatus> {
+  const client = supabaseService.getClient();
+  if (!client) {
+    return { allowed: true, remaining: 20, resetInSeconds: 0 };
+  }
+
+  const userId = userIdOverride || getRateLimitUserId();
+
+  try {
+    const { data, error } = await client.rpc('check_gemini_rate_limit', {
+      p_user_id: userId,
+      p_max_requests: 20,
+      p_window_seconds: 60
+    });
+
+    if (error) {
+      console.warn('Supabase Gemini rate limit check warning:', error.message);
+      return { allowed: true, remaining: 20, resetInSeconds: 0 };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return {
+      allowed: row?.allowed ?? true,
+      remaining: row?.remaining_calls ?? 19,
+      resetInSeconds: row?.reset_in_seconds ?? 60
+    };
+  } catch (err) {
+    console.warn('Failed to contact rate limit RPC:', err);
+    return { allowed: true, remaining: 20, resetInSeconds: 0 };
+  }
+}
+
 export async function askCaminoGemini(
   userQuery: string,
   context?: CaminoContext
 ): Promise<CaminoResponse> {
+  // 1. Check database rate limit in Supabase (20 calls / min / user)
+  const rateLimit = await checkGeminiRateLimit();
+  if (!rateLimit.allowed) {
+    return {
+      text: `Has alcanzado el límite de 20 preguntas por minuto con Camino. Por favor espera ${rateLimit.resetInSeconds} segundos antes de continuar.`,
+      spanishText: `Has alcanzado el límite de 20 preguntas por minuto con Camino. Por favor espera ${rateLimit.resetInSeconds} segundos.`,
+      englishText: `Rate limit reached (20 calls/min). Please wait ${rateLimit.resetInSeconds}s before asking again.`,
+      source: 'fallback'
+    };
+  }
+
   const apiKey = getGeminiApiKey();
 
   const currentCity = context?.cityName || 'Madrid';
