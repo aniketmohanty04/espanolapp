@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import { FloatingChatbot } from '../components/FloatingChatbot';
+import { FloatingChatbot, formatTeacherText } from '../components/FloatingChatbot';
 import { GameProvider, useGame, ActiveQuizState } from '../context/GameContext';
 import { askCaminoGemini, CaminoContext } from '../services/geminiService';
 import { authDatabaseService } from '../services/authDatabaseService';
@@ -255,5 +255,23 @@ describe('Floating AI Chatbot (Camino) Verification', () => {
       expect(html).toContain('Tutor (Bloqueado)');
       expect(html).toContain('Pista de vocabulario');
     }
+  });
+
+  it('formatTeacherText cleanly splits inline bullets and formats bold markdown tags', () => {
+    const raw = 'Here is a comprehensive list: • **ser** (to be) • **estar** (to be) • **tener** (to have) Rule: Verbs do not change.';
+    const html = renderToString(<div>{formatTeacherText(raw)}</div>);
+
+    // Verify bold formatting
+    expect(html).toContain('<strong class="font-bold text-[#1F1610]">ser</strong>');
+    expect(html).toContain('<strong class="font-bold text-[#1F1610]">estar</strong>');
+    expect(html).toContain('<strong class="font-bold text-[#1F1610]">tener</strong>');
+
+    // Verify split bullet dots
+    const bulletCount = (html.match(/text-\[#E05615\] font-black text-sm/g) || []).length;
+    expect(bulletCount).toBe(3);
+
+    // Verify rule header is styled
+    expect(html).toContain('font-bold text-[#8B2500]');
+    expect(html).toContain('Rule:');
   });
 });

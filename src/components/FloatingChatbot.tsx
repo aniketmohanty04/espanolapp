@@ -60,17 +60,41 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 export function formatTeacherText(content: string): React.ReactNode {
   if (!content) return null;
 
-  const lines = content.split('\n');
+  // 1. Normalize inline bullets and section markers onto their own lines
+  const normalized = content
+    // Convert inline bullets (preceded by anything other than newline) to newlines with bullet
+    .replace(/([^\n])\s*[•●▪]\s*/g, '$1\n• ')
+    // Convert numbered lists like " 1. ", " 2. " onto newlines
+    .replace(/([^\n])\s+(\d+\.\s+)/g, '$1\n$2')
+    // Split section markers onto their own line
+    .replace(/([^\n])\s*(Rule:|Regla:|Note:|Nota:|Grammar Rule:|Example:|Ejemplo:)/gi, '$1\n\n$2');
+
+  const lines = normalized.split('\n');
 
   return lines.map((line, lineIdx) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return <div key={lineIdx} className="h-1.5" />;
+    }
+
+    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
+    const isNumbered = /^\d+\.\s+/.test(trimmed);
+
+    // Strip leading bullet symbol for custom stylish bullet icon
+    const displayText = isBullet
+      ? trimmed.replace(/^[•\-*]\s*/, '')
+      : isNumbered
+      ? trimmed.replace(/^\d+\.\s*/, '')
+      : line;
+
     const parts: React.ReactNode[] = [];
     const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = tokenRegex.exec(line)) !== null) {
+    while ((match = tokenRegex.exec(displayText)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(line.substring(lastIndex, match.index));
+        parts.push(displayText.substring(lastIndex, match.index));
       }
       const token = match[0];
       if (token.startsWith('**') && token.endsWith('**')) {
@@ -89,20 +113,42 @@ export function formatTeacherText(content: string): React.ReactNode {
       lastIndex = tokenRegex.lastIndex;
     }
 
-    if (lastIndex < line.length) {
-      parts.push(line.substring(lastIndex));
+    if (lastIndex < displayText.length) {
+      parts.push(displayText.substring(lastIndex));
     }
 
-    const trimmed = line.trim();
-    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
+    const contentNodes = parts.length > 0 ? parts : displayText;
+
+    if (isBullet) {
+      return (
+        <div key={lineIdx} className="flex items-start space-x-2 py-0.5 pl-1.5">
+          <span className="text-[#E05615] font-black text-sm leading-tight select-none shrink-0">•</span>
+          <div className="flex-1 leading-snug text-[#24140E]">{contentNodes}</div>
+        </div>
+      );
+    }
+
+    if (isNumbered) {
+      const numMatch = trimmed.match(/^(\d+\.)\s*/);
+      const numberPrefix = numMatch ? numMatch[1] : '1.';
+      return (
+        <div key={lineIdx} className="flex items-start space-x-2 py-0.5 pl-1.5">
+          <span className="text-[#C2410C] font-black text-xs leading-tight select-none shrink-0">{numberPrefix}</span>
+          <div className="flex-1 leading-snug text-[#24140E]">{contentNodes}</div>
+        </div>
+      );
+    }
+
+    // Check if section header
+    const isHeader = /^(Rule:|Regla:|Note:|Nota:|Grammar Rule:|Example:|Ejemplo:)/i.test(trimmed);
 
     return (
-      <span
+      <p
         key={lineIdx}
-        className={`block leading-relaxed ${isBullet ? 'pl-2 py-0.5 text-slate-800' : 'py-0.5'}`}
+        className={`leading-relaxed py-0.5 ${isHeader ? 'font-bold text-[#8B2500] mt-1.5' : 'text-[#24140E]'}`}
       >
-        {parts.length > 0 ? parts : line}
-      </span>
+        {contentNodes}
+      </p>
     );
   });
 }
@@ -627,7 +673,9 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                         <div className="mt-2 p-2 bg-[#F6F0E6] border border-[#E6DAC8] rounded-xl flex items-start justify-between space-x-2 text-[#24140E]">
                           <div className="space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#C2410C]">Español</span>
-                            <p className="font-bold text-xs sm:text-sm text-[#8B2500] leading-snug whitespace-pre-line">{msg.spanishText}</p>
+                            <div className="font-bold text-xs sm:text-sm text-[#8B2500] leading-snug">
+                              {formatTeacherText(msg.spanishText)}
+                            </div>
                             {msg.pronunciation && (
                               <p className="text-[10px] text-[#7A6B60] italic">🗣 {msg.pronunciation}</p>
                             )}
