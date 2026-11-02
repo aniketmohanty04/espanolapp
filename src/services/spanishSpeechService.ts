@@ -386,12 +386,12 @@ function playNativeAudioStream(
   const encoded = encodeURIComponent(cleaned);
 
   // Candidate URLs in priority order:
-  // 1. Direct Google Translate TTS with no-referrer
-  // 2. Same-origin backend proxy (/api/spanish-tts)
+  // 1. Same-origin backend proxy (/api/spanish-tts) - direct native MP3 stream with zero CORS/referrer issues
+  // 2. Direct Google Translate TTS with no-referrer
   // 3. Alternative global mirror
   const candidateUrls = [
-    `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encoded}`,
     `/api/spanish-tts?text=${encoded}&lang=${tl}`,
+    `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encoded}`,
     `https://translate.google.com.hk/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encoded}`
   ];
 
