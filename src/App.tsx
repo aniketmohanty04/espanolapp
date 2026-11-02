@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { GameProvider, useGame } from './context/GameContext';
 import { AuthScreen } from './components/AuthScreen';
 import { TutorialScreen } from './components/TutorialScreen';
@@ -400,6 +401,7 @@ export function App() {
   return (
     <GameProvider>
       <GameMain />
+      <Analytics />
     </GameProvider>
   );
 }
