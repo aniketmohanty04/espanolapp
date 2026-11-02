@@ -57,8 +57,21 @@ describe('grammarExplanationService', () => {
     expect(rule).toContain('gender');
   });
 
-  it('handles null or empty question safely', () => {
+  it('translates Spanish explanation patterns when syllabusRef is absent', () => {
+    const q: Partial<Question> = {
+      explanation: 'Uso de los artículos indefinidos en masculino plural.'
+    };
+    const rule = getEnglishGrammarExplanation(q);
+    expect(rule.toLowerCase()).toContain('indefinite articles');
+    expect(rule).not.toContain('profesora');
+  });
+
+  it('handles null or empty question safely with default fallback', () => {
+    const emptyRule = getEnglishGrammarExplanation({});
+    expect(emptyRule).toContain('Grammar Rule');
+    expect(emptyRule).toContain('gender agreement');
+    expect(emptyRule).not.toContain('profesora');
+
     expect(getEnglishGrammarExplanation(null)).toContain('Grammar Rule');
-    expect(getEnglishGrammarExplanation({})).toContain('Grammar Rule');
   });
 });

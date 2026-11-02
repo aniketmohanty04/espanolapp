@@ -973,19 +973,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                     {currentQuestion.explanation}
                   </p>
 
-                  {/* Rich English Grammar Rule Explanation */}
-                  {showFullTranslation && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-amber-950 animate-fadeIn">
-                      <div className="flex items-center space-x-1.5 font-bold text-xs text-[#B4400C] mb-1">
-                        <Sparkles className="w-3.5 h-3.5 text-[#E05615] fill-amber-400" />
-                        <span>Regla gramatical en inglés (English Explanation & Rules):</span>
-                      </div>
-                      <p className="text-xs sm:text-sm font-medium leading-relaxed text-[#24140E]">
-                        {getEnglishGrammarExplanation(currentQuestion)}
-                      </p>
-                    </div>
-                  )}
-
                   {/* Quick Translation Toggle in Feedback */}
                   <div className="mt-3 pt-2.5 border-t border-black/10 flex flex-wrap items-center justify-between gap-2">
                     <button

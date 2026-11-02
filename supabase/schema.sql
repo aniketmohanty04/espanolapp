@@ -61,14 +61,16 @@ create table if not exists public.gemini_rate_limits (
 
 alter table public.gemini_rate_limits enable row level security;
 
--- Allow anon and authenticated clients full access through RLS
+-- Revoke direct table manipulation from client roles (access is strictly through the secure RPC function)
+revoke all on public.gemini_rate_limits from anon, authenticated;
+grant select, insert, update on public.gemini_rate_limits to service_role;
+
 drop policy if exists "Allow anon rate limit access" on public.gemini_rate_limits;
-create policy "Allow anon rate limit access" on public.gemini_rate_limits
-  for all using (true) with check (true);
+drop policy if exists "Deny direct client access" on public.gemini_rate_limits;
+create policy "Deny direct client access" on public.gemini_rate_limits
+  for all using (false);
 
-grant all on public.gemini_rate_limits to anon, authenticated, service_role;
-
--- Atomic Rate Limiting Function
+-- Atomic Rate Limiting Function (protected with fixed search_path and server-side limit ceiling)
 create or replace function public.check_gemini_rate_limit(
   p_user_id text,
   p_max_requests int default 20,
@@ -82,57 +84,51 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public, pg_temp
 as $$
 declare
   v_window_start timestamptz;
   v_count int;
   v_now timestamptz := clock_timestamp();
   v_elapsed_seconds int;
+  c_max_allowed constant int := 20;
+  c_window_min constant int := 60;
 begin
-  -- Lock the row for this user & API endpoint
-  select window_start, request_count
-  into v_window_start, v_count
-  from public.gemini_rate_limits
-  where user_id = p_user_id and api_name = 'gemini'
-  for update;
+  -- Enforce server-side security ceilings on client-provided parameters
+  p_max_requests := least(greatest(coalesce(p_max_requests, c_max_allowed), 1), c_max_allowed);
+  p_window_seconds := greatest(coalesce(p_window_seconds, c_window_min), c_window_min);
 
-  -- Case A: No previous record exists -> Insert first record
-  if not found then
-    insert into public.gemini_rate_limits (user_id, api_name, window_start, request_count)
-    values (p_user_id, 'gemini', v_now, 1);
-
-    return query select true, 1, p_max_requests - 1, p_window_seconds;
-    return;
-  end if;
+  -- Atomic upsert: handles initial insert and updates concurrently without race conditions
+  insert into public.gemini_rate_limits (user_id, api_name, window_start, request_count)
+  values (p_user_id, 'gemini', v_now, 1)
+  on conflict (user_id, api_name) do update
+  set request_count = case
+        when floor(extract(epoch from (v_now - public.gemini_rate_limits.window_start)))::int >= p_window_seconds
+        then 1
+        when public.gemini_rate_limits.request_count < p_max_requests
+        then public.gemini_rate_limits.request_count + 1
+        else public.gemini_rate_limits.request_count
+      end,
+      window_start = case
+        when floor(extract(epoch from (v_now - public.gemini_rate_limits.window_start)))::int >= p_window_seconds
+        then v_now
+        else public.gemini_rate_limits.window_start
+      end
+  returning window_start, request_count into v_window_start, v_count;
 
   v_elapsed_seconds := floor(extract(epoch from (v_now - v_window_start)))::int;
 
-  -- Case B: The 60-second window has expired -> Reset window & counter
-  if v_elapsed_seconds >= p_window_seconds then
-    update public.gemini_rate_limits
-    set window_start = v_now,
-        request_count = 1
-    where user_id = p_user_id and api_name = 'gemini';
-
-    return query select true, 1, p_max_requests - 1, p_window_seconds;
-    return;
-  end if;
-
-  -- Case C: Window is active and user is within limit -> Increment counter
-  if v_count < p_max_requests then
-    update public.gemini_rate_limits
-    set request_count = request_count + 1
-    where user_id = p_user_id and api_name = 'gemini';
-
+  -- If within limit, allow request
+  if v_count <= p_max_requests then
     return query select 
       true, 
-      v_count + 1, 
-      p_max_requests - (v_count + 1), 
-      p_window_seconds - v_elapsed_seconds;
+      v_count, 
+      p_max_requests - v_count, 
+      greatest(1, p_window_seconds - v_elapsed_seconds);
     return;
   end if;
 
-  -- Case D: Limit reached (>= 20 calls in current 60s window) -> Block request
+  -- Limit reached: block request and return countdown until reset
   return query select 
     false, 
     v_count, 

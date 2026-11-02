@@ -392,6 +392,12 @@ export async function transcribeSpanishAudioWithGemini(
   targetPhrase?: string,
   candidateOptions?: string[]
 ): Promise<{ transcript: string; confidence: number } | null> {
+  const rateLimit = await checkGeminiRateLimit();
+  if (!rateLimit.allowed) {
+    console.warn(`Gemini audio transcription rate limit reached. Reset in ${rateLimit.resetInSeconds}s`);
+    return null;
+  }
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) return null;
 

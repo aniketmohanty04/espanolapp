@@ -55,11 +55,13 @@ export function getEnglishGrammarExplanation(question?: Partial<Question> | null
     return QUESTION_SPECIFIC_RULES[qId];
   }
 
-  // 3. Check syllabus topic rules
-  const ref = question.syllabusRef?.toUpperCase() || '';
-  for (const [key, rule] of Object.entries(SYLLABUS_GRAMMAR_RULES)) {
-    if (ref.includes(key) || key.includes(ref)) {
-      return rule;
+  // 3. Check syllabus topic rules (only if syllabusRef is non-empty)
+  if (question.syllabusRef && question.syllabusRef.trim()) {
+    const ref = question.syllabusRef.trim().toUpperCase();
+    for (const [key, rule] of Object.entries(SYLLABUS_GRAMMAR_RULES)) {
+      if (ref === key || ref.startsWith(key) || key.startsWith(ref)) {
+        return rule;
+      }
     }
   }
 

@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const urlObj = new URL(req.url, 'http://localhost');
+    const urlObj = new URL(req.url || '/', 'http://localhost');
     const textParam = urlObj.searchParams.get('text') || '';
     const langParam = urlObj.searchParams.get('lang') || 'es-ES';
 
@@ -45,27 +45,34 @@ export default async function handler(req: any, res: any) {
 
     const locale = langParam.toLowerCase().startsWith('es-mx') ? 'es-MX' : 'es-ES';
 
-    // Fetch upstream Google Translate TTS without browser Referer header
+    // Fetch upstream Google Translate TTS without browser Referer header, bounded by timeout
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${locale}&client=tw-ob&q=${encodeURIComponent(cleanedText)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-    const upstreamRes = await fetch(googleTtsUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.8'
+    try {
+      const upstreamRes = await fetch(googleTtsUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.8'
+        }
+      });
+
+      if (!upstreamRes.ok) {
+        throw new Error(`Upstream TTS responded with status: ${upstreamRes.status}`);
       }
-    });
 
-    if (!upstreamRes.ok) {
-      throw new Error(`Upstream TTS responded with status: ${upstreamRes.status}`);
+      const buffer = await upstreamRes.arrayBuffer();
+
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.end(Buffer.from(buffer));
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const buffer = await upstreamRes.arrayBuffer();
-
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.end(Buffer.from(buffer));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     res.statusCode = 502;
