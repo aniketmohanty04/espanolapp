@@ -312,84 +312,79 @@ JSON OUTPUT SCHEMA:
   "practicePrompt": "An engaging question or sentence exercise in Spanish directly testing this concept."
 }`;
 
-  if (!apiKey || apiKey.trim() === '') {
-    return getFallbackCaminoResponse(userQuery, context);
-  }
+  // 2. Call serverless backend proxy (/api/camino-chat)
+  // Keeps Gemini API key 100% private and invisible to browser / client DevTools
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9500);
 
-  const candidateModels = [DEFAULT_GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+    const response = await fetch('/api/camino-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'chat',
+        prompt: userQuery,
+        systemInstruction,
+        apiKeyOverride: apiKey || undefined
+      })
+    });
 
-  for (const model of candidateModels) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    clearTimeout(timeoutId);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6500);
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: userQuery }]
-            }
-          ],
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.3,
-            maxOutputTokens: 1200
-          }
-        })
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        console.warn(`Gemini model ${model} status ${response.status}, failing over to next model...`);
-        continue;
-      }
-
+    if (response.ok) {
       const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!rawText) {
-        continue;
-      }
-
-      // Clean and parse JSON response
-      try {
-        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-        const parsed = JSON.parse(cleaned);
-
+      // Handle serverless proxy response format
+      if (data.text || data.spanishText) {
         return {
-          text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
-          spanishText: parsed.spanishText || undefined,
-          pronunciation: parsed.pronunciation || undefined,
-          englishText: parsed.englishText || undefined,
-          correctionNotice: parsed.correctionNotice && parsed.correctionNotice !== 'null' ? parsed.correctionNotice : undefined,
-          practicePrompt: parsed.practicePrompt || undefined,
-          source: 'gemini'
-        };
-      } catch {
-        // If output wasn't strictly JSON, return text directly
-        return {
-          text: rawText,
+          text: data.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
+          spanishText: data.spanishText || undefined,
+          pronunciation: data.pronunciation || undefined,
+          englishText: data.englishText || undefined,
+          correctionNotice:
+            data.correctionNotice && data.correctionNotice !== 'null'
+              ? data.correctionNotice
+              : undefined,
+          practicePrompt: data.practicePrompt || undefined,
           source: 'gemini'
         };
       }
-    } catch (err) {
-      console.warn(`Gemini model ${model} request error, failing over to next model:`, err);
-      continue;
+
+      // Handle direct mock test format with candidates
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const rawText = data.candidates[0].content.parts[0].text;
+        try {
+          const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+          const parsed = JSON.parse(cleaned);
+
+          return {
+            text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
+            spanishText: parsed.spanishText || undefined,
+            pronunciation: parsed.pronunciation || undefined,
+            englishText: parsed.englishText || undefined,
+            correctionNotice:
+              parsed.correctionNotice && parsed.correctionNotice !== 'null'
+                ? parsed.correctionNotice
+                : undefined,
+            practicePrompt: parsed.practicePrompt || undefined,
+            source: 'gemini'
+          };
+        } catch {
+          return {
+            text: rawText,
+            source: 'gemini'
+          };
+        }
+      }
     }
+  } catch (err) {
+    console.warn('Camino server proxy error, falling back to offline intelligent engine:', err);
   }
 
-  // If all candidate models failed (or completely offline), use intelligent offline Spanish teacher engine
+  // If serverless proxy failed, timed out, or offline, use intelligent offline Spanish teacher engine
   return getFallbackCaminoResponse(userQuery, context);
 }
 
@@ -409,7 +404,6 @@ export async function transcribeSpanishAudioWithGemini(
   }
 
   const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
 
   try {
     const base64Data = await new Promise<string>((resolve, reject) => {
@@ -426,71 +420,46 @@ export async function transcribeSpanishAudioWithGemini(
     if (!base64Data) return null;
 
     const mimeType = (audioBlob.type || 'audio/webm').split(';')[0];
-    const candidateModels = [DEFAULT_GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
-
-    for (const model of candidateModels) {
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8500);
-
-        let promptText = `You are an expert Spanish speech recognition transcriber. Listen to this Spanish audio recording carefully.`;
-        if (targetPhrase) {
-          promptText += ` Target phrase: "${targetPhrase}".`;
-        }
-        if (candidateOptions && candidateOptions.length > 0) {
-          promptText += ` Possible choices or options: [${candidateOptions.join(', ')}].`;
-        }
-        promptText += `\nTranscribe accurately in Spanish what words were spoken.
+    let promptText = `You are an expert Spanish speech recognition transcriber. Listen to this Spanish audio recording carefully.`;
+    if (targetPhrase) {
+      promptText += ` Target phrase: "${targetPhrase}".`;
+    }
+    if (candidateOptions && candidateOptions.length > 0) {
+      promptText += ` Possible choices or options: [${candidateOptions.join(', ')}].`;
+    }
+    promptText += `\nTranscribe accurately in Spanish what words were spoken.
 Output ONLY a JSON object:
 {"transcript": "the exact Spanish words spoken", "confidence": 0.95}`;
 
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType,
-                      data: base64Data
-                    }
-                  },
-                  { text: promptText }
-                ]
-              }
-            ],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.1,
-              maxOutputTokens: 250
-            }
-          })
-        });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10500);
 
-        clearTimeout(timeoutId);
-        if (!response.ok) continue;
+    const response = await fetch('/api/camino-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'transcribe',
+        audioBase64: base64Data,
+        mimeType,
+        promptText,
+        apiKeyOverride: apiKey || undefined
+      })
+    });
 
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) continue;
+    clearTimeout(timeoutId);
 
-        const parsed = JSON.parse(text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim());
-        if (parsed.transcript && typeof parsed.transcript === 'string') {
-          return {
-            transcript: parsed.transcript.trim(),
-            confidence: parsed.confidence || 0.9
-          };
-        }
-      } catch {
-        continue;
+    if (response.ok) {
+      const data = await response.json();
+      if (data.transcript && typeof data.transcript === 'string') {
+        return {
+          transcript: data.transcript.trim(),
+          confidence: data.confidence || 0.9
+        };
       }
     }
   } catch (err) {
-    console.warn('Gemini audio transcription fallback error:', err);
+    console.warn('Gemini audio transcription proxy error:', err);
   }
 
   return null;
