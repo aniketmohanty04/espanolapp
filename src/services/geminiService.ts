@@ -221,12 +221,20 @@ Instruction: Clarify why the answer is correct or incorrect, explain relevant gr
 The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).${curriculumTopic}${levelTitle}${reviewContext}
 
 YOUR STRICT MANDATE AS A SPANISH TEACHER:
-1. SIMPLE BILINGUAL EXPLANATIONS: Camino must not speak exclusively in advanced Spanish. Help beginners understand the language using a natural mixture of simple Spanish and short English explanations.
-Examples of the pedagogical tone to use:
-- "¿Qué significa 'dónde'? It means 'where'."
-- "'Tengo hambre' means you feel hungry. Remember: tener + hambre."
-- "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action?"
-- "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself."
+1. PRIMARY TEACHING LANGUAGE — EXPLAIN IN ENGLISH WITH SPANISH RULES & EXAMPLES:
+- The student (${playerName}) is an English speaker beginning their A1 Spanish journey.
+- Camino MUST NOT speak exclusively in advanced Spanish paragraphs. You MUST explain all grammar rules, meanings, error corrections, and hints in clear, encouraging ENGLISH.
+- If you respond in pure Spanish, the beginner student CANNOT understand your lesson!
+- "text": The main teacher explanation MUST be written in clear ENGLISH, with relevant Spanish words, phrases, and grammar terms clearly highlighted.
+- "spanishText": The target Spanish phrase, vocabulary, or example sentence (with proper accents: á, é, í, ó, ú, ñ, ¡, ¿).
+- "englishText": Direct English translation and pedagogical breakdown of the rule.
+- "correctionNotice": If the student made an error, explain the mistake and rule in clear ENGLISH.
+- Examples of the pedagogical tone to use:
+  * "In Spanish, we say 'María es profesora'. Unlike English, you do not use 'un' or 'una' when stating someone's profession."
+  * "¿Qué significa 'dónde'? It means 'where'. We use '¿Dónde está...?' with the verb estar to ask for locations."
+  * "'Tengo hambre' means you feel hungry. Remember: in Spanish, physical sensations like hunger or cold use tener (to have), not ser or estar."
+  * "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action? The ending '-amos' tells you that 'nosotros' (we) is the subject."
+  * "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself."
 
 2. A1 SYLLABUS DISCIPLINE (PRESENT TENSE ONLY):
 The game's curriculum covers the A1 syllabus, strictly focusing on the present tense (regular verbs in -ar, -er, -ir, ser, estar, tener, ir, gustar, querer, reflexive verbs, questions, and descriptions).
@@ -280,23 +288,21 @@ For every vocabulary explanation or translation:
 - If context is genuinely insufficient (e.g. the student asks about an isolated ambiguous word without a sentence), DO NOT guess; explicitly flag the genuine ambiguity and explain how sentence context determines the meaning.
 
 Rules:
-- Keep Spanish as the main learning language.
-- Use short English words or phrases to clarify difficult vocabulary and grammar.
-- Adapt the amount of English to the student's level.
-- Do not translate every sentence automatically.
-- Do not give away an unanswered quiz answer.
-- Before submission, Camino can explain general grammar and vocabulary, but must not reveal which option is correct.
-- After submission, Camino can explain why the student's answer was correct or incorrect.
+- The language of instruction is ENGLISH. The target language being taught is SPANISH.
+- Use clear English to explain grammar, vocabulary, rules, and student mistakes.
+- Never give away an unanswered quiz answer before submission.
+- Before submission, Camino can explain general grammar and vocabulary in English, but must not reveal which option is correct.
+- After submission, Camino can explain in English why the student's answer was correct or incorrect.
 
-2. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction.
-3. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
-4. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly.
-5. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule.
-6. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
-7. PRACTICE CHALLENGE: Always provide a short, fun practice question or sentence in Spanish directly relevant to what was just taught.
+3. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction in English.
+4. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
+5. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly in English.
+6. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule in English.
+7. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
 8. STANDALONE AI TEACHER IDENTITY: You are Camino (🤖), the standalone, intelligent Spanish Teacher AI in "¡Aventura Española!". You are an autonomous AI tutor. NEVER mention Google, Gemini, Gemini 3.8 Flash, or any underlying model or company. Always speak directly and warmly as Camino.
 
 FORBIDDEN:
+- NEVER give explanations in full Spanish paragraphs. The beginner student cannot understand full Spanish text!
 - NEVER give generic, evasive, or random answers that ignore the student's prompt.
 - NEVER reveal answers to upcoming questions or quizzes that the student hasn't submitted.
 - NEVER put English in "spanishText". It must strictly contain pure Spanish text with proper Spanish punctuation (¡ !, ¿ ?, á, é, í, ó, ú, ñ).
@@ -304,12 +310,12 @@ FORBIDDEN:
 
 JSON OUTPUT SCHEMA:
 {
-  "text": "Warm, encouraging teacher response in English with Spanish flair explaining the answer directly in 1-2 sentences.",
+  "text": "Warm, encouraging teacher explanation in ENGLISH with Spanish examples directly explaining the rule in 1-3 sentences. MUST be in English for beginner comprehension.",
   "spanishText": "Pure Spanish translation, vocabulary with articles (el/la), or corrected Spanish phrase with proper accents (¡ !, ¿ ?, á, é, í, ó, ú, ñ).",
-  "pronunciation": "Phonetic pronunciation guide (e.g. 'ehl beh-RAH-noh').",
+  "pronunciation": "Phonetic pronunciation guide for English speakers (e.g. 'ehl beh-RAH-noh').",
   "englishText": "English translation and pedagogical explanation of the grammar rule.",
-  "correctionNotice": "Specific explanation of what was corrected in the student's Spanish, or null if no error was made.",
-  "practicePrompt": "An engaging question or sentence exercise in Spanish directly testing this concept."
+  "correctionNotice": "Specific explanation in English of what was corrected in the student's Spanish, or null if no error was made.",
+  "practicePrompt": "An engaging question or practice sentence challenge in English inviting them to try a Spanish phrase."
 }`;
 
   // 2. Call serverless backend proxy (/api/camino-chat)
@@ -636,8 +642,8 @@ function getFallbackCaminoResponse(
     const isCorrect = Boolean(context.isCorrect);
     return {
       text: isCorrect
-        ? `¡Buen trabajo! Tu respuesta "${context.submittedAnswer || ''}" es correcta. ${context.explanation || 'You applied the right grammar rule!'}`
-        : `Analicemos tu respuesta "${context.submittedAnswer || ''}": ${context.explanation || 'Notice the verb conjugation and agreement.'} ¡No te preocupes, los errores nos ayudan a aprender!`,
+        ? `Great job! Your answer "${context.submittedAnswer || ''}" is correct (es correcta). ${context.explanation || 'You applied the right grammar rule!'}`
+        : `Let's analyze your answer "${context.submittedAnswer || ''}": ${context.explanation || 'Notice the verb conjugation and agreement.'} Don't worry, mistakes help us learn!`,
       spanishText: context.explanation || context.questionPrompt,
       englishText: isCorrect
         ? `You answered correctly. ${context.explanation || 'You applied the right grammar rule!'}`
@@ -743,7 +749,7 @@ function getFallbackCaminoResponse(
     );
     if (isIsolatedQuery && !context?.questionPrompt) {
       return {
-        text: "En español, 'mañana' tiene dos significados según el contexto: como sustantivo femenino ('la mañana') significa 'morning', y como adverbio temporal significa 'tomorrow'.",
+        text: "In Spanish, 'mañana' has two meanings (tiene dos significados) depending on context: as a feminine noun ('la mañana') it means 'morning', and as a time adverb it means 'tomorrow'.",
         spanishText: "La mañana (morning) • Mañana (tomorrow)",
         pronunciation: "mah-NYAH-nah",
         englishText: "Ambiguous without context: 'la mañana' means morning, while 'mañana' alone means tomorrow. Sentence context determines the meaning!",
@@ -779,7 +785,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'mañana' tiene dos significados según el contexto: como sustantivo femenino ('la mañana') significa 'morning', y como adverbio temporal significa 'tomorrow'.",
+      text: "In Spanish, 'mañana' has two meanings (tiene dos significados) depending on context: as a feminine noun ('la mañana') it means 'morning', and as a time adverb it means 'tomorrow'.",
       spanishText: "La mañana (morning) • Mañana (tomorrow)",
       pronunciation: "mah-NYAH-nah",
       englishText: "Ambiguous without context: 'la mañana' means morning, while 'mañana' alone means tomorrow. Sentence context determines the meaning!",
@@ -835,7 +841,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, el significado de 'frío/a' depende del contexto: 'hace frío' (el clima), 'tengo frío' (sensación corporal con tener), o 'la comida está fría' (temperatura con estar).",
+      text: "In Spanish, the meaning of 'frío/a' depends on context: 'hace frío' (weather with hacer), 'tengo frío' (feeling cold with tener), or 'la comida está fría' (food temperature with estar).",
       spanishText: "Hace frío (weather) • Tengo frío (feeling cold) • La comida está fría (food temperature)",
       pronunciation: "FREE-oh / FREE-ah",
       englishText: "Ambiguous without context: 'frío' can describe the weather (hacer), a person's sensation (tener), or food/object temperature (estar).",
@@ -905,7 +911,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'llevo' (del verbo llevar) cambia según el contexto: con ropa significa 'I am wearing' ('llevo una chaqueta'), con tiempo significa 'I have been' ('llevo dos horas aquí'), y con objetos significa 'I carry' ('llevo la maleta').",
+      text: "In Spanish, 'llevo' (from the verb llevar) changes meaning depending on context: with clothing it means 'I am wearing' ('llevo una chaqueta'), with time duration it means 'I have been' ('llevo dos horas aquí'), and with objects it means 'I carry' ('llevo la maleta').",
       spanishText: "Llevo una chaqueta (wearing) • Llevo dos horas aquí (have been) • Llevo la maleta (carry)",
       pronunciation: "YEH-boh",
       englishText: "Ambiguous without context: 'llevar' means wearing clothes, ongoing duration of time, or carrying an object.",
@@ -951,7 +957,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'tiempo' tiene dos significados principales: 'weather' (el clima: '¿Qué tiempo hace?') o 'time' (duración o disponibilidad: 'No tengo tiempo'). El contexto lo define.",
+      text: "In Spanish, 'tiempo' has two primary meanings: 'weather' ('¿Qué tiempo hace?') or 'time' ('No tengo tiempo'). Sentence context determines which one applies.",
       spanishText: "¿Qué tiempo hace? (weather) • No tengo tiempo (time)",
       pronunciation: "TYEHM-poh",
       englishText: "Ambiguous without context: 'tiempo' can mean weather or time depending on the sentence.",
@@ -1010,7 +1016,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'cuenta' varía según el contexto: en un restaurante significa 'the bill' ('la cuenta, por favor'), en finanzas 'bank account' ('cuenta bancaria'), y en 'darse cuenta' significa 'to realize'.",
+      text: "In Spanish, 'cuenta' varies with context: at a restaurant it means 'the bill' ('la cuenta, por favor'), in finance 'bank account' ('cuenta bancaria'), and in 'darse cuenta' it means 'to realize'.",
       spanishText: "La cuenta (bill) • Cuenta bancaria (account) • Darse cuenta (realize)",
       pronunciation: "KWEHN-tah",
       englishText: "Ambiguous without context: 'cuenta' can mean dining bill, financial account, or realization in 'darse cuenta'.",
@@ -1054,7 +1060,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'vino' puede ser el sustantivo 'wine' ('una copa de vino') o el verbo en pasado 'came' ('él vino ayer').",
+      text: "In Spanish, 'vino' can be the noun 'wine' ('una copa de vino') or the past verb form 'came' ('él vino ayer').",
       spanishText: "El vino (wine) • Él vino (he came)",
       pronunciation: "BEE-noh",
       englishText: "Ambiguous without context: 'vino' is either the beverage wine or the preterite past form came.",
@@ -1096,7 +1102,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'camino' puede ser el sustantivo 'path' ('el camino es largo') o la acción verbal 'I walk' ('yo camino por el parque').",
+      text: "In Spanish, 'camino' can be the noun 'path' ('el camino es largo') or the verb form 'I walk' ('yo camino por el parque').",
       spanishText: "El camino (path) • Yo camino (I walk)",
       pronunciation: "kah-MEE-noh",
       englishText: "Ambiguous without context: 'camino' is either the noun path/trail or the verb form I walk.",
@@ -1138,7 +1144,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'banco' tiene dos significados: el asiento público ('bench') o la entidad financiera ('bank').",
+      text: "In Spanish, 'banco' has two meanings: a park bench ('el banco de la plaza') or a financial bank ('el banco para sacar dinero').",
       spanishText: "Banco de la plaza (bench) • Banco financiero (bank)",
       pronunciation: "BAHN-koh",
       englishText: "Ambiguous without context: 'banco' means either a park bench or a financial bank.",
@@ -1178,7 +1184,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'carta' significa 'menu' en un restaurante ('la carta del restaurante') o 'letter' en el correo ('escribir una carta').",
+      text: "In Spanish, 'carta' means 'menu' at a restaurant ('la carta del restaurante') or 'letter' in the mail ('escribir una carta').",
       spanishText: "La carta del restaurante (menu) • Escribir una carta (letter)",
       pronunciation: "KAHR-tah",
       englishText: "Ambiguous without context: 'carta' means a dining menu or a written letter.",
@@ -1210,7 +1216,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'bajo' puede ser la preposición 'under' ('bajo la mesa') o el adjetivo 'short' ('un chico bajo').",
+      text: "In Spanish, 'bajo' can be the preposition 'under' ('bajo la mesa') or the adjective 'short' ('un chico bajo').",
       spanishText: "Bajo la mesa (under) • Un chico bajo (short)",
       pronunciation: "BAH-hoh",
       englishText: "Ambiguous without context: 'bajo' means under as a preposition or short as an adjective.",
@@ -1252,7 +1258,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'sobre' puede significar 'on top of' ('sobre la mesa'), 'about' ('un libro sobre España'), o el sustantivo 'envelope' ('un sobre para la carta').",
+      text: "In Spanish, 'sobre' can mean 'on top of' ('sobre la mesa'), 'about' ('un libro sobre España'), or 'envelope' ('un sobre para la carta').",
       spanishText: "Sobre la mesa (on) • Sobre España (about) • Un sobre (envelope)",
       pronunciation: "SOH-breh",
       englishText: "Ambiguous without context: 'sobre' can mean on top of, about, or an envelope.",
@@ -1284,7 +1290,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'pasa' puede significar 'happens' ('no pasa nada') o 'passes' ('el tren pasa por Madrid').",
+      text: "In Spanish, 'pasa' can mean 'happens' ('no pasa nada') or 'passes' ('el tren pasa por Madrid').",
       spanishText: "No pasa nada (happens) • El tren pasa (passes)",
       pronunciation: "PAH-sah",
       englishText: "Ambiguous without context: 'pasa' means happens or passes depending on context.",
@@ -1316,7 +1322,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'tomar' significa 'to drink' con bebidas ('tomar un café') o 'to take' con transportes ('tomar el autobús').",
+      text: "In Spanish, 'tomar' means 'to drink' with beverages ('tomar un café') or 'to take' with transportation ('tomar el autobús').",
       spanishText: "Tomar un café (drink) • Tomar el autobús (take transport)",
       pronunciation: "toh-MAHR",
       englishText: "Ambiguous without context: 'tomar' means to drink/consume or to catch transport.",
@@ -1358,7 +1364,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'derecho' puede significar 'straight ahead' ('sigue derecho') o 'law' ('estudio derecho'), mientras que 'derecha' es el lado derecho ('a la derecha').",
+      text: "In Spanish, 'derecho' means 'straight ahead' ('sigue derecho') or 'law' ('estudio derecho'), while 'derecha' is the right-hand direction ('a la derecha').",
       spanishText: "A la derecha (right) • Sigue derecho (straight ahead) • Estudio derecho (law)",
       pronunciation: "deh-REH-choh / deh-REH-chah",
       englishText: "Ambiguous without context: right direction, straight ahead, or the academic study of law.",
@@ -1390,7 +1396,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'planta' significa 'floor' en un edificio ('primera planta') o 'plant' en botánica ('una planta verde').",
+      text: "In Spanish, 'planta' means 'floor' of a building ('primera planta') or 'plant' in botany ('una planta verde').",
       spanishText: "Primera planta (floor) • Planta verde (plant)",
       pronunciation: "PLAHN-tah",
       englishText: "Ambiguous without context: 'planta' means a building floor or a living botanical plant.",
@@ -1422,7 +1428,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'ordenar' significa 'to arrange' ('ordenar palabras') o 'to order food' en un restaurante ('ordenar una paella').",
+      text: "In Spanish, 'ordenar' means 'to arrange' ('ordenar palabras') or 'to order food' at a restaurant ('ordenar una paella').",
       spanishText: "Ordenar palabras (arrange) • Ordenar comida (order food)",
       pronunciation: "ohr-deh-NAHR",
       englishText: "Ambiguous without context: 'ordenar' means to arrange in sequence or to order food.",
@@ -1464,7 +1470,7 @@ function getFallbackCaminoResponse(
       };
     }
     return {
-      text: "En español, 'nada' puede ser 'nothing' ('no hay nada'), la cortesía 'you are welcome' ('de nada'), o el verbo 'swims' ('él nada en la piscina').",
+      text: "In Spanish, 'nada' can mean 'nothing' ('no hay nada'), 'you are welcome' ('de nada'), or the verb 'swims' ('él nada en la piscina').",
       spanishText: "No hay nada (nothing) • De nada (you are welcome) • Él nada (he swims)",
       pronunciation: "NAH-dah",
       englishText: "Ambiguous without context: 'nada' can mean nothing, you are welcome, or swims.",

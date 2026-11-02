@@ -48,11 +48,11 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'welcome-msg',
     sender: 'tutor',
-    text: '¡Hola! Soy Camino, tu tutor personal de español en ¡Aventura Española! 🇪🇸',
+    text: "¡Hola! I'm Camino, your personal Spanish tutor in ¡Aventura Española! 🇪🇸",
     spanishText: '¿En qué puedo ayudarte hoy?',
     pronunciation: 'ehn keh PWEH-doh ah-yoo-DAHR-teh oy',
     englishText: 'How can I help you today? Ask me about Spanish words, grammar rules, verb conjugations, or pronunciation!',
-    practicePrompt: 'Prueba a preguntarme: "¿Cómo se dice gracias en español?" o "¿Por qué ser vs estar?"',
+    practicePrompt: 'Try asking me: "¿Cómo se dice gracias en español?" or "Why ser vs estar?"',
     timestamp: 'Ahora'
   }
 ];

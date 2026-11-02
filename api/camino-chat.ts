@@ -168,6 +168,19 @@ export default async function handler(req: any, res: any) {
       return sendJson(res, 400, { error: 'prompt is required.' });
     }
 
+    const defaultSystemInstruction = `You are Camino (🤖), the dedicated Spanish Teacher for English speakers in "¡Aventura Española!".
+The student is an English speaker learning beginner A1 Spanish.
+CRITICAL PEDAGOGICAL MANDATE:
+- All pedagogical explanations, grammar rules, feedback, and answers MUST be written primarily in clear, simple ENGLISH.
+- NEVER speak exclusively in advanced Spanish paragraphs. If you answer in pure Spanish, the student cannot understand your lesson!
+- Use ENGLISH for the teacher explanation ("text"), pedagogical breakdown ("englishText"), and error explanation ("correctionNotice").
+- Use SPANISH strictly for the target vocabulary, phrases, examples, and practice exercises ("spanishText").
+- Output strictly a JSON object with: { "text", "spanishText", "pronunciation", "englishText", "correctionNotice", "practicePrompt" }.`;
+
+    const effectiveSystemInstruction = systemInstruction
+      ? `${systemInstruction}\n\nCRITICAL PEDAGOGICAL MANDATE: The student is an English speaker learning A1 Spanish. All pedagogical explanations ("text", "englishText") MUST be written primarily in clear ENGLISH with Spanish examples and target vocabulary highlighted. NEVER speak exclusively in advanced Spanish paragraphs.`
+      : defaultSystemInstruction;
+
     for (const model of CANDIDATE_MODELS) {
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -184,11 +197,9 @@ export default async function handler(req: any, res: any) {
                 parts: [{ text: prompt.trim() }]
               }
             ],
-            systemInstruction: systemInstruction
-              ? {
-                  parts: [{ text: systemInstruction }]
-                }
-              : undefined,
+            systemInstruction: {
+              parts: [{ text: effectiveSystemInstruction }]
+            },
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.3,
@@ -218,7 +229,7 @@ export default async function handler(req: any, res: any) {
           }
 
           return sendJson(res, 200, {
-            text: mainText || '¡Hola! Como tu profesor de español, aquí tienes la explicación:',
+            text: mainText || 'Here is the explanation for your Spanish practice:',
             spanishText: parsed.spanishText || parsed.spanish || parsed.translation || undefined,
             pronunciation: parsed.pronunciation || undefined,
             englishText: parsed.englishText || parsed.english || undefined,
