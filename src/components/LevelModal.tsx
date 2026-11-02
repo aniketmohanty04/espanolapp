@@ -53,7 +53,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     progress, 
     recordQuestionResult, 
     recordDialogueCompleted, 
-    purchaseTranslation,
     purchaseVocabHint,
     recordLevelCompleted,
     refillLivesWithCoins,
@@ -77,8 +76,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [attemptCount, setAttemptCount] = useState<number>(0);
   const [translationUnlocked, setTranslationUnlocked] = useState<boolean>(false);
-  const [showTranslateModal, setShowTranslateModal] = useState<boolean>(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
   // Vocab hint state
   const [vocabHintUnlocked, setVocabHintUnlocked] = useState<boolean>(false);
   const [showVocabHintModal, setShowVocabHintModal] = useState<boolean>(false);
@@ -116,8 +113,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
     setHasSubmitted(false);
     setIsCorrect(false);
     setAttemptCount(0);
-    setShowTranslateModal(false);
-    setTranslateError(null);
     setDialogueChosenChoice(null);
     setShowVocabHintModal(false);
     setVocabHintError(null);
@@ -271,18 +266,6 @@ export const LevelModal: React.FC<LevelModalProps> = ({
       } catch {
         // Safe fallback
       }
-    }
-  };
-
-  // Purchase Translation (Panel 10)
-  const handlePurchaseTranslation = () => {
-    const res = purchaseTranslation(currentQuestion.id);
-    if (res.success) {
-      setTranslationUnlocked(true);
-      setShowTranslateModal(false);
-      setTranslateError(null);
-    } else {
-      setTranslateError(res.reason || 'No tienes suficientes monedas.');
     }
   };
 
@@ -912,7 +895,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                             </div>
                             <div>
                               <span className="leading-tight block">{choice.text}</span>
-                              {translationUnlocked && choice.englishHint && (
+                              {(translationUnlocked || (hasSubmitted && showFullTranslation)) && choice.englishHint && (
                                 <span className="text-xs text-[#7A6B60] italic font-normal block mt-0.5">
                                   "{choice.englishHint}"
                                 </span>

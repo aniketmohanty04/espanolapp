@@ -134,6 +134,8 @@ export interface RateLimitStatus {
   resetInSeconds: number;
 }
 
+let inMemoryFallbackAnonId: string | null = null;
+
 export function getRateLimitUserId(): string {
   try {
     const email = authDatabaseService.getCurrentSessionEmail();
@@ -151,7 +153,10 @@ export function getRateLimitUserId(): string {
   } catch {
     // fallback
   }
-  return 'anon_guest_user';
+  if (!inMemoryFallbackAnonId) {
+    inMemoryFallbackAnonId = 'anon_session_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+  }
+  return inMemoryFallbackAnonId;
 }
 
 export async function checkGeminiRateLimit(userIdOverride?: string): Promise<RateLimitStatus> {
@@ -329,21 +334,24 @@ JSON OUTPUT SCHEMA:
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 9500);
 
-    const response = await fetch('/api/camino-chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        action: 'chat',
-        prompt: userQuery,
-        systemInstruction,
-        apiKeyOverride: apiKey || undefined
-      })
-    });
-
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch('/api/camino-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: 'chat',
+          prompt: userQuery,
+          systemInstruction,
+          apiKeyOverride: apiKey || undefined
+        })
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.ok) {
       const data = await response.json();
@@ -445,20 +453,23 @@ Output ONLY a JSON object:
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10500);
 
-    const response = await fetch('/api/camino-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        action: 'transcribe',
-        audioBase64: base64Data,
-        mimeType,
-        promptText,
-        apiKeyOverride: apiKey || undefined
-      })
-    });
-
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch('/api/camino-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: 'transcribe',
+          audioBase64: base64Data,
+          mimeType,
+          promptText,
+          apiKeyOverride: apiKey || undefined
+        })
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.ok) {
       const data = await response.json();

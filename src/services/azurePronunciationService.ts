@@ -240,17 +240,20 @@ export async function assessSpanishPronunciationWithAzure(
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        Accept: 'application/json'
-      },
-      body: formData,
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          Accept: 'application/json'
+        },
+        body: formData,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     // If endpoint is unconfigured or not found, fall back gracefully to local approximation ONLY if speech exists
     if (response.status === 503 || response.status === 404) {

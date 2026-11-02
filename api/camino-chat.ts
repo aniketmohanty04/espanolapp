@@ -106,37 +106,40 @@ export default async function handler(req: any, res: any) {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 9500);
 
-          const upstreamRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal,
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      inlineData: {
-                        mimeType: mimeType || 'audio/webm',
-                        data: audioBase64
+          let upstreamRes: Response;
+          try {
+            upstreamRes = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: controller.signal,
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      {
+                        inlineData: {
+                          mimeType: mimeType || 'audio/webm',
+                          data: audioBase64
+                        }
+                      },
+                      {
+                        text:
+                          promptText ||
+                          'You are an expert Spanish speech recognition transcriber. Listen carefully and output JSON: {"transcript": "Spanish words spoken", "confidence": 0.95}'
                       }
-                    },
-                    {
-                      text:
-                        promptText ||
-                        'You are an expert Spanish speech recognition transcriber. Listen carefully and output JSON: {"transcript": "Spanish words spoken", "confidence": 0.95}'
-                    }
-                  ]
+                    ]
+                  }
+                ],
+                generationConfig: {
+                  responseMimeType: 'application/json',
+                  temperature: 0.1,
+                  maxOutputTokens: 250
                 }
-              ],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: 0.1,
-                maxOutputTokens: 250
-              }
-            })
-          });
-
-          clearTimeout(timeoutId);
+              })
+            });
+          } finally {
+            clearTimeout(timeoutId);
+          }
 
           if (!upstreamRes.ok) continue;
 
@@ -188,28 +191,31 @@ CRITICAL PEDAGOGICAL MANDATE:
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8500);
 
-        const upstreamRes = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: prompt.trim() }]
+        let upstreamRes: Response;
+        try {
+          upstreamRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: prompt.trim() }]
+                }
+              ],
+              systemInstruction: {
+                parts: [{ text: effectiveSystemInstruction }]
+              },
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.3,
+                maxOutputTokens: 1200
               }
-            ],
-            systemInstruction: {
-              parts: [{ text: effectiveSystemInstruction }]
-            },
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.3,
-              maxOutputTokens: 1200
-            }
-          })
-        });
-
-        clearTimeout(timeoutId);
+            })
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!upstreamRes.ok) {
           continue;
