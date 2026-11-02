@@ -118,6 +118,22 @@ create table if not exists public.player_progress (
 ### Prerequisites
 - Node.js 18+
 
+## 🤖 Camino — Gemini-Powered AI Spanish Learning Companion
+
+**Camino** is the AI-powered personal Spanish tutor integrated into ¡Aventura Española!, powered by the **Google Gemini API** via a secure serverless backend proxy (`/api/camino-chat`).
+
+### Core Capabilities:
+- **Bilingual English Explanations**: Explains grammar rules, vocabulary distinctions, and errors in clear, beginner-friendly English with Spanish terms and examples.
+- **A1 Syllabus Discipline**: Anchors all examples strictly in the present tense (ser, estar, tener, ir, regular -ar/-er/-ir verbs).
+- **Context-Aware Vocabulary & Ambiguity Resolution**: Evaluates words with multiple meanings (e.g. *mañana*, *tiempo*, *vino*, *cuenta*) using the exact sentence context.
+- **Post-Submission Review Tutor**: Unlocks during review periods to clarify why answers are correct or incorrect.
+- **Assessment Integrity**: Automatically locked during active unanswered quiz questions.
+- **100% Private Architecture**: Server-side proxy keeps `GEMINI_API_KEY` private with atomic PostgreSQL rate limiting (20 requests / min / user).
+
+📖 *For the complete technical and pedagogical specification, see [docs/CAMINO_AI_COMPANION.md](docs/CAMINO_AI_COMPANION.md).*
+
+---
+
 ## 🎙️ Azure AI Speech Pronunciation Assessment
 
 The platform includes genuine pronunciation assessment using **Azure AI Speech Services** (`es-ES` for Spain and `es-MX` for Mexico).
