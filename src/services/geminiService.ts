@@ -1631,7 +1631,7 @@ function getFallbackCaminoResponse(
   }
 
   // 9. SER vs ESTAR
-  if (lower.includes('ser') && lower.includes('estar')) {
+  if (/\bser\b/i.test(lower) && /\bestar\b/i.test(lower)) {
     return {
       text: 'Here is the golden rule for SER vs. ESTAR in Spain:',
       spanishText: 'SER = Identity, essential traits, origin ("Soy de Madrid").\nESTAR = Location & temporary conditions ("El tren está en la estación").',
@@ -1643,7 +1643,7 @@ function getFallbackCaminoResponse(
   }
 
   // 10. POR vs PARA
-  if (lower.includes('por') && lower.includes('para')) {
+  if (/\bpor\b/i.test(lower) && /\bpara\b/i.test(lower)) {
     return {
       text: 'The definitive guide to POR vs. PARA in Spanish:',
       spanishText: 'POR = Reason, cause, duration, exchange ("Gracias por la ayuda", "por dos horas").\nPARA = Destination, recipient, deadline, purpose ("El billete es para Barcelona", "para el lunes").',
@@ -1666,8 +1666,9 @@ function getFallbackCaminoResponse(
     };
   }
 
-  // 12. GREETINGS / HELLO / HI / SALUDOS (Exact test expectation)
-  if (lower.includes('hello') || lower.includes('greetings') || lower.includes('hi') || lower.includes('saludos') || lower === 'hola') {
+  // 12. GREETINGS / HELLO / HI / SALUDOS (Strict word boundaries to prevent 'which' or 'this' matching 'hi')
+  const isGreeting = /\b(hello|hi|saludos|buenos dias|buenas tardes|buenas noches)\b/i.test(lower) || lower === 'hola' || lower.includes('greetings');
+  if (isGreeting) {
     return {
       text: 'Common greetings you will hear across Spain every day:',
       spanishText: '¡Buenos días! (Morning) • ¡Buenas tardes! (Afternoon) • ¡Hola, buenas! (Casual greeting)',
@@ -1691,17 +1692,20 @@ function getFallbackCaminoResponse(
   }
 
   // 14. VERBS AND GENDER / NEUTRAL VERBS / VERB LISTS (With conversational context awareness)
-  const isListRequest = lower.includes('list') || lower.includes('lista') || lower.includes('give me') || lower.includes('gimme') || lower.includes('show me');
+  const isListRequest = lower.includes('list') || lower.includes('lista') || lower.includes('give me') || lower.includes('give all') || lower.includes('gimme') || lower.includes('show me') || lower.includes('tell me') || lower.includes('all adjectives') || lower.includes('all verbs');
   const lastHistoryText = context?.chatHistory && context.chatHistory.length > 0
     ? context.chatHistory.slice(-2).map(m => m.text.toLowerCase()).join(' ')
     : '';
 
+  const isVerbGenderQuestion = (lower.includes('verb') || lower.includes('verbo')) && 
+    (lower.includes('gender') || lower.includes('género') || lower.includes('genero') || lower.includes('masculin') || lower.includes('feminin') || lower.includes('neutral') || lower.includes('neither') || lower.includes('biased'));
+
   if (
-    ((lower.includes('verb') || lower.includes('verbo')) && (lower.includes('gender') || lower.includes('género') || lower.includes('masculin') || lower.includes('feminin') || lower.includes('neutral') || lower.includes('neither'))) ||
+    isVerbGenderQuestion ||
     (isListRequest && (lower.includes('verb') || lastHistoryText.includes('verb') || lastHistoryText.includes('conjugat')))
   ) {
     return {
-      text: "In Spanish grammar, ALL verbs are gender-neutral! Unlike nouns (el libro / la mesa) and adjectives (alto / alta), verbs NEVER take gender categories like masculine or feminine. Verbs conjugate strictly based on who performs the action (person & number) and tense.\n\nHere is a master list of essential A1 verbs:\n• **ser** (to be - permanent identity, origin, profession)\n• **estar** (to be - temporary states, locations, conditions)\n• **tener** (to have - possessions, age, physical sensations)\n• **ir** (to go - movement, future with 'ir a')\n• **hablar** (to speak - regular -ar)\n• **comer** (to eat - regular -er)\n• **vivir** (to live - regular -ir)\n• **querer** (to want / love)\n• **hacer** (to do / to make)\n• **poder** (can / to be able to)",
+      text: "In Spanish grammar, ALL verbs are gender-neutral! Unlike nouns (el libro / la mesa) and adjectives (alto / alta), verbs NEVER take gender categories like masculine or feminine. Verbs conjugate strictly based on who performs the action (person & number) and tense.\n\nHere is a master list of essential A1 verbs:\n• **ser** (to be - permanent identity, origin, profession)\n• **estar** (to be - temporary states, locations, conditions)\n• **tener** (to have - possessions, age, physical sensations)\n• **ir** (to go - movement, future with 'ir a')\n• **hablar** (to speak - regular -ar)\n• **comer** (to eat - regular -er)\n• **vivir** (to live - regular -ir)\n• **querer** (to want / love)\n• **hacer** (to do / to make)\n• **poder** (can / to be able to)\n\nRule: Whether the speaker is male or female, the verb form stays exactly the same.",
       spanishText: "Los verbos en español no tienen género. • Ejemplos: hablar, comer, vivir, ser, estar, tener, ir, querer, hacer, poder.",
       pronunciation: "lohs VEHR-bohs ehn ehs-pah-NYOHL noh TYEH-nehn HEH-neh-roh",
       englishText: "Verbs do not change for gender. A male says 'yo hablo' and a female says 'yo hablo' — the verb form remains identical!",
@@ -1710,14 +1714,20 @@ function getFallbackCaminoResponse(
     };
   }
 
-  // 15. ADJECTIVES LIST CONTEXTUAL FOLLOW-UP
-  if (isListRequest && (lower.includes('adjective') || lower.includes('ending in e') || lastHistoryText.includes('adjective') || lastHistoryText.includes('ending in -e'))) {
+  // 15. ADJECTIVES (GENDER-NEUTRAL / ENDING IN -E / INVARIABLE / LISTS)
+  const isAdjectiveGenderQuestion = (lower.includes('adjective') || lower.includes('adjetivo')) &&
+    (lower.includes('gender') || lower.includes('género') || lower.includes('genero') || lower.includes('biased') || lower.includes('neutral') || lower.includes('ending in e') || lower.includes('ending in -e') || lower.includes('ending with e') || lower.includes('neither') || lower.includes('masculine') || lower.includes('feminine') || lower.includes('invariable'));
+
+  if (
+    isAdjectiveGenderQuestion ||
+    (isListRequest && (lower.includes('adjective') || lower.includes('ending in e') || lastHistoryText.includes('adjective') || lastHistoryText.includes('ending in -e')))
+  ) {
     return {
-      text: "Here is the complete list of common A1-level adjectives ending in '-e' (they are gender-neutral and do not change between masculine and feminine nouns!):\n\n• **inteligente** (smart / intelligent)\n• **interesante** (interesting)\n• **amable** (kind / polite)\n• **alegre** (cheerful / happy)\n• **triste** (sad)\n• **grande** (big / large)\n• **fuerte** (strong)\n• **débil** (weak)\n• **verde** (green)\n• **dulce** (sweet)\n• **pobre** (poor)\n• **elegante** (elegant)\n• **importante** (important)",
-      spanishText: "Adjetivos invariables en -e: inteligente, interesante, amable, alegre, triste, grande, fuerte, verde, dulce.",
-      pronunciation: "ihn-teh-lee-HEHN-teh, ihn-teh-reh-SAHN-teh, ah-MAH-bleh, GRAN-deh",
-      englishText: "Notice that both 'un chico inteligente' and 'una chica inteligente' use the exact same form.",
-      practicePrompt: "Elige uno de estos adjetivos y forma una frase corta en español.",
+      text: "In Spanish grammar, adjectives ending in '-e' (and many ending in consonants or '-ista') are gender-neutral (invariable)! They do not change form between masculine and feminine nouns.\n\nHere is a comprehensive list of essential A1 gender-neutral adjectives:\n• **inteligente** (smart / intelligent) - un chico inteligente / una chica inteligente\n• **interesante** (interesting) - un libro interesante / una película interesante\n• **amable** (kind / polite) - un hombre amable / una mujer amable\n• **alegre** (cheerful / happy) - un amigo alegre / una amiga alegre\n• **grande** (big / large) - un hotel grande / una casa grande\n• **fuerte** (strong) - un café fuerte / una persona fuerte\n• **triste** (sad) - un día triste / una historia triste\n• **verde** (green) - un coche verde / una manzana verde\n• **dulce** (sweet) - un postre dulce / una fruta dulce\n• **elegante** (elegant) - un traje elegante / una camisa elegante\n• **fácil** (easy) - un examen fácil / una tarea fácil\n• **difícil** (difficult) - un ejercicio difícil / una pregunta difícil\n• **optimista** (optimistic) - un estudiante optimista / una estudiante optimista\n\nRule: Invariable adjectives end in '-e', consonants like '-l' or '-r', or '-ista'. They stay identical for masculine and feminine. To make them plural, simply add '-s' (ending in vowel) or '-es' (ending in consonant).",
+      spanishText: "Adjetivos invariables (sin distinción de género): inteligente, interesante, amable, alegre, grande, fuerte, fácil, difícil, optimista.",
+      pronunciation: "ihn-teh-lee-HEHN-teh, ihn-teh-reh-SAHN-teh, ah-MAH-bleh, GRAN-deh, FAH-theel",
+      englishText: "Notice that both 'un chico inteligente' and 'una chica inteligente' use the exact same adjective form without altering for gender.",
+      practicePrompt: "Elige uno de estos adjetivos y forma una frase en español (por ejemplo: 'La casa es grande' o 'El profesor es amable').",
       source: 'fallback'
     };
   }

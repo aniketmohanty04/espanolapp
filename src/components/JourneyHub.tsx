@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ALL_CITIES, getCityById } from '../data/citiesData';
 import { City, Level } from '../types';
 import { askCaminoGemini } from '../services/geminiService';
+import { formatTeacherText } from './FloatingChatbot';
 import { speakSpanish as speakSpanishNative, stopSpanishSpeech } from '../services/spanishSpeechService';
 import { 
   Compass, 
@@ -239,8 +240,17 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
     if (!customText) setChatInput('');
     setIsCaminoLoading(true);
 
+    const chatHistory = messages
+      .filter(m => m.id !== '1' || m.text.length > 0)
+      .slice(-6)
+      .map(m => ({
+        role: (m.sender === 'user' ? 'user' : 'model') as 'user' | 'model',
+        text: m.text + (m.spanishText ? `\nEspañol: ${m.spanishText}` : '')
+      }));
+
     try {
       const response = await askCaminoGemini(textToSend, {
+        chatHistory,
         cityName: selectedCity.name,
         cityId: selectedCity.id,
         levelNumber: activeLevel.levelNumber,
@@ -1249,9 +1259,9 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                 return (
                   <div key={msg.id} className="flex justify-start">
                     <div className="p-4 rounded-2xl bg-[#FDF8F2] border border-[#EFE5D9] text-xs sm:text-sm text-[#382318] max-w-[92%] shadow-xs space-y-2">
-                      <p className="font-semibold text-[#24140E]">
-                        {msg.text}
-                      </p>
+                      <div className="leading-relaxed font-normal">
+                        {formatTeacherText(msg.text)}
+                      </div>
 
                       {/* Spanish Grammar Coach & Fault Finder Notice */}
                       {msg.correctionNotice && (
@@ -1292,8 +1302,12 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                           </div>
 
                           {/* The Prominent Spanish Answer */}
-                          <div className="text-2xl sm:text-3xl font-black text-[#1F110B] font-serif leading-snug tracking-tight whitespace-pre-line select-all drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)]">
-                            {msg.spanishText}
+                          <div className={`font-black text-[#1F110B] leading-snug tracking-tight select-all drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)] ${
+                            msg.spanishText.length > 70 || msg.spanishText.includes('•') || msg.spanishText.includes('\n')
+                              ? 'text-sm sm:text-base font-sans'
+                              : 'text-2xl sm:text-3xl font-serif whitespace-pre-line'
+                          }`}>
+                            {msg.spanishText.includes('•') ? formatTeacherText(msg.spanishText) : msg.spanishText}
                           </div>
 
                           {/* Pronunciation Guide */}

@@ -55,6 +55,18 @@ const SEED_KNOWLEDGE: Array<{ query: string; topic: string; response: CaminoResp
     }
   },
   {
+    query: 'give all adjectives which are not gender biased',
+    topic: 'adjectives_e',
+    response: {
+      text: 'In Spanish grammar, adjectives ending in "-e" (and many ending in consonants or "-ista") are gender-neutral (invariable)! They do not change form between masculine and feminine nouns.\n\nHere is a comprehensive list of essential A1 gender-neutral adjectives:\n• **inteligente** (smart / intelligent) - un chico inteligente / una chica inteligente\n• **interesante** (interesting) - un libro interesante / una película interesante\n• **amable** (kind / polite) - un hombre amable / una mujer amable\n• **alegre** (cheerful / happy) - un amigo alegre / una amiga alegre\n• **grande** (big / large) - un hotel grande / una casa grande\n• **fuerte** (strong) - un café fuerte / una persona fuerte\n• **triste** (sad) - un día triste / una historia triste\n• **verde** (green) - un coche verde / una manzana verde\n• **dulce** (sweet) - un postre dulce / una fruta dulce\n• **elegante** (elegant) - un traje elegante / una camisa elegante\n• **fácil** (easy) - un examen fácil / una tarea fácil\n• **difícil** (difficult) - un ejercicio difícil / una pregunta difícil\n• **optimista** (optimistic) - un estudiante optimista / una estudiante optimista\n\nRule: Invariable adjectives stay identical for both masculine and feminine nouns.',
+      spanishText: 'Adjetivos invariables (sin distinción de género): inteligente, interesante, amable, alegre, grande, fuerte, fácil, difícil, optimista.',
+      pronunciation: 'ihn-teh-lee-HEHN-teh, ihn-teh-reh-SAHN-teh, ah-MAH-bleh, GRAN-deh, FAH-theel',
+      englishText: 'Notice that both "un chico inteligente" and "una chica inteligente" use the exact same adjective form without altering for gender.',
+      practicePrompt: 'Elige uno de estos adjetivos y forma una frase en español (por ejemplo: "La casa es grande" o "El profesor es amable").',
+      source: 'gemini'
+    }
+  },
+  {
     query: 'difference between ser and estar',
     topic: 'ser_vs_estar',
     response: {
@@ -219,7 +231,32 @@ export function findTrainedCaminoResponse(
     }
   }
 
-  // 3. Keyword overlap match
+  // 3. Topic-level conceptual match for gender-neutral queries
+  const isAdjectiveGenderQuery = (
+    (normalized.includes('adjective') || normalized.includes('adjetivo')) &&
+    (normalized.includes('gender') || normalized.includes('biased') || normalized.includes('neutral') || normalized.includes('ending in e') || normalized.includes('ending in -e') || normalized.includes('ending with e') || normalized.includes('neither') || normalized.includes('feminine') || normalized.includes('masculine'))
+  );
+  if (isAdjectiveGenderQuery) {
+    const adjEntry = entries.find(e => e.topic === 'adjectives_e' || e.topic === 'adjectives');
+    if (adjEntry) {
+      adjEntry.useCount += 1;
+      return adjEntry.response;
+    }
+  }
+
+  const isVerbGenderQuery = (
+    (normalized.includes('verb') || normalized.includes('verbo')) &&
+    (normalized.includes('gender') || normalized.includes('neither') || normalized.includes('neutral') || normalized.includes('biased') || normalized.includes('feminine') || normalized.includes('masculine'))
+  );
+  if (isVerbGenderQuery) {
+    const verbEntry = entries.find(e => e.topic === 'verbs_gender' || e.topic === 'verbs');
+    if (verbEntry) {
+      verbEntry.useCount += 1;
+      return verbEntry.response;
+    }
+  }
+
+  // 4. Keyword overlap match
   if (queryKeywords.length >= 2) {
     let bestMatch: LearnedKnowledgeEntry | null = null;
     let maxMatches = 0;

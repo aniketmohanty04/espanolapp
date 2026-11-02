@@ -168,4 +168,34 @@ describe('Gemini Camino AI Service', () => {
     expect(response.text.toLowerCase()).toContain('verb');
     expect(response.spanishText).toContain('hablar');
   });
+
+  it('does not confuse "which" with "hi" and returns adjectives instead of greetings for "give all adjectives which are not gender biased"', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('give all adjectives which are not gender biased', {
+      cityName: 'Toledo'
+    });
+
+    expect(response.source).toBe('fallback');
+    // Ensure "which" did NOT trigger greetings:
+    expect(response.text).not.toContain('Common greetings you will hear across Spain every day');
+    expect(response.spanishText).not.toContain('¡Buenos días!');
+    // Verify it answers with gender-neutral adjectives:
+    expect(response.text.toLowerCase()).toContain('adjective');
+    expect(response.text.toLowerCase()).toContain('inteligente');
+    expect(response.spanishText).toContain('inteligente');
+  });
+
+  it('handles "all adjectives ending with e:nor feminine nor masculine" and provides invariable adjectives', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('all adjectives ending with e:nor feminine nor masculine', {
+      cityName: 'Madrid'
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.text.toLowerCase()).toContain('adjective');
+    expect(response.text.toLowerCase()).toContain('inteligente');
+    expect(response.spanishText).toContain('inteligente');
+  });
 });
