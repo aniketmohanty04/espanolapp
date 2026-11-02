@@ -347,15 +347,24 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
     setIsLoading(true);
     setLastFailedQuery(null);
 
-    // Build pedagogical context
+    // Build pedagogical context and conversational history
     const currentCity = activeCityId ? getCityById(activeCityId) : null;
+    const chatHistory = messages
+      .filter(m => m.id !== 'intro' || m.text.length > 0)
+      .slice(-6)
+      .map(m => ({
+        role: (m.sender === 'user' ? 'user' : 'model') as 'user' | 'model',
+        text: m.text + (m.spanishText ? `\nEspañol: ${m.spanishText}` : '')
+      }));
+
     const context: CaminoContext = {
       cityName: activeQuizState?.cityName || currentCity?.name || 'España',
       cityId: activeCityId || undefined,
       playerName: progress.profile?.displayName || progress.profile?.character?.name || 'Estudiante',
       streak: progress.stats?.streak || 1,
       syllabusTopic: activeQuizState?.syllabusTopic,
-      levelTitle: activeQuizState?.levelTitle
+      levelTitle: activeQuizState?.levelTitle,
+      chatHistory
     };
 
     // ONLY provide review question & submitted answer context if question was SUBMITTED (Never prior!)

@@ -166,9 +166,44 @@ export default async function handler(req: any, res: any) {
     }
 
     // 5. Action: Camino AI Chat Tutor
-    const { prompt, systemInstruction } = body;
+    const { prompt, systemInstruction, chatHistory } = body;
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return sendJson(res, 400, { error: 'prompt is required.' });
+    }
+
+    // Build multi-turn conversational contents for Gemini with role alternation
+    const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+      // Keep up to 6 most recent turns for conversational continuity
+      const recent = chatHistory.slice(-6);
+      for (const item of recent) {
+        if (!item || typeof item !== 'object' || !item.text || typeof item.text !== 'string') continue;
+        const text = item.text.trim();
+        if (!text) continue;
+        const role = item.role === 'model' || item.role === 'assistant' || item.role === 'tutor' ? 'model' : 'user';
+
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+          contents[contents.length - 1].parts[0].text += `\n${text}`;
+        } else {
+          contents.push({ role, parts: [{ text }] });
+        }
+      }
+    }
+
+    // Gemini requirement: first content turn must be 'user'
+    while (contents.length > 0 && contents[0].role !== 'user') {
+      contents.shift();
+    }
+
+    // Ensure the latest user turn is appended
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+      contents[contents.length - 1].parts[0].text += `\n${prompt.trim()}`;
+    } else {
+      contents.push({
+        role: 'user',
+        parts: [{ text: prompt.trim() }]
+      });
     }
 
     const defaultSystemInstruction = `You are Camino (🤖), the dedicated Spanish Teacher for English speakers in "¡Aventura Española!".
@@ -198,11 +233,7 @@ CRITICAL PEDAGOGICAL MANDATE:
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
             body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: prompt.trim() }]
-                }
-              ],
+              contents: contents.length > 0 ? contents : [{ parts: [{ text: prompt.trim() }] }],
               systemInstruction: {
                 parts: [{ text: effectiveSystemInstruction }]
               },

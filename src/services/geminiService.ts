@@ -26,6 +26,11 @@ export interface CaminoResponse {
   source: 'gemini' | 'fallback';
 }
 
+export interface CaminoChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
 export interface CaminoContext {
   cityName?: string;
   cityId?: string;
@@ -38,6 +43,7 @@ export interface CaminoContext {
   submittedAnswer?: string;
   isCorrect?: boolean;
   explanation?: string;
+  chatHistory?: CaminoChatMessage[];
 }
 
 // In-memory fallback for test and non-browser environments
@@ -346,6 +352,7 @@ JSON OUTPUT SCHEMA:
           action: 'chat',
           prompt: userQuery,
           systemInstruction,
+          chatHistory: context?.chatHistory || undefined,
           apiKeyOverride: apiKey || undefined
         })
       });
@@ -1657,9 +1664,42 @@ function getFallbackCaminoResponse(
     };
   }
 
-  // 14. VERB CONJUGATION LOOKUP
+  // 14. VERBS AND GENDER / NEUTRAL VERBS / VERB LISTS (With conversational context awareness)
+  const isListRequest = lower.includes('list') || lower.includes('lista') || lower.includes('give me') || lower.includes('gimme') || lower.includes('show me');
+  const lastHistoryText = context?.chatHistory && context.chatHistory.length > 0
+    ? context.chatHistory.slice(-2).map(m => m.text.toLowerCase()).join(' ')
+    : '';
+
+  if (
+    ((lower.includes('verb') || lower.includes('verbo')) && (lower.includes('gender') || lower.includes('género') || lower.includes('masculin') || lower.includes('feminin') || lower.includes('neutral') || lower.includes('neither'))) ||
+    (isListRequest && (lower.includes('verb') || lastHistoryText.includes('verb') || lastHistoryText.includes('conjugat')))
+  ) {
+    return {
+      text: "In Spanish grammar, ALL verbs are gender-neutral! Unlike nouns (el libro / la mesa) and adjectives (alto / alta), verbs NEVER take gender categories like masculine or feminine. Verbs conjugate strictly based on who performs the action (person & number) and tense.\n\nHere is a master list of essential A1 verbs:\n• **ser** (to be - permanent identity, origin, profession)\n• **estar** (to be - temporary states, locations, conditions)\n• **tener** (to have - possessions, age, physical sensations)\n• **ir** (to go - movement, future with 'ir a')\n• **hablar** (to speak - regular -ar)\n• **comer** (to eat - regular -er)\n• **vivir** (to live - regular -ir)\n• **querer** (to want / love)\n• **hacer** (to do / to make)\n• **poder** (can / to be able to)",
+      spanishText: "Los verbos en español no tienen género. • Ejemplos: hablar, comer, vivir, ser, estar, tener, ir, querer, hacer, poder.",
+      pronunciation: "lohs VEHR-bohs ehn ehs-pah-NYOHL noh TYEH-nehn HEH-neh-roh",
+      englishText: "Verbs do not change for gender. A male says 'yo hablo' and a female says 'yo hablo' — the verb form remains identical!",
+      practicePrompt: "¿Quieres que conjuguemos uno de estos verbos, por ejemplo 'hablar' o 'tener'?",
+      source: 'fallback'
+    };
+  }
+
+  // 15. ADJECTIVES LIST CONTEXTUAL FOLLOW-UP
+  if (isListRequest && (lower.includes('adjective') || lower.includes('ending in e') || lastHistoryText.includes('adjective') || lastHistoryText.includes('ending in -e'))) {
+    return {
+      text: "Here is the complete list of common A1-level adjectives ending in '-e' (they are gender-neutral and do not change between masculine and feminine nouns!):\n\n• **inteligente** (smart / intelligent)\n• **interesante** (interesting)\n• **amable** (kind / polite)\n• **alegre** (cheerful / happy)\n• **triste** (sad)\n• **grande** (big / large)\n• **fuerte** (strong)\n• **débil** (weak)\n• **verde** (green)\n• **dulce** (sweet)\n• **pobre** (poor)\n• **elegante** (elegant)\n• **importante** (important)",
+      spanishText: "Adjetivos invariables en -e: inteligente, interesante, amable, alegre, triste, grande, fuerte, verde, dulce.",
+      pronunciation: "ihn-teh-lee-HEHN-teh, ihn-teh-reh-SAHN-teh, ah-MAH-bleh, GRAN-deh",
+      englishText: "Notice that both 'un chico inteligente' and 'una chica inteligente' use the exact same form.",
+      practicePrompt: "Elige uno de estos adjetivos y forma una frase corta en español.",
+      source: 'fallback'
+    };
+  }
+
+  // 16. VERB CONJUGATION LOOKUP (Strict whole-word boundary so 'verbs' does not falsely match 'ver')
   for (const [verbKey, conj] of Object.entries(VERB_CONJUGATIONS)) {
-    if (lower.includes(verbKey) || lower.includes(`conjugate ${verbKey}`) || lower.includes(`verb ${verbKey}`)) {
+    const verbWordRegex = new RegExp(`\\b${verbKey}\\b`, 'i');
+    if (verbWordRegex.test(lower) || lower.includes(`conjugate ${verbKey}`) || lower.includes(`verb ${verbKey}`)) {
       return {
         text: `Here is the present indicative conjugation of the verb "${conj.verb}" (${conj.meaning}):`,
         spanishText: `Yo ${conj.yo} • Tú ${conj.tu} • Él/Ella ${conj.el}\nNosotros ${conj.nos} • Vosotros ${conj.vos} • Ellos/Ellas ${conj.ellos}\nEjemplo: "${conj.example}"`,

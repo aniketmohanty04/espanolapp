@@ -136,4 +136,34 @@ describe('Gemini Camino AI Service', () => {
     expect(response.spanishText).toContain('¿Dónde está el baño?');
     expect(response.pronunciation).toBeDefined();
   });
+
+  it('explains that verbs do not have gender and does not falsely match verb "ver"', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('give me a list of verbs that donot have gender', {
+      cityName: 'Toledo'
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.text.toLowerCase()).toContain('gender');
+    expect(response.spanishText).toContain('hablar');
+    // Ensure "verbs" did not falsely trigger conjugation of "ver"
+    expect(response.text).not.toContain('conjugation of the verb "ver"');
+  });
+
+  it('resolves contextual follow-up "give me the list" using chatHistory in offline mode', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('give me the list', {
+      cityName: 'Madrid',
+      chatHistory: [
+        { role: 'user', text: 'verbs which are neither masculine nor feminine' },
+        { role: 'model', text: 'In Spanish grammar, verbs do not have a gender! Would you like to learn how verbs change?' }
+      ]
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.text.toLowerCase()).toContain('verb');
+    expect(response.spanishText).toContain('hablar');
+  });
 });
