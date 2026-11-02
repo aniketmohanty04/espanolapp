@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { speakSpanish, stopSpanishSpeech } from '../services/spanishSpeechService';
+import { speakSpanish, stopSpanishSpeech, getSpanishPhoneticGuide } from '../services/spanishSpeechService';
 import { transcribeSpanishAudioWithGemini } from '../services/geminiService';
 import {
   isAnyAudioInputSupported,
@@ -124,10 +124,13 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
     speakSpanish(textToPlay, {
       rate: isSlowMode ? 0.72 : 0.84,
       pauseBetweenWords: isSlowMode,
+      lang: selectedLocale,
+      preferNativeAudio: true,
+      onStart: () => setIsPlayingAudio(true),
       onEnd: () => setIsPlayingAudio(false),
       onError: () => setIsPlayingAudio(false)
     });
-  }, [activeTarget, isPlayingAudio, isSlowMode]);
+  }, [activeTarget, isPlayingAudio, isSlowMode, selectedLocale]);
 
   // Evaluates transcript against active target and detects quiz options
   const processCapturedTranscript = useCallback((transcript: string, confidence?: number) => {
@@ -451,8 +454,15 @@ export const PronunciationTrainerModal: React.FC<PronunciationTrainerModalProps>
               <p className="text-xl font-black text-slate-950 font-serif leading-snug">
                 "{activeTarget}"
               </p>
+              {/* Authentic Spanish Phonetic Pronunciation Guide */}
+              <div className="flex items-center space-x-1.5 mt-1.5 text-xs text-amber-900 font-semibold">
+                <span className="text-[10px] text-amber-700 uppercase font-black tracking-wider">🗣️ Pronunciación:</span>
+                <span className="font-mono bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300 text-amber-950 font-bold text-xs shadow-2xs">
+                  {getSpanishPhoneticGuide(activeTarget)}
+                </span>
+              </div>
               {englishMeaning && (
-                <p className="text-xs text-slate-600 italic mt-1 font-medium">
+                <p className="text-xs text-slate-600 italic mt-1.5 font-medium">
                   Significado: {englishMeaning}
                 </p>
               )}

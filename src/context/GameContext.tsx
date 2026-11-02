@@ -4,7 +4,7 @@ import { storageService, INITIAL_PROGRESS, DEFAULT_PROFILE } from '../services/s
 import { authDatabaseService } from '../services/authDatabaseService';
 import { supabaseService } from '../services/supabaseClient';
 import { soundService } from '../services/soundService';
-import { getCityById, getNextCity } from '../data/citiesData';
+import { getCityById, getNextCity, reconcileProgression } from '../data/citiesData';
 import confetti from 'canvas-confetti';
 
 export const REWARD_CONFIG = {
@@ -122,9 +122,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sessionEmail = authDatabaseService.getCurrentSessionEmail();
     if (sessionEmail) {
       const userProg = authDatabaseService.loadUserProgress(sessionEmail);
-      if (userProg) return userProg;
+      if (userProg) return reconcileProgression(userProg);
     }
-    return storageService.loadProgress();
+    return reconcileProgression(storageService.loadProgress());
   });
   
   const progressRef = useRef<PlayerProgress>(progress);
@@ -149,7 +149,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (sessionEmail && supabaseService.getConfig().isConfigured) {
       authDatabaseService.loadUserProgressAsync(sessionEmail).then(remoteProg => {
         if (remoteProg) {
-          setProgress(remoteProg);
+          setProgress(reconcileProgression(remoteProg));
           setCurrentScreen('world-map');
         }
         setIsRemoteSyncReady(true);
@@ -660,15 +660,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newXp = prev.stats.xp + 50;
       const newLevel = Math.floor(newXp / 300) + 1;
 
-      return {
+      const unlockedCityIds = [...prev.unlockedCityIds];
+      const cityObj = getCityById(cityId);
+      const isBossPassed = Boolean(prev.completedBosses[cityId]?.passed);
+      if (cityObj && isBossPassed) {
+        const cityCompletedCount = cityObj.levels.filter(l => Boolean(completedLevels[l.id])).length;
+        if (cityCompletedCount >= 10) {
+          const nextCity = getNextCity(cityId);
+          if (nextCity && !unlockedCityIds.includes(nextCity.id)) {
+            unlockedCityIds.push(nextCity.id);
+          }
+        }
+      }
+
+      return reconcileProgression({
         ...prev,
         stats: {
           ...prev.stats,
           xp: newXp,
           level: newLevel
         },
-        completedLevels
-      };
+        completedLevels,
+        unlockedCityIds
+      });
     });
   }, []);
 
@@ -735,7 +749,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const newLevel = Math.floor(newXp / 300) + 1;
 
-      return {
+      return reconcileProgression({
         ...prev,
         stats: {
           ...prev.stats,
@@ -747,7 +761,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completedBosses,
         rewardedCityCompletionIds: rewardedCities,
         achievements
-      };
+      });
     });
 
     if (passed) {

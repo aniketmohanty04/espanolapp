@@ -1,5 +1,6 @@
 import { PlayerProgress, PlayerProfile, PlayerCharacter } from '../types';
 import { supabaseService } from './supabaseClient';
+import { reconcileProgression } from '../data/citiesData';
 
 const STORAGE_KEY = 'aventura_espanola_progress_v2';
 const PROFILE_KEY = 'aventura_espanola_profile_v1';
@@ -139,8 +140,8 @@ export const storageService = {
         return INITIAL_PROGRESS;
       }
       const parsed = JSON.parse(data);
-      // Ensure all fields exist (safe merge)
-      return {
+      // Ensure all fields exist (safe merge) and self-heal city unlock progression
+      return reconcileProgression({
         ...INITIAL_PROGRESS,
         ...parsed,
         stats: {
@@ -169,7 +170,7 @@ export const storageService = {
         completedStudyDays: parsed.completedStudyDays || [1],
         festivalVisitedStalls: parsed.festivalVisitedStalls || [],
         unlockedCosmetics: parsed.unlockedCosmetics || []
-      };
+      });
     } catch (err) {
       console.warn('Failed to load player progress from localStorage:', err);
       return INITIAL_PROGRESS;

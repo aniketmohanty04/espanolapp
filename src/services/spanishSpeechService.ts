@@ -86,39 +86,65 @@ export function formatSpanishWithWordPauses(raw: string): string {
     .join(' ');
 }
 
-export function getBestSpanishVoice(): SpeechSynthesisVoice | null {
+export function getBestSpanishVoice(preferredLang?: string): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
 
   try {
     const voices = window.speechSynthesis.getVoices();
     if (!voices || voices.length === 0) return null;
 
-    // 1. High priority: European Spanish voices (es-ES, Microsoft Helena, Microsoft Laura, Jorge, Mónica)
+    const isMexico = preferredLang?.toLowerCase().startsWith('es-mx');
+
+    // 1. If Mexico is preferred, search for Mexican Spanish voices
+    if (isMexico) {
+      const esMx = voices.find(v => {
+        const lang = v.lang.toLowerCase().replace('_', '-');
+        const name = v.name.toLowerCase();
+        return (
+          lang === 'es-mx' ||
+          (lang.startsWith('es') && (name.includes('mexic') || name.includes('sabina') || name.includes('raul') || name.includes('dalia')))
+        );
+      });
+      if (esMx) return esMx;
+    }
+
+    // 2. High priority: European Spanish voices (es-ES, Microsoft Helena, Microsoft Laura, Jorge, Mónica, Álvaro, Elvira)
     const esSpain = voices.find(v => {
-      const lang = v.lang.toLowerCase();
+      const lang = v.lang.toLowerCase().replace('_', '-');
       const name = v.name.toLowerCase();
       return (
         lang === 'es-es' ||
         (lang.startsWith('es') &&
           (name.includes('helena') ||
             name.includes('laura') ||
+            name.includes('alvaro') ||
+            name.includes('álvaro') ||
+            name.includes('elvira') ||
             name.includes('spain') ||
             name.includes('españa') ||
             name.includes('castilian')))
       );
     });
-    if (esSpain) return esSpain;
+    if (!isMexico && esSpain) return esSpain;
 
-    // 2. High priority: Google Español / Google Spanish (exceptional clarity in Chrome)
+    // 3. High priority: Google Español / Google Spanish (exceptional clarity in Chrome)
     const googleEs = voices.find(v => {
-      const lang = v.lang.toLowerCase();
+      const lang = v.lang.toLowerCase().replace('_', '-');
       const name = v.name.toLowerCase();
-      return lang.startsWith('es') && (name.includes('google') || name.includes('natural'));
+      return (lang.startsWith('es') || name.includes('spanish') || name.includes('español')) &&
+        (name.includes('google') || name.includes('natural'));
     });
     if (googleEs) return googleEs;
 
-    // 3. Priority: Any native Spanish voice (es-MX, es-US, Microsoft Sabina, Microsoft Raul, Paulina)
-    const anyEs = voices.find(v => v.lang.toLowerCase().startsWith('es'));
+    // 4. Return European voice if available
+    if (esSpain) return esSpain;
+
+    // 5. Priority: Any native Spanish voice (es-MX, es-US, es-419, Microsoft Sabina, Microsoft Raul, Paulina)
+    const anyEs = voices.find(v => {
+      const lang = v.lang.toLowerCase().replace('_', '-');
+      const name = v.name.toLowerCase();
+      return lang.startsWith('es') || name.includes('spanish') || name.includes('español');
+    });
     if (anyEs) return anyEs;
 
     return null;
@@ -127,8 +153,119 @@ export function getBestSpanishVoice(): SpeechSynthesisVoice | null {
   }
 }
 
+// Common Spanish word phonetic dictionary for 100% accurate human-grade guides
+const COMMON_SPANISH_PHONETICS: Record<string, string> = {
+  'maria': 'mah-REE-ah',
+  'maría': 'mah-REE-ah',
+  'es': 'ess',
+  'profesora': 'proh-feh-SOH-rah',
+  'profesor': 'proh-feh-SOHR',
+  'buenos': 'BWEH-nohs',
+  'días': 'DEE-ahs',
+  'dias': 'DEE-ahs',
+  'buenas': 'BWEH-nahs',
+  'tardes': 'TAHR-dehs',
+  'noches': 'NOH-chehs',
+  'hola': 'OH-lah',
+  'gracias': 'GRAH-syahs',
+  'muchas': 'MOO-chahs',
+  'por': 'por',
+  'favor': 'fah-BOHR',
+  'hasta': 'AHS-tah',
+  'luego': 'LWEH-goh',
+  'pronto': 'PROHN-toh',
+  'mañana': 'mah-NYAH-nah',
+  'manana': 'mah-NYAH-nah',
+  'adios': 'ah-DYOHS',
+  'adiós': 'ah-DYOHS',
+  'como': 'KOH-moh',
+  'cómo': 'KOH-moh',
+  'estas': 'ehs-TAHS',
+  'estás': 'ehs-TAHS',
+  'muy': 'mwee',
+  'bien': 'byen',
+  'yo': 'yoh',
+  'el': 'ehl',
+  'la': 'lah',
+  'un': 'oon',
+  'una': 'OO-nah',
+  'soy': 'soy',
+  'estoy': 'ehs-TOY',
+  'donde': 'DOHN-deh',
+  'dónde': 'DOHN-deh',
+  'esta': 'ehs-TAH',
+  'está': 'ehs-TAH',
+  'tren': 'trehn',
+  'estacion': 'ehs-tah-SYOHN',
+  'estación': 'ehs-tah-SYOHN',
+  'madrid': 'mah-DREED',
+  'toledo': 'toh-LEH-doh',
+  'espana': 'ehs-PAH-nyah',
+  'españa': 'ehs-PAH-nyah',
+  'billete': 'bee-YEH-teh',
+  'cafe': 'kah-FEH',
+  'café': 'kah-FEH',
+  'con': 'kohn',
+  'leche': 'LEH-cheh',
+  'agua': 'AH-gwah',
+  'si': 'see',
+  'sí': 'see',
+  'no': 'noh'
+};
+
+/**
+ * Generates an intuitive phonetic guide for Spanish text (e.g. "María es profesora" -> "mah-REE-ah ess proh-feh-SOH-rah")
+ */
+export function getSpanishPhoneticGuide(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  const clean = text.replace(/^[¡¿"\s]+|[!?"\s]+$/g, '').trim();
+  if (!clean) return '';
+
+  const words = clean.split(/\s+/);
+  return words
+    .map(word => {
+      const punctMatch = word.match(/([.,;:!?]+)$/);
+      const punct = punctMatch ? punctMatch[1] : '';
+      const rawWord = word.replace(/[.,;:!?¡¿"']/g, '').toLowerCase();
+
+      if (COMMON_SPANISH_PHONETICS[rawWord]) {
+        return COMMON_SPANISH_PHONETICS[rawWord] + punct;
+      }
+
+      // Algorithmic phonetic approximation for Spanish
+      const p = rawWord
+        .replace(/ch/g, 'ch')
+        .replace(/ll/g, 'y')
+        .replace(/rr/g, 'rr')
+        .replace(/ñ/g, 'ny')
+        .replace(/qu([ei])/g, 'k$1')
+        .replace(/gu([ei])/g, 'g$1')
+        .replace(/c([ei])/g, 'th$1')
+        .replace(/z/g, 'th')
+        .replace(/j/g, 'kh')
+        .replace(/ge/g, 'khe')
+        .replace(/gi/g, 'khi')
+        .replace(/v/g, 'b')
+        .replace(/^h/g, '')
+        .replace(/y$/g, 'ee');
+
+      return p + punct;
+    })
+    .join(' ');
+}
+
+/**
+ * Returns a direct streamable native Spanish audio URL for guaranteed authentic pronunciation
+ */
+export function getSpanishAudioUrl(text: string, lang: string = 'es-ES'): string {
+  const cleaned = cleanSpanishTextForSpeech(text);
+  const tl = lang.toLowerCase().startsWith('es-mx') ? 'es-MX' : 'es-ES';
+  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encodeURIComponent(cleaned)}`;
+}
+
 // Keep active reference to prevent Chromium garbage collection from abruptly cutting speech
 let activeUtterance: SpeechSynthesisUtterance | null = null;
+let activeAudio: HTMLAudioElement | null = null;
 let speechTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -146,17 +283,20 @@ export interface SpeakSpanishOptions {
   rate?: number;
   pitch?: number;
   volume?: number;
+  lang?: string; // e.g. 'es-ES' or 'es-MX'
   pauseBetweenWords?: boolean; // When true, inserts slight micro-pauses between words for distinct clarity
+  preferNativeAudio?: boolean; // When true or when no native Spanish OS voice is found, uses audio stream
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err?: unknown) => void;
 }
 
-export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): boolean {
+function speakViaSpeechSynthesis(
+  cleaned: string,
+  options: SpeakSpanishOptions,
+  spanishVoice: SpeechSynthesisVoice | null
+): boolean {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
-
-  const cleaned = cleanSpanishTextForSpeech(text);
-  if (!cleaned) return false;
 
   try {
     if (speechTimeoutId) {
@@ -168,25 +308,20 @@ export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): b
     window.speechSynthesis.cancel();
 
     // Chromium audio pipeline reset delay (60ms)
-    // Calling speak immediately after cancel can cause the new speech to be aborted
     speechTimeoutId = setTimeout(() => {
       try {
-        // Prepend a soft lead-in pause (', ')
-        // This causes the TTS engine to pause ~150ms before pronouncing the first word.
-        // During this pause, the Windows/Chrome audio hardware awakens and initializes,
-        // preventing the first word or initial syllable from being clipped!
         const baseText = options.pauseBetweenWords
           ? formatSpanishWithWordPauses(cleaned)
           : cleaned;
         const textToSpeak = `, ${baseText}`;
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-        const spanishVoice = getBestSpanishVoice();
-        if (spanishVoice) {
-          utterance.voice = spanishVoice;
-          utterance.lang = spanishVoice.lang;
+        const voice = spanishVoice || getBestSpanishVoice(options.lang);
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
         } else {
-          utterance.lang = 'es-ES';
+          utterance.lang = options.lang || 'es-ES';
         }
 
         // Calibrated beginner rate: slower, calmer cadence (0.74 if pauseBetweenWords, 0.80 standard)
@@ -227,7 +362,73 @@ export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): b
   }
 }
 
+export function speakSpanish(text: string, options: SpeakSpanishOptions = {}): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const cleaned = cleanSpanishTextForSpeech(text);
+  if (!cleaned) return false;
+
+  stopSpanishSpeech();
+
+  const lang = options.lang || 'es-ES';
+  const spanishVoice = getBestSpanishVoice(lang);
+
+  // If preferNativeAudio is set OR no genuine native Spanish voice exists locally in this browser/OS,
+  // play authentic native Spanish audio via HTML5 Audio element!
+  const hasLocalSpanishVoice = Boolean(spanishVoice);
+  const shouldUseNativeAudio = Boolean(
+    (options.preferNativeAudio || !hasLocalSpanishVoice) &&
+    typeof Audio !== 'undefined'
+  );
+
+  if (shouldUseNativeAudio) {
+    try {
+      const audioUrl = getSpanishAudioUrl(cleaned, lang);
+      const audio = new Audio(audioUrl);
+      activeAudio = audio;
+      if (options.rate && options.rate !== 1.0) {
+        audio.playbackRate = options.rate;
+      }
+      audio.onplay = () => {
+        options.onStart?.();
+      };
+      audio.onended = () => {
+        if (activeAudio === audio) activeAudio = null;
+        options.onEnd?.();
+      };
+      audio.onerror = () => {
+        if (activeAudio === audio) activeAudio = null;
+        // Fall back to SpeechSynthesis if Audio element fails or is offline
+        speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (activeAudio === audio) activeAudio = null;
+          // Fall back to SpeechSynthesis if Audio playback was blocked by autoplay
+          speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+        });
+      }
+      return true;
+    } catch {
+      // Audio element failed, fall back to speechSynthesis
+    }
+  }
+
+  return speakViaSpeechSynthesis(cleaned, options, spanishVoice);
+}
+
 export function stopSpanishSpeech(): void {
+  if (activeAudio) {
+    try {
+      activeAudio.pause();
+      activeAudio.currentTime = 0;
+      activeAudio = null;
+    } catch {
+      // ignore
+    }
+  }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       if (speechTimeoutId) {
@@ -235,9 +436,15 @@ export function stopSpanishSpeech(): void {
         speechTimeoutId = null;
       }
       window.speechSynthesis.cancel();
-      activeUtterance = null;
+      if (activeUtterance) {
+        activeUtterance = null;
+      }
     } catch {
       // safe fallback
     }
   }
+}
+
+export function isSpanishSpeechActive(): boolean {
+  return Boolean(activeAudio || activeUtterance);
 }

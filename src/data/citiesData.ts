@@ -1,4 +1,4 @@
-import { City, Level, Question } from '../types';
+import { City, Level, Question, PlayerProgress } from '../types';
 import { MODULE1_CITIES } from './cities/module1Cities';
 import { MODULE2_CITIES } from './cities/module2Cities';
 import { MODULE3_CITIES } from './cities/module3Cities';
@@ -58,4 +58,52 @@ export function getQuestionById(questionId: string): Question | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * Reconciles and self-heals unlocked city IDs based on defeated bosses and existing unlocks.
+ * Guarantees that:
+ * 1. Madrid ('madrid') is always unlocked.
+ * 2. Whenever a city's boss is passed (>=80%), the next city is automatically unlocked.
+ * 3. Module boundaries (e.g. Salamanca -> Segovia for Module 2) properly unlock.
+ * 4. Deduplicates and preserves chronological city progression ordering.
+ */
+export function reconcileProgression(progress: PlayerProgress): PlayerProgress {
+  if (!progress) return progress;
+
+  const unlocked = new Set<string>(
+    progress.unlockedCityIds && progress.unlockedCityIds.length > 0
+      ? progress.unlockedCityIds
+      : ['madrid']
+  );
+  unlocked.add('madrid');
+
+  for (let i = 0; i < ALL_CITIES.length - 1; i++) {
+    const currentCity = ALL_CITIES[i];
+    const nextCity = ALL_CITIES[i + 1];
+
+    const bossPassed = Boolean(progress.completedBosses?.[currentCity.id]?.passed);
+    if (bossPassed && nextCity) {
+      unlocked.add(nextCity.id);
+    }
+  }
+
+  // Preserve the canonical sequential order of ALL_CITIES
+  const sortedUnlocked = ALL_CITIES
+    .filter(c => unlocked.has(c.id))
+    .map(c => c.id);
+
+  const prevList = progress.unlockedCityIds || [];
+  const isDifferent =
+    sortedUnlocked.length !== prevList.length ||
+    sortedUnlocked.some((id, idx) => id !== prevList[idx]);
+
+  if (isDifferent) {
+    return {
+      ...progress,
+      unlockedCityIds: sortedUnlocked
+    };
+  }
+
+  return progress;
 }

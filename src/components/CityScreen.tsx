@@ -1307,11 +1307,18 @@ export const CityScreen: React.FC<CityScreenProps> = ({
           {/* Action button */}
           <div className="flex flex-col items-center justify-center shrink-0 min-w-[200px]">
             <button
-              onClick={onOpenBoss}
+              onClick={() => {
+                if (allLevelsDone || isBossPassed) {
+                  onOpenBoss();
+                }
+              }}
+              disabled={!allLevelsDone && !isBossPassed}
               className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm sm:text-base shadow-xl transition-all flex items-center justify-center space-x-2 border-2 ${
-                isBossPassed
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/50 shadow-emerald-600/30'
-                  : 'bg-gradient-to-r from-fiesta-red to-amber-600 hover:from-red-600 hover:to-amber-500 text-white border-amber-400/50 shadow-rose-600/30 glow-gold'
+                !allLevelsDone && !isBossPassed
+                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-60'
+                  : isBossPassed
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/50 shadow-emerald-600/30 cursor-pointer'
+                  : 'bg-gradient-to-r from-fiesta-red to-amber-600 hover:from-red-600 hover:to-amber-500 text-white border-amber-400/50 shadow-rose-600/30 glow-gold cursor-pointer'
               }`}
             >
               <Play className="w-5 h-5 fill-current" />
@@ -1320,6 +1327,8 @@ export const CityScreen: React.FC<CityScreenProps> = ({
             <p className="text-[11px] text-slate-400 mt-2 text-center">
               {isBossPassed 
                 ? `Superado con éxito (${bossRecord?.scorePercent}%). Próxima ciudad desbloqueada.` 
+                : !allLevelsDone
+                ? `Completa los 10 niveles de la ciudad para desbloquear este Desafío.`
                 : 'Se requiere un mínimo de 80% para desbloquear la siguiente ciudad.'}
             </p>
           </div>

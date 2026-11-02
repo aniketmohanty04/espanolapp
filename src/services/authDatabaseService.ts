@@ -1,6 +1,7 @@
 import { PlayerProgress, PlayerProfile } from '../types';
 import { INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from './storageService';
 import { supabaseService } from './supabaseClient';
+import { reconcileProgression } from '../data/citiesData';
 
 export interface DatabaseUser {
   id: string;
@@ -93,7 +94,7 @@ function saveStoredUsers(users: Record<string, DatabaseUser>): void {
 function getStoredProgress(email: string): PlayerProgress | null {
   const normEmail = email.trim().toLowerCase();
   if (supabaseService.getConfig().isConfigured) {
-    return memoryProgress[normEmail] || null;
+    const localMem = memoryProgress[normEmail]; return localMem ? reconcileProgression(localMem) : null;
   }
   try {
     if (typeof localStorage !== 'undefined') {
@@ -586,7 +587,7 @@ export const authDatabaseService = {
    */
   loadUserProgress(email: string): PlayerProgress | null {
     if (!email) return null;
-    return getStoredProgress(email);
+    const prog = getStoredProgress(email); return prog ? reconcileProgression(prog) : null;
   },
 
   /**
@@ -627,7 +628,9 @@ export const authDatabaseService = {
           };
 
           memoryProgress[normEmail] = resolvedProg;
-          return resolvedProg;
+          const reconciled = reconcileProgression(resolvedProg);
+          memoryProgress[normEmail] = reconciled;
+          return reconciled;
         }
       } catch (err) {
         console.warn('Failed to load user progress from Supabase:', err);

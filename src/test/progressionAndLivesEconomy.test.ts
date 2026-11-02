@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ALL_CITIES, getCityById } from '../data/citiesData';
+import { ALL_CITIES, getCityById, reconcileProgression } from '../data/citiesData';
 import { INITIAL_PROGRESS } from '../services/storageService';
 import { PlayerProgress } from '../types';
 import { calculateSecondsUntilNextLife } from '../context/GameContext';
@@ -231,6 +231,41 @@ describe('Progression & Lives Economy Suite', () => {
       expect(zaragoza.moduleIndex).toBe(4);
       expect(bilbao.moduleIndex).toBe(5);
       expect(bilbao.number).toBe(zaragoza.number + 1);
+    });
+
+    it('reconcileProgression heals stale unlockedCityIds when Madrid boss is passed', () => {
+      const staleProg: PlayerProgress = {
+        ...INITIAL_PROGRESS,
+        unlockedCityIds: ['madrid'],
+        completedBosses: {
+          madrid: { scorePercent: 85, passed: true, completedAt: new Date().toISOString() }
+        }
+      };
+
+      const healed = reconcileProgression(staleProg);
+      expect(healed.unlockedCityIds).toContain('madrid');
+      expect(healed.unlockedCityIds).toContain('toledo');
+    });
+
+    it('reconcileProgression unlocks Module 2 (Segovia) when Module 1 (Madrid, Toledo, Salamanca) is completed', () => {
+      const mod1DoneProg: PlayerProgress = {
+        ...INITIAL_PROGRESS,
+        unlockedCityIds: ['madrid'],
+        completedBosses: {
+          madrid: { scorePercent: 90, passed: true, completedAt: new Date().toISOString() },
+          toledo: { scorePercent: 85, passed: true, completedAt: new Date().toISOString() },
+          salamanca: { scorePercent: 80, passed: true, completedAt: new Date().toISOString() }
+        }
+      };
+
+      const healed = reconcileProgression(mod1DoneProg);
+      expect(healed.unlockedCityIds).toContain('madrid');
+      expect(healed.unlockedCityIds).toContain('toledo');
+      expect(healed.unlockedCityIds).toContain('salamanca');
+      // Module 2 city 4 (Segovia) MUST be unlocked!
+      expect(healed.unlockedCityIds).toContain('segovia');
+      const segovia = getCityById('segovia')!;
+      expect(segovia.moduleIndex).toBe(2);
     });
   });
 

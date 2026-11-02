@@ -3,6 +3,8 @@ import {
   cleanSpanishTextForSpeech,
   formatSpanishWithWordPauses,
   getBestSpanishVoice,
+  getSpanishPhoneticGuide,
+  getSpanishAudioUrl,
   speakSpanish,
   stopSpanishSpeech
 } from '../services/spanishSpeechService';
@@ -156,6 +158,34 @@ describe('Spanish Speech Service & Text Sanitization', () => {
       const callArg = mockSpeak.mock.calls[0][0];
       expect(callArg.text).toBe(', Buenos , días');
       expect(callArg.rate).toBeLessThanOrEqual(0.75);
+    });
+
+    it('generates authentic Spanish phonetic guide for target phrases', () => {
+      expect(getSpanishPhoneticGuide('María es profesora')).toBe('mah-REE-ah ess proh-feh-SOH-rah');
+      expect(getSpanishPhoneticGuide('¡Buenos días!')).toBe('BWEH-nohs DEE-ahs');
+      expect(getSpanishPhoneticGuide('¿Dónde está el tren?')).toBe('DOHN-deh ehs-TAH ehl trehn');
+    });
+
+    it('generates streaming native Spanish audio URL for guaranteed authentic pronunciation', () => {
+      const urlEs = getSpanishAudioUrl('María es profesora', 'es-ES');
+      expect(urlEs).toContain('tl=es-ES');
+      expect(urlEs).toContain('client=tw-ob');
+      expect(urlEs).toContain('Mar%C3%ADa%20es%20profesora');
+
+      const urlMx = getSpanishAudioUrl('Hola amigo', 'es-MX');
+      expect(urlMx).toContain('tl=es-MX');
+    });
+
+    it('respects Mexican Spanish locale when es-MX is requested', () => {
+      mockGetVoices.mockReturnValue([
+        { name: 'Microsoft David Desktop', lang: 'en-US', default: true },
+        { name: 'Microsoft Sabina', lang: 'es-MX', default: false },
+        { name: 'Google español', lang: 'es-ES', default: false }
+      ]);
+      const voice = getBestSpanishVoice('es-MX');
+      expect(voice).toBeDefined();
+      expect(voice?.lang).toBe('es-MX');
+      expect(voice?.name).toContain('Sabina');
     });
   });
 });
