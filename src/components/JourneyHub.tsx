@@ -1307,7 +1307,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                               ? 'text-sm sm:text-base font-sans'
                               : 'text-2xl sm:text-3xl font-serif whitespace-pre-line'
                           }`}>
-                            {msg.spanishText.includes('•') ? formatTeacherText(msg.spanishText) : msg.spanishText}
+                            {msg.spanishText.includes('•') || msg.spanishText.includes('\n') ? formatTeacherText(msg.spanishText) : msg.spanishText}
                           </div>
 
                           {/* Pronunciation Guide */}
@@ -1330,9 +1330,9 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                                   Significado • Meaning & Note
                                 </span>
-                                <p className="text-xs sm:text-sm font-medium text-[#4A382C] leading-relaxed">
-                                  {msg.englishText}
-                                </p>
+                                <div className="text-xs sm:text-sm font-medium text-[#4A382C] leading-relaxed">
+                                  {formatTeacherText(msg.englishText)}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -1341,9 +1341,9 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
 
                       {/* Fallback English text if spanishText is not provided */}
                       {!msg.spanishText && msg.englishText && (
-                        <p className="text-xs sm:text-sm text-[#4A382C] leading-relaxed font-medium">
-                          {msg.englishText}
-                        </p>
+                        <div className="text-xs sm:text-sm text-[#4A382C] leading-relaxed font-medium">
+                          {formatTeacherText(msg.englishText)}
+                        </div>
                       )}
 
                       {/* Interactive Practice Challenge */}

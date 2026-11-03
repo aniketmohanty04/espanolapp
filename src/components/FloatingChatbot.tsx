@@ -79,16 +79,19 @@ export function formatTeacherText(content: string): React.ReactNode {
 
     const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
     const isNumbered = /^\d+\.\s+/.test(trimmed);
+    const isHeading = /^#{1,4}\s+/.test(trimmed);
 
-    // Strip leading bullet symbol for custom stylish bullet icon
+    // Strip leading bullet symbol or heading for custom stylish rendering
     const displayText = isBullet
       ? trimmed.replace(/^[•\-*]\s*/, '')
       : isNumbered
       ? trimmed.replace(/^\d+\.\s*/, '')
-      : line;
+      : isHeading
+      ? trimmed.replace(/^#{1,4}\s+/, '')
+      : trimmed;
 
     const parts: React.ReactNode[] = [];
-    const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
@@ -109,6 +112,12 @@ export function formatTeacherText(content: string): React.ReactNode {
             {token.slice(1, -1)}
           </em>
         );
+      } else if (token.startsWith('`') && token.endsWith('`')) {
+        parts.push(
+          <code key={`${lineIdx}-${match.index}`} className="px-1.5 py-0.5 rounded bg-orange-100/70 text-[#C2410C] font-mono text-xs font-semibold">
+            {token.slice(1, -1)}
+          </code>
+        );
       }
       lastIndex = tokenRegex.lastIndex;
     }
@@ -118,6 +127,14 @@ export function formatTeacherText(content: string): React.ReactNode {
     }
 
     const contentNodes = parts.length > 0 ? parts : displayText;
+
+    if (isHeading) {
+      return (
+        <h4 key={lineIdx} className="font-extrabold text-xs sm:text-sm text-[#8B2500] mt-2 mb-1 uppercase tracking-wide">
+          {contentNodes}
+        </h4>
+      );
+    }
 
     if (isBullet) {
       return (
@@ -704,23 +721,35 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
 
                       {/* English explanation */}
                       {msg.englishText && (
-                        <p className="mt-1.5 text-xs text-[#52443B] bg-white/70 p-1.5 rounded-lg border border-[#EFE5D8]">
-                          💡 <span className="font-medium">{msg.englishText}</span>
-                        </p>
+                        <div className="mt-1.5 text-xs text-[#52443B] bg-white/70 p-2 rounded-lg border border-[#EFE5D8]">
+                          <div className="flex items-start space-x-1.5">
+                            <span className="shrink-0 select-none">💡</span>
+                            <div className="flex-1 font-medium leading-relaxed">
+                              {formatTeacherText(msg.englishText)}
+                            </div>
+                          </div>
+                        </div>
                       )}
 
                       {/* Grammar correction notice if student made a typo */}
                       {msg.correctionNotice && (
-                        <div className="mt-1.5 text-[11px] text-amber-900 bg-amber-50 border border-amber-200 p-1.5 rounded-lg flex items-start space-x-1">
+                        <div className="mt-1.5 text-[11px] text-amber-900 bg-amber-50 border border-amber-200 p-2 rounded-lg flex items-start space-x-1.5">
                           <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                          <span><strong>Corrección:</strong> {msg.correctionNotice}</span>
+                          <div className="flex-1">
+                            <strong className="text-amber-950 font-bold">Corrección: </strong>
+                            <div className="inline">{formatTeacherText(msg.correctionNotice)}</div>
+                          </div>
                         </div>
                       )}
 
                       {/* Practice challenge prompt */}
                       {msg.practicePrompt && (
-                        <div className="mt-2 text-[11px] text-emerald-900 bg-emerald-50 border border-emerald-200 p-1.5 rounded-lg">
-                          🎯 <strong>Reto:</strong> {msg.practicePrompt}
+                        <div className="mt-2 text-[11px] text-emerald-900 bg-emerald-50 border border-emerald-200 p-2 rounded-lg flex items-start space-x-1.5">
+                          <span className="shrink-0 select-none">🎯</span>
+                          <div className="flex-1 font-medium">
+                            <strong className="text-emerald-950 font-bold">Reto: </strong>
+                            <div className="inline">{formatTeacherText(msg.practicePrompt)}</div>
+                          </div>
                         </div>
                       )}
 

@@ -13,12 +13,13 @@ import {
 
 // Default key empty: API key is securely injected via VITE_GEMINI_API_KEY environment variable
 export const DEFAULT_GEMINI_API_KEY = '';
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
 export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
 export const GEMINI_FALLBACK_MODELS = [
-  'gemini-3-flash-preview',
-  'gemini-3.5-flash',
-  'gemini-flash-lite-latest'
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3-flash-preview'
 ];
 
 export interface CaminoResponse {

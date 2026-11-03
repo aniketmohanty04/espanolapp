@@ -6,10 +6,11 @@ declare const Buffer: any;
 declare const process: any;
 
 const CANDIDATE_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-3-flash-preview',
   'gemini-3.5-flash',
-  'gemini-flash-lite-latest'
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3-flash-preview'
 ];
 
 async function parseJsonBody(req: any): Promise<any> {
