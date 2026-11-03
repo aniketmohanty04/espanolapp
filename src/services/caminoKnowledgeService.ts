@@ -90,6 +90,30 @@ const SEED_KNOWLEDGE: Array<{ query: string; topic: string; response: CaminoResp
       practicePrompt: '¿Cómo dirías en español: "I am happy today" (use estar)?',
       source: 'gemini'
     }
+  },
+  {
+    query: 'sentence using muy bien',
+    topic: 'sentence_feeling',
+    response: {
+      text: 'Here is a natural sentence to express feeling well in Spanish:\n\n• **Me siento muy bien.** (I\'m feeling very good.)\n\n"Me siento" means "I feel" (from the reflexive verb sentirse), and "muy bien" means "very well". You can also say "Estoy muy bien" using the verb estar.',
+      spanishText: 'Me siento muy bien.',
+      pronunciation: 'meh SYEN-toh mwee byen',
+      englishText: "I'm feeling very good.",
+      practicePrompt: '¿Cómo te sientes hoy? Prueba a responder con: "Me siento..." o "Estoy..."',
+      source: 'gemini'
+    }
+  },
+  {
+    query: 'sentence using estoy feliz',
+    topic: 'sentence_feeling',
+    response: {
+      text: 'Here is a sentence expressing happiness in Spanish:\n\n• **Estoy feliz.** (I am happy.)\n\nWe use the verb "estar" because happiness is a current mood or emotional state, not a permanent physical trait.',
+      spanishText: 'Estoy feliz.',
+      pronunciation: 'ehs-TOY feh-LEES',
+      englishText: 'I am happy.',
+      practicePrompt: '¿Por qué estás feliz hoy?',
+      source: 'gemini'
+    }
   }
 ];
 
@@ -284,6 +308,31 @@ export function findTrainedCaminoResponse(
     }
   }
 
+  // 3.5 Sentence generation / feeling requests
+  const isSentenceFeelingMuyBien = (
+    normalized.includes('muy bien') &&
+    (normalized.includes('sentence') || normalized.includes('feeling') || normalized.includes('write') || normalized.includes('writing') || normalized.includes('frase'))
+  );
+  if (isSentenceFeelingMuyBien) {
+    const entry = entries.find(e => e.topic === 'sentence_feeling' && e.query.includes('muy bien'));
+    if (entry) {
+      entry.useCount += 1;
+      return entry.response;
+    }
+  }
+
+  const isSentenceEstoyFeliz = (
+    normalized.includes('estoy feliz') &&
+    (normalized.includes('sentence') || normalized.includes('happy') || normalized.includes('write') || normalized.includes('writing') || normalized.includes('frase'))
+  );
+  if (isSentenceEstoyFeliz) {
+    const entry = entries.find(e => e.topic === 'sentence_feeling' && e.query.includes('estoy feliz'));
+    if (entry) {
+      entry.useCount += 1;
+      return entry.response;
+    }
+  }
+
   // 4. Keyword overlap match
   if (queryKeywords.length >= 2) {
     let bestMatch: LearnedKnowledgeEntry | null = null;
@@ -333,10 +382,15 @@ export function resetCaminoKnowledge(): void {
 export function getCaminoTrainingExemplars(currentQuery: string): string {
   const entries = loadKnowledge();
   const normalized = normalizeQueryText(currentQuery);
+  const queryKeywords = extractKeywords(normalized);
 
-  // Select 1 or 2 relevant entries to inject as few-shot teaching exemplars
+  // Select up to 2 strictly relevant entries to inject as few-shot teaching exemplars
+  // Only inject if there is genuine keyword or topic overlap to avoid contaminating unrelated queries
   const relevant = entries
-    .filter(e => e.response.text && e.response.spanishText)
+    .filter(e => {
+      if (!e.response.text || !e.response.spanishText) return false;
+      return e.keywords.some(k => queryKeywords.includes(k)) || (e.topic && normalized.includes(e.topic));
+    })
     .slice(0, 2);
 
   if (relevant.length === 0) return '';

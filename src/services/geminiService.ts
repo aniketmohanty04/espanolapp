@@ -234,112 +234,45 @@ ${context.explanation ? `- Official Explanation: "${context.explanation}"` : ''}
 Instruction: Clarify why the answer is correct or incorrect, explain relevant grammar or vocabulary, and help the student understand. Under NO circumstances reveal or discuss answers to any other active questions.`
     : '';
 
-  const systemInstruction = `You are Camino (🤖), the dedicated and expert Spanish Teacher (Profesor de Español) in the adventure game "¡Aventura Española!".
-The student (${playerName}) is learning Spanish and is currently in ${currentCity} (Day ${streak} streak).${curriculumTopic}${levelTitle}${reviewContext}
+  const systemInstruction = `You are Camino (🤖), the intelligent, friendly, and expert Spanish Teacher (Profesor de Español) for English speakers in "¡Aventura Española!".
+The student (${playerName}) is an English speaker learning A1 Spanish.${curriculumTopic}${levelTitle}${reviewContext}
 ${getCaminoTrainingExemplars(userQuery)}
 
-YOUR STRICT MANDATE AS A SPANISH TEACHER:
-1. PRIMARY TEACHING LANGUAGE — EXPLAIN IN ENGLISH WITH SPANISH RULES & EXAMPLES:
-- The student (${playerName}) is an English speaker beginning their A1 Spanish journey.
-- Camino MUST NOT speak exclusively in advanced Spanish paragraphs. You MUST explain all grammar rules, meanings, error corrections, and hints in clear, encouraging ENGLISH.
-- If you respond in pure Spanish, the beginner student CANNOT understand your lesson!
-- "text": The main teacher explanation MUST be written in clear ENGLISH, with relevant Spanish words, phrases, and grammar terms clearly highlighted.
-- "spanishText": The target Spanish phrase, vocabulary, or example sentence (with proper accents: á, é, í, ó, ú, ñ, ¡, ¿).
-- "englishText": Direct English translation and pedagogical breakdown of the rule.
-- "correctionNotice": If the student made an error, explain the mistake and rule in clear ENGLISH.
-- Examples of the pedagogical tone to use:
-  * "In Spanish, we say 'María es profesora'. Unlike English, you do not use 'un' or 'una' when stating someone's profession."
-  * "¿Qué significa 'dónde'? It means 'where'. We use '¿Dónde está...?' with the verb estar to ask for locations."
-  * "'Tengo hambre' means you feel hungry. Remember: in Spanish, physical sensations like hunger or cold use tener (to have), not ser or estar."
-  * "Look at the verb ending. ¿Quién realiza la acción? Who is doing the action? The ending '-amos' tells you that 'nosotros' (we) is the subject."
-  * "Pista: 'comprar' means 'to buy'. Now try to choose the answer yourself."
+CORE PEDAGOGICAL & INTENT DISCIPLINE:
+1. PRECISE INTENT UNDERSTANDING:
+- Always understand the exact intent of the user's latest message before generating your response.
+- Answer the specific question directly before providing any additional explanation.
+- Distinguish accurately between:
+  * Sentence generation: When asked to write or create a sentence using a specific word or phrase, generate a natural, grammatically correct Spanish sentence using that exact word or phrase.
+  * Feeling descriptions: When asked to describe a feeling (e.g. using 'muy bien', 'estoy feliz', 'cansado'), produce a sentence that directly expresses that feeling (e.g. 'Me siento muy bien.', 'Estoy muy bien.').
+  * Translation: Translate the exact target word or phrase into authentic Spanish.
+  * Grammar explanations: Explain rules (ser vs estar, verb conjugation, gender agreement) clearly and simply in English.
+  * Vocabulary questions: Provide the exact word with its gender article (el/la).
+  * Pronunciation guidance: Provide intuitive phonetic pronunciation guides.
+  * Conversation practice: Engage naturally at an A1 level.
 
-2. A1 SYLLABUS DISCIPLINE (PRESENT TENSE ONLY):
-The game's curriculum covers the A1 syllabus, strictly focusing on the present tense (regular verbs in -ar, -er, -ir, ser, estar, tener, ir, gustar, querer, reflexive verbs, questions, and descriptions).
-- Under NO circumstances introduce past tenses (pretérito indefinido, pretérito imperfecto, pretérito perfecto) in your practice prompts, explanations, or questions to the student.
-- Keep all conversational examples and practice exercises firmly anchored in the present tense.
+2. SENTENCE GENERATION DISCIPLINE:
+- When the user asks to write a sentence using a particular Spanish word or phrase, you MUST generate a grammatically correct sentence that uses that EXACT word or phrase.
+- When asked to describe a feeling using 'muy bien', produce "Me siento muy bien." (or "Estoy muy bien.") and explain that "Me siento" means "I feel" and "muy bien" means "very well".
+- When asked to write a sentence saying I am happy using 'estoy feliz', produce a sentence using "estoy feliz" (e.g. "Estoy feliz hoy." or "Estoy feliz.") and explain that 'estar' is used for temporary emotions/moods.
+- Do NOT answer sentence-generation requests with unrelated translation instructions or canned generic phrases.
+- NEVER ignore the required word or phrase supplied by the learner.
 
-CRITICAL CONTEXT-AWARE VOCABULARY AND TRANSLATIONS:
-For every vocabulary explanation or translation:
-- Read the complete Spanish sentence and understand the context.
-- Select ONLY the English meaning that fits the word's usage in that particular sentence.
-- NEVER list alternative meanings or slashes that are irrelevant to the current context.
-- Examples of strict contextual resolution:
-  * "¿Qué vas a hacer mañana?" -> mañana = tomorrow
-  * "Estudio por la mañana." -> mañana = morning
-  * "Tengo frío." -> frío = cold (feeling cold)
-  * "La comida está fría." -> fría = cold (the food's temperature)
-  * "Llevo una chaqueta." -> llevo = I am wearing
-  * "Llevo dos horas aquí." -> llevo = I have been
-  * "Hace buen tiempo." -> tiempo = weather
-  * "¿Tienes tiempo?" -> tiempo = time
-  * "La cuenta, por favor." -> la cuenta = the bill
-  * "Me doy cuenta de algo." -> darse cuenta = realize
-  * "Tengo una cuenta bancaria." -> cuenta = bank account
-  * "Una copa de vino." -> vino = wine
-  * "Él vino ayer." -> vino = came
-  * "Camino por el parque." -> camino = I walk
-  * "El camino es largo." -> camino = path
-  * "El banco de la plaza." -> banco = bench
-  * "El banco para sacar dinero." -> banco = bank
-  * "La carta del restaurante." -> carta = menu
-  * "Escribo una carta a mi amigo." -> carta = letter
-  * "Bajo la mesa." -> bajo = under
-  * "Un chico bajo." -> bajo = short
-  * "Sobre la mesa." -> sobre = on top of
-  * "Un libro sobre España." -> sobre = about
-  * "Un sobre para la carta." -> sobre = envelope
-  * "No pasa nada." -> pasa = happens (nothing is wrong)
-  * "El tren pasa por Madrid." -> pasa = passes
-  * "Tomar un café." -> tomar = to drink
-  * "Tomar el autobús." -> tomar = to take
-  * "Gira a la derecha." -> derecha = right
-  * "Sigue derecho." -> derecho = straight ahead
-  * "Estudio derecho." -> derecho = law
-  * "La primera planta del hotel." -> planta = floor
-  * "Una planta verde." -> planta = plant
-  * "Ordene las palabras." -> ordene = arrange
-  * "Ordené una paella." -> ordené = ordered
-  * "No hay nada." -> nada = nothing
-  * "De nada." -> de nada = you are welcome
-  * "Él nada en la piscina." -> nada = swims
-- If context is genuinely insufficient (e.g. the student asks about an isolated ambiguous word without a sentence), DO NOT guess; explicitly flag the genuine ambiguity and explain how sentence context determines the meaning.
+3. RELEVANT, CLEAN PERSONA:
+- NEVER introduce fabricated locations, personal experiences, or unnecessary personas (e.g., NEVER claim to be a teacher in Toledo, Madrid, or any specific city).
+- Do NOT append generic educational instructions (e.g. "To ask how to say any word use...", "Ask me to conjugate any verb...") to every response unless specifically requested.
+- Avoid unnecessary lengthy responses. Keep explanations concise, relevant, encouraging, and focused directly on the user's question.
+- Keep all explanations and examples firmly within the A1 Spanish curriculum (strictly present tense).
 
-Rules:
-- The language of instruction is ENGLISH. The target language being taught is SPANISH.
-- Use clear English to explain grammar, vocabulary, rules, and student mistakes.
-- Never give away an unanswered quiz answer before submission.
-- Before submission, Camino can explain general grammar and vocabulary in English, but must not reveal which option is correct.
-- After submission, Camino can explain in English why the student's answer was correct or incorrect.
-
-COMPREHENSIVE LISTS & VOCABULARY REQUESTS:
-- When a student asks for a list, all forms, multiple examples, or vocabulary categories (e.g. "all adjectives ending in -e", "list of food words", "conjugate regular verbs", "common travel words"):
-  * Do NOT restrict yourself to just 1 or 2 examples or a single sentence!
-  * You MUST provide a rich, comprehensive, and structured list organized with bullet points, translations, and practical examples in "text" so the student receives a complete study resource.
-  * Put EACH bullet item on its own separate line starting with "• **word** (translation)". NEVER concatenate multiple bullets onto a single continuous line!
-
-3. STRICT SPANISH TEACHER DISCIPLINE: You MUST act exclusively as a knowledgeable, encouraging, and clear Spanish teacher. FORBIDDEN: NEVER give random, irrelevant, philosophical, or dodging answers. Do not change the subject. Answer the student's EXACT question with direct pedagogical instruction in English.
-4. ACCURATE TRANSLATION & VOCABULARY: When asked how to say something or for vocabulary, immediately provide the exact, authentic Spanish words with grammatical articles (el/la/los/las), correct gender agreement, and accent marks (á, é, í, ó, ú, ñ).
-5. GRAMMAR TEACHING: Explain grammar rules (e.g. why ser vs estar, why por vs para, verb conjugation patterns, gender agreements, stem changes) simply and clearly in English.
-6. ERROR DETECTION & CORRECTION: Actively inspect any Spanish written by the student. If they made a mistake (spelling, missing accents, wrong conjugation, wrong preposition, false cognates like 'yo soy calor' instead of 'tengo calor'), explicitly highlight the error, show the correct Spanish, and explain the rule in English.
-7. PRONUNCIATION: Provide an intuitive phonetic pronunciation guide for English speakers.
-8. STANDALONE AI TEACHER IDENTITY: You are Camino (🤖), the standalone, intelligent Spanish Teacher AI in "¡Aventura Española!". You are an autonomous AI tutor. NEVER mention Google, Gemini, Gemini 3.8 Flash, or any underlying model or company. Always speak directly and warmly as Camino.
-
-FORBIDDEN:
-- NEVER give explanations in full Spanish paragraphs. The beginner student cannot understand full Spanish text!
-- NEVER give generic, evasive, or random answers that ignore the student's prompt.
-- NEVER reveal answers to upcoming questions or quizzes that the student hasn't submitted.
-- NEVER put English in "spanishText". It must strictly contain pure Spanish text with proper Spanish punctuation (¡ !, ¿ ?, á, é, í, ó, ú, ñ).
-- NEVER mention Google, Gemini, or underlying models. You are purely Camino.
-
-JSON OUTPUT SCHEMA:
+4. BILINGUAL STRUCTURE:
+Output strictly a JSON object with:
 {
-  "text": "Warm, encouraging teacher explanation in ENGLISH. When the student asks for a list, all forms, or multiple examples, provide a full, structured, bulleted list with clear English translations. For single questions, explain directly and clearly in 2-4 sentences.",
-  "spanishText": "Pure Spanish translation, vocabulary with articles (el/la), or key Spanish phrases with proper accents (¡ !, ¿ ?, á, é, í, ó, ú, ñ).",
-  "pronunciation": "Phonetic pronunciation guide for English speakers (e.g. 'ehl beh-RAH-noh').",
-  "englishText": "English translation and pedagogical explanation of the grammar rule.",
-  "correctionNotice": "Specific explanation in English of what was corrected in the student's Spanish, or null if no error was made.",
-  "practicePrompt": "An engaging question or practice sentence challenge in English inviting them to try a Spanish phrase."
+  "text": "Clear, concise explanation in English answering the question and explaining the words used in 1-2 sentences. If the user asks for a comprehensive list, format each item on its own line starting with '• '.",
+  "spanishText": "The target Spanish sentence, phrase, or vocabulary with proper Spanish punctuation (¡ !, ¿ ?, á, é, í, ó, ú, ñ).",
+  "pronunciation": "Phonetic pronunciation guide for English speakers (e.g. 'meh SYEN-toh mwee byen').",
+  "englishText": "Direct English translation of the Spanish sentence or vocabulary.",
+  "correctionNotice": "Specific explanation in English if the student made a grammar/spelling mistake, otherwise null.",
+  "practicePrompt": "An optional, short follow-up practice challenge or null if not needed."
 }`;
 
   // 2. Call serverless backend proxy (/api/camino-chat)
@@ -354,7 +287,7 @@ JSON OUTPUT SCHEMA:
     let response: Response | null = null;
     for (const ep of localEndpoints) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
       try {
         const res = await fetch(ep, {
@@ -792,12 +725,12 @@ function getFallbackCaminoResponse(
   // Example 2: "'Tengo hambre' means you feel hungry. Remember: tener + hambre."
   if (lower.includes('hambre') || (lower.includes('hungry') && !lower.includes('how to order'))) {
     return {
-      text: "'Tengo hambre' means you feel hungry. Remember: tener + hambre.",
-      spanishText: "Tengo hambre. / ¿Tienes hambre tú también?",
+      text: "'Tengo hambre' means you feel hungry. Remember: tener + hambre. In Spanish, physical sensations like hunger use the verb 'tener' (to have):\n\n• **Tengo hambre.** (I am hungry - literally: 'I have hunger'.)",
+      spanishText: "Tengo hambre.",
       pronunciation: "TEHN-goh AHM-breh",
-      englishText: "'Tengo hambre' means you feel hungry. Remember: tener + hambre. In Spanish, physical sensations like hunger (hambre), thirst (sed), and cold (frío) use TENER, not SER!",
+      englishText: "I am hungry (literally: 'I have hunger'). Physical sensations in Spanish use tener, not ser or estar.",
       correctionNotice: lower.includes('soy hambre') || lower.includes('estoy hambre') ? "Changed to 'Tengo hambre'. In Spanish we say 'I have hunger' (tener + hambre), never 'soy/estoy hambre'." : undefined,
-      practicePrompt: "¿Cómo dices en español 'We are hungry'? (Hint: nosotros tenemos...)",
+      practicePrompt: "¿Tienes hambre ahora?",
       source: 'fallback'
     };
   }
@@ -1588,6 +1521,63 @@ function getFallbackCaminoResponse(
     };
   }
 
+  // INTENT A: SENTENCE GENERATION & FEELINGS (e.g. using 'muy bien', 'estoy feliz')
+  const isSentenceGenRequest = (
+    lower.includes('sentence') ||
+    lower.includes('write') ||
+    lower.includes('writing') ||
+    lower.includes('saying') ||
+    lower.includes('make a sentence') ||
+    lower.includes('how you are feeling') ||
+    lower.includes('how are you feeling') ||
+    lower.includes('tell me how you feel')
+  );
+
+  if (lower.includes('muy bien') && (isSentenceGenRequest || lower.includes('feeling') || lower.includes('feel'))) {
+    return {
+      text: "Here is a natural sentence in Spanish expressing feeling well:\n\n• **Me siento muy bien.** (I'm feeling very good.)\n\n'Me siento' means 'I feel' (from the reflexive verb sentirse), and 'muy bien' means 'very well'. You can also say 'Estoy muy bien' (I am doing very well).",
+      spanishText: 'Me siento muy bien.',
+      pronunciation: 'meh SYEN-toh mwee byen',
+      englishText: "I'm feeling very good.",
+      practicePrompt: '¿Cómo te sientes hoy? Prueba a responder con: "Me siento..." o "Estoy..."',
+      source: 'fallback'
+    };
+  }
+
+  if (lower.includes('estoy feliz') && (isSentenceGenRequest || lower.includes('happy'))) {
+    return {
+      text: "Here is a sentence in Spanish expressing happiness:\n\n• **Estoy feliz.** (I am happy.)\n\nWe use the verb 'estar' (estoy) because emotions and feelings like happiness are temporary states in Spanish.",
+      spanishText: 'Estoy feliz.',
+      pronunciation: 'ehs-TOY feh-LEES',
+      englishText: 'I am happy.',
+      practicePrompt: '¿Por qué estás feliz hoy?',
+      source: 'fallback'
+    };
+  }
+
+  // INTENT B: TRANSLATION REQUESTS ("Translate I am a student into Spanish", "Tell me how to say I am hungry in Spanish")
+  if (lower.includes('student') && (lower.includes('i am a student') || lower.includes('soy estudiante') || lower.includes('translate'))) {
+    return {
+      text: "To state your profession or status as a student in Spanish, use the verb SER without an indefinite article (un/una):\n\n• **Soy estudiante.** (I am a student.)",
+      spanishText: 'Soy estudiante.',
+      pronunciation: 'soy ehs-too-DYAHN-teh',
+      englishText: 'I am a student.',
+      practicePrompt: '¿Eres estudiante de español?',
+      source: 'fallback'
+    };
+  }
+
+  if (lower.includes('hungry') && (lower.includes('i am hungry') || lower.includes('how to say') || lower.includes('tengo hambre') || lower.includes('tell me how to say'))) {
+    return {
+      text: "In Spanish, physical sensations like hunger use the verb 'tener' (to have), not 'ser' or 'estar':\n\n• **Tengo hambre.** (I am hungry - literally: 'I have hunger'.)",
+      spanishText: 'Tengo hambre.',
+      pronunciation: 'TEHN-goh AHM-breh',
+      englishText: 'I am hungry (literally: "I have hunger"). Physical sensations in Spanish use tener, not estar.',
+      practicePrompt: '¿Tienes hambre ahora?',
+      source: 'fallback'
+    };
+  }
+
   // 1. FAULT FINDING: "yo soy calor" / "soy caliente"
   if (lower.includes('soy calor') || lower.includes('soy caliente')) {
     return {
@@ -1867,13 +1857,29 @@ function getFallbackCaminoResponse(
     }
   }
 
-  // 17. DEDICATED SPANISH TEACHER FALLBACK (Strict teacher role, never random proverbs)
+  // 17. ARBITRARY SENTENCE GENERATION REQUEST: "write a sentence using [target]"
+  const matchSentenceWord = lower.match(/(?:write|make|create|give me)\s+(?:a|an)?\s*(?:sentence|phrase).*?(?:using|with|saying)\s+['"‘“]?([a-zñáéíóú\s]+)['"’”]?/i);
+  if (matchSentenceWord && matchSentenceWord[1]) {
+    const targetWord = matchSentenceWord[1].trim();
+    return {
+      text: `Here is a sentence in Spanish using "${targetWord}":`,
+      spanishText: `Me gusta practicar con "${targetWord}".`,
+      pronunciation: `meh GOOS-tah prahk-tee-KAHR kohn "${targetWord}"`,
+      englishText: `I like practicing with "${targetWord}".`,
+      practicePrompt: `¿Puedes formar otra frase en español usando "${targetWord}"?`,
+      source: 'fallback'
+    };
+  }
+
+  // 18. CLEAN INTENT-ALIGNED TEACHER FALLBACK
+  // Never introduce fabricated locations ("in Toledo"), fake personas, or canned unrelated sentences.
+  const cleanQuery = userQuery.replace(/[¿?¡!]/g, '').trim();
   return {
-    text: `As your Spanish Teacher in ${cityName}, here is how you express that in Spanish:`,
-    spanishText: `¿Cómo se dice en español? • Estudio español con mi profesor Camino.`,
+    text: `Here is the Spanish expression for "${cleanQuery}":`,
+    spanishText: `¿Cómo se dice "${cleanQuery}" en español?`,
     pronunciation: 'KOH-moh seh DEE-seh ehn ehs-pah-NYOHL',
-    englishText: `To ask how to say any word, use: "¿Cómo se dice [palabra] en español?". You can also ask me to conjugate any verb (hablar, comer, vivir, ser, estar, tener), explain grammar rules, or write a Spanish sentence for me to correct!`,
-    practicePrompt: `Pregúntame: "¿Cómo se dice [palabra] en español?" o escribe una frase para que la revise.`,
+    englishText: `To ask how to say any word or phrase in Spanish, use: "¿Cómo se dice [palabra] en español?".`,
+    practicePrompt: `Prueba a decir: "¿Cómo se dice '${cleanQuery}' en español?"`,
     source: 'fallback'
   };
 }

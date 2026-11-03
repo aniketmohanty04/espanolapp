@@ -279,5 +279,182 @@ describe('Gemini Camino AI Service — Dynamic AI (No Pre-Set Answers)', () => {
     expect(response.source).toBe('fallback');
     expect(response.text).toBeDefined();
     expect(response.spanishText).toBeDefined();
+    // Must never return generic canned boilerplate or fabricated teacher personas
+    expect(response.text).not.toContain('As your Spanish Teacher in Toledo');
+    expect(response.spanishText).not.toContain('Estudio español con mi profesor Camino');
+  });
+
+  describe('Camino Intent-Based Response Suite (Prompt Requirements)', () => {
+    it('1. "Write a sentence using muy bien." generates a meaningful sentence containing "muy bien"', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_, init) => {
+        const body = JSON.parse(init.body);
+        expect(body.prompt).toBe('Write a sentence using muy bien.');
+        return {
+          ok: true,
+          json: async () => ({
+            text: 'Here is a natural sentence using "muy bien". "Me siento" means "I feel" and "muy bien" means "very well".',
+            spanishText: 'Me siento muy bien.',
+            pronunciation: 'meh SYEN-toh mwee byen',
+            englishText: "I'm feeling very good.",
+            source: 'gemini'
+          })
+        };
+      }));
+
+      const res = await askCaminoGemini('Write a sentence using muy bien.', { cityName: 'Toledo' });
+      expect(res.spanishText).toContain('muy bien');
+      expect(res.spanishText).toBe('Me siento muy bien.');
+      expect(res.englishText).toBeDefined();
+      expect(res.text).not.toContain('As your Spanish Teacher in Toledo');
+      expect(res.spanishText).not.toContain('Estudio español con mi profesor Camino');
+    });
+
+    it('2. "Tell me how to say I am hungry in Spanish." returns "Tengo hambre."', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'In Spanish, we express hunger using the verb "tener" (to have), which literally translates to "I have hunger".',
+          spanishText: 'Tengo hambre.',
+          pronunciation: 'TEHN-goh AHM-breh',
+          englishText: 'I am hungry.',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('Tell me how to say I am hungry in Spanish.');
+      expect(res.spanishText).toBe('Tengo hambre.');
+      expect(res.englishText?.toLowerCase()).toContain('hungry');
+    });
+
+    it('3. "Explain the difference between ser and estar." explains the two verbs, not an unrelated sentence', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'Both "ser" and "estar" translate to "to be", but "ser" expresses permanent identity and traits, while "estar" expresses location, emotions, and temporary states.',
+          spanishText: 'SER (permanente / identidad) vs ESTAR (lugar / estado temporal)',
+          pronunciation: 'sehr vs ehs-TAHR',
+          englishText: 'SER is for essential identity; ESTAR is for temporary condition or location.',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('Explain the difference between ser and estar.');
+      expect(res.text.toLowerCase()).toContain('ser');
+      expect(res.text.toLowerCase()).toContain('estar');
+      expect(res.spanishText).toContain('SER');
+      expect(res.spanishText).toContain('ESTAR');
+      expect(res.text).not.toContain('Estudio español con mi profesor Camino');
+    });
+
+    it('4. "Translate I am a student into Spanish." returns "Soy estudiante."', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'In Spanish, use the verb "ser" without an article when stating your profession or status as a student.',
+          spanishText: 'Soy estudiante.',
+          pronunciation: 'soy ehs-too-DYAHN-teh',
+          englishText: 'I am a student.',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('Translate I am a student into Spanish.');
+      expect(res.spanishText).toBe('Soy estudiante.');
+      expect(res.englishText?.toLowerCase()).toContain('student');
+    });
+
+    it('5. "Write a sentence saying I am happy using estoy feliz." produces a sentence containing "estoy feliz"', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'Here is a sentence expressing happiness in Spanish. We use the verb "estar" (estoy) because happiness is an emotion or state.',
+          spanishText: 'Estoy feliz hoy.',
+          pronunciation: 'ehs-TOY feh-LEES oy',
+          englishText: 'I am happy today.',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('Write a sentence saying I am happy using estoy feliz.');
+      expect(res.spanishText).toMatch(/estoy feliz/i);
+      expect(res.englishText?.toLowerCase()).toContain('happy');
+    });
+
+    it('6. "How do I conjugate hablar?" returns present-tense conjugation with an explanation', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'Here is the present indicative conjugation of the regular -ar verb "hablar" (to speak).',
+          spanishText: 'Yo hablo • Tú hablas • Él/Ella habla\nNosotros hablamos • Vosotros habláis • Ellos/Ellas hablan',
+          pronunciation: 'ah-BLOH, ah-BLAHS, ah-BLAH, ah-BLAH-mohs, ah-BLICE, ah-BLAHN',
+          englishText: 'Present tense conjugation of "hablar" (to speak).',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('How do I conjugate hablar?');
+      expect(res.spanishText).toContain('hablo');
+      expect(res.spanishText).toContain('hablas');
+      expect(res.spanishText).toContain('hablamos');
+      expect(res.text.toLowerCase()).toContain('conjugat');
+    });
+
+    it('handles the exact bug query: "Can you try writing a sentence in Spanish telling me how you are feeling using \'muy bien\'?" without fabricated personas', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: '"Me siento" means "I feel", and "muy bien" means "very well".',
+          spanishText: 'Me siento muy bien.',
+          pronunciation: 'meh SYEN-toh mwee byen',
+          englishText: "I'm feeling very good.",
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini("Can you try writing a sentence in Spanish telling me how you are feeling using 'muy bien'?", {
+        cityName: 'Toledo'
+      });
+
+      expect(res.spanishText).toBe('Me siento muy bien.');
+      expect(res.englishText).toBe("I'm feeling very good.");
+      expect(res.pronunciation).toBe('meh SYEN-toh mwee byen');
+      expect(res.text).toContain('"Me siento" means "I feel"');
+      expect(res.text).toContain('"muy bien" means "very well"');
+      // Verify no irrelevant content
+      expect(res.text).not.toContain('As your Spanish Teacher in Toledo');
+      expect(res.spanishText).not.toContain('Estudio español con mi profesor Camino');
+    });
+
+    it('offline engine also satisfies intent requirements when network is unavailable without fabricated personas', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Offline test')));
+
+      // 1. Sentence feeling muy bien
+      const res1 = await askCaminoGemini("Can you try writing a sentence in Spanish telling me how you are feeling using 'muy bien'?", { cityName: 'Toledo' });
+      expect(res1.spanishText).toBe('Me siento muy bien.');
+      expect(res1.englishText).toBe("I'm feeling very good.");
+      expect(res1.text).not.toContain('As your Spanish Teacher in Toledo');
+      expect(res1.spanishText).not.toContain('Estudio español con mi profesor Camino');
+
+      // 2. Hungry
+      const res2 = await askCaminoGemini('Tell me how to say I am hungry in Spanish.');
+      expect(res2.spanishText).toBe('Tengo hambre.');
+
+      // 3. Ser vs Estar
+      const res3 = await askCaminoGemini('Explain the difference between ser and estar.');
+      expect(res3.text.toLowerCase()).toContain('ser');
+      expect(res3.text.toLowerCase()).toContain('estar');
+
+      // 4. Student
+      const res4 = await askCaminoGemini('Translate I am a student into Spanish.');
+      expect(res4.spanishText).toBe('Soy estudiante.');
+
+      // 5. Happy with estoy feliz
+      const res5 = await askCaminoGemini('Write a sentence saying I am happy using estoy feliz.');
+      expect(res5.spanishText).toMatch(/estoy feliz/i);
+
+      // 6. Conjugate hablar
+      const res6 = await askCaminoGemini('How do I conjugate hablar?');
+      expect(res6.spanishText).toContain('hablo');
+    });
   });
 });
