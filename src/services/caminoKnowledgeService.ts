@@ -67,6 +67,19 @@ const SEED_KNOWLEDGE: Array<{ query: string; topic: string; response: CaminoResp
     }
   },
   {
+    query: 'yo soy india',
+    topic: 'nationality_origin',
+    response: {
+      text: "¡Excelente frase! In Spanish, you use the verb 'ser' (to be) to state your nationality and origin. Here is the breakdown:\n\n• **Yo soy india** (if you are female)\n• **Yo soy indio** (if you are male)\n• **Yo soy de la India** (I am from India - stating your country with 'de')\n\nRule: Nationalities in Spanish are treated as adjectives and must match the gender of the speaker (india / indio). In Spanish, nationalities are NOT capitalized (unlike English)!",
+      spanishText: 'Yo soy india (femenino) • Yo soy indio (masculino) • Soy de la India (origen).',
+      pronunciation: 'yoh soy EEN-dyah • yoh soy EEN-dyoh • soy deh lah EEN-dyah',
+      englishText: 'I am Indian (female: "india", male: "indio") / I am from India ("Soy de la India").',
+      correctionNotice: 'Your sentence "Yo soy india" is grammatically correct for a female speaker! Remember that nationalities in Spanish are written in lowercase (india, not India).',
+      practicePrompt: '¿Puedes decir de qué país es un amigo tuyo? (Por ejemplo: "Mi amigo es de..." o "Mi amiga es...")',
+      source: 'gemini'
+    }
+  },
+  {
     query: 'difference between ser and estar',
     topic: 'ser_vs_estar',
     response: {
@@ -253,6 +266,21 @@ export function findTrainedCaminoResponse(
     if (verbEntry) {
       verbEntry.useCount += 1;
       return verbEntry.response;
+    }
+  }
+
+  const isNationalityQuery = (
+    normalized.includes('india') ||
+    normalized.includes('indio') ||
+    normalized.includes('nacionalidad') ||
+    normalized.includes('nationality') ||
+    ((normalized.includes('soy') || normalized.includes('yo soy')) && (normalized.includes('pais') || normalized.includes('de donde')))
+  );
+  if (isNationalityQuery) {
+    const natEntry = entries.find(e => e.topic === 'nationality_origin');
+    if (natEntry) {
+      natEntry.useCount += 1;
+      return natEntry.response;
     }
   }
 

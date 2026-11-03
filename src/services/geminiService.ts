@@ -342,32 +342,46 @@ JSON OUTPUT SCHEMA:
 }`;
 
   // 2. Call serverless backend proxy (/api/camino-chat)
-  // Keeps Gemini API key 100% private and invisible to browser / client DevTools
+  // Checks relative endpoint, cross-dev ports (5173/5174), and direct API fallback
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 16000);
-
-    let response: Response;
-    try {
-      response = await fetch('/api/camino-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          action: 'chat',
-          prompt: userQuery,
-          systemInstruction,
-          chatHistory: context?.chatHistory || undefined,
-          apiKeyOverride: apiKey || undefined
-        })
-      });
-    } finally {
-      clearTimeout(timeoutId);
+    const localEndpoints = ['/api/camino-chat'];
+    if (typeof window !== 'undefined' && window.location) {
+      if (window.location.port === '5173') localEndpoints.push('http://localhost:5174/api/camino-chat');
+      else if (window.location.port === '5174') localEndpoints.push('http://localhost:5173/api/camino-chat');
     }
 
-    if (response.ok) {
+    let response: Response | null = null;
+    for (const ep of localEndpoints) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            action: 'chat',
+            prompt: userQuery,
+            systemInstruction,
+            chatHistory: context?.chatHistory || undefined,
+            apiKeyOverride: apiKey || undefined
+          })
+        });
+        if (res.ok) {
+          response = res;
+          break;
+        }
+      } catch {
+        continue;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    if (response && response.ok) {
       const data = await response.json();
 
       // Handle serverless proxy response format
@@ -419,6 +433,52 @@ JSON OUTPUT SCHEMA:
             text: rawText,
             source: 'gemini'
           };
+        }
+      }
+    }
+
+    // Direct Gemini fallback if server proxy was unreachable
+    if ((!response || !response.ok) && apiKey) {
+      for (const model of GEMINI_FALLBACK_MODELS) {
+        try {
+          const directEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          const directRes = await fetch(directEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: userQuery }] }],
+              systemInstruction: { parts: [{ text: systemInstruction }] },
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.3,
+                maxOutputTokens: 2500
+              }
+            })
+          });
+          if (directRes.ok) {
+            const data = await directRes.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+              const parsed = JSON.parse(cleaned);
+              const result = enforceProperSpanishPedagogy({
+                text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
+                spanishText: parsed.spanishText || undefined,
+                pronunciation: parsed.pronunciation || undefined,
+                englishText: parsed.englishText || undefined,
+                correctionNotice:
+                  parsed.correctionNotice && parsed.correctionNotice !== 'null'
+                    ? parsed.correctionNotice
+                    : undefined,
+                practicePrompt: parsed.practicePrompt || undefined,
+                source: 'gemini'
+              });
+              recordCaminoLearnedResponse(userQuery, result, context?.syllabusTopic);
+              return result;
+            }
+          }
+        } catch {
+          continue;
         }
       }
     }
@@ -1613,6 +1673,36 @@ function getFallbackCaminoResponse(
       pronunciation: 'ehl beh-RAH-noh',
       englishText: "The summer (masculine noun: 'el verano', plural: 'los veranos').",
       practicePrompt: "¿Te gusta más el verano o el invierno en España?",
+      source: 'fallback'
+    };
+  }
+
+  // 7.5 NATIONALITY & ORIGIN: "yo soy india" / "soy de la india" / "soy indio" / "nationality"
+  if (
+    lower.includes('india') || 
+    lower.includes('indio') || 
+    lower.includes('nacionalidad') || 
+    lower.includes('nationality') ||
+    ((lower.includes('yo soy') || lower.includes('soy de')) && (lower.includes('pais') || lower.includes('país') || lower.includes('country') || lower.includes('de donde') || lower.includes('origen')))
+  ) {
+    const isIndia = lower.includes('india') || lower.includes('indio');
+    return {
+      text: isIndia
+        ? "¡Excelente frase! In Spanish, you use the verb 'ser' (to be) to state your nationality and origin. Here is the breakdown:\n\n• **Yo soy india** (if you are female)\n• **Yo soy indio** (if you are male)\n• **Yo soy de la India** (I am from India - stating your country with 'de')\n\nRule: Nationalities in Spanish are adjectives and must match the gender of the speaker (india / indio). Also, unlike English, nationalities in Spanish are NOT capitalized!"
+        : "In Spanish, express your nationality and origin with the verb SER:\n\n• **Yo soy de [País]** (I am from [Country])\n• **Yo soy [nacionalidad]** (I am [nationality])\n\nRule: Nationalities change according to gender (e.g. español / española, mexicano / mexicana, indio / india) and are written in lowercase in Spanish.",
+      spanishText: isIndia
+        ? "Yo soy india (femenino) • Yo soy indio (masculino) • Soy de la India (origen)."
+        : "Yo soy de España • Yo soy español / española • Yo soy de la India • Yo soy indio / india.",
+      pronunciation: isIndia
+        ? "yoh soy EEN-dyah • yoh soy EEN-dyoh • soy deh lah EEN-dyah"
+        : "yoh soy deh ehs-PAH-nyah",
+      englishText: isIndia
+        ? "I am Indian (female: 'india', male: 'indio') / I am from India ('Soy de la India')."
+        : "I am from Spain / I am Spanish. Nationalities in Spanish use lowercase letters.",
+      correctionNotice: isIndia
+        ? "Your sentence 'Yo soy india' is grammatically correct for a female speaker! Notice that 'india' is not capitalized in Spanish."
+        : undefined,
+      practicePrompt: "¿Puedes decir de qué país es un amigo tuyo? (Por ejemplo: 'Mi amigo es de...' o 'Mi amiga es...')",
       source: 'fallback'
     };
   }

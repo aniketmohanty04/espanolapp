@@ -198,4 +198,18 @@ describe('Gemini Camino AI Service', () => {
     expect(response.text.toLowerCase()).toContain('inteligente');
     expect(response.spanishText).toContain('inteligente');
   });
+
+  it('correctly handles nationality and origin like "yo soy india" without returning generic error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    const response = await askCaminoGemini('yo soy india', {
+      cityName: 'Toledo'
+    });
+
+    expect(response.source).toBe('fallback');
+    expect(response.text.toLowerCase()).toContain('nationality');
+    expect(response.spanishText).toContain('Yo soy india');
+    expect(response.spanishText).toContain('Soy de la India');
+    expect(response.text).not.toContain('Estudio español con mi profesor Camino');
+  });
 });
