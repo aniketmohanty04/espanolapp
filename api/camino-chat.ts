@@ -6,11 +6,10 @@ declare const Buffer: any;
 declare const process: any;
 
 const CANDIDATE_MODELS = [
-  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
   'gemini-3-flash-preview',
-  'gemini-3.1-flash-lite-preview',
-  'gemini-flash-latest',
-  'gemini-3.8-flash'
+  'gemini-3.5-flash',
+  'gemini-flash-lite-latest'
 ];
 
 async function parseJsonBody(req: any): Promise<any> {
@@ -240,7 +239,7 @@ CRITICAL PEDAGOGICAL MANDATE:
               generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: 0.3,
-                maxOutputTokens: 1200
+                maxOutputTokens: 2500
               }
             })
           });
@@ -256,10 +255,37 @@ CRITICAL PEDAGOGICAL MANDATE:
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!rawText) continue;
 
+        let parsed: any = null;
         try {
           const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-          const parsed = JSON.parse(cleaned);
+          parsed = JSON.parse(cleaned);
+        } catch {
+          // Attempt robust repair of unclosed JSON or extract fields
+          const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+          const textMatch = cleaned.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const spanishMatch = cleaned.match(/"spanishText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const pronunciationMatch = cleaned.match(/"pronunciation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const englishMatch = cleaned.match(/"englishText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const correctionMatch = cleaned.match(/"correctionNotice"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const practiceMatch = cleaned.match(/"practicePrompt"\s*:\s*"((?:[^"\\]|\\.)*)"/);
 
+          if (textMatch || spanishMatch) {
+            try {
+              parsed = {
+                text: textMatch ? JSON.parse(`"${textMatch[1]}"`) : undefined,
+                spanishText: spanishMatch ? JSON.parse(`"${spanishMatch[1]}"`) : undefined,
+                pronunciation: pronunciationMatch ? JSON.parse(`"${pronunciationMatch[1]}"`) : undefined,
+                englishText: englishMatch ? JSON.parse(`"${englishMatch[1]}"`) : undefined,
+                correctionNotice: correctionMatch ? JSON.parse(`"${correctionMatch[1]}"`) : undefined,
+                practicePrompt: practiceMatch ? JSON.parse(`"${practiceMatch[1]}"`) : undefined
+              };
+            } catch {
+              // fallback
+            }
+          }
+        }
+
+        if (parsed) {
           let mainText = parsed.text || parsed.explanation || parsed.response || parsed.message;
           if (!mainText && typeof parsed === 'object') {
             const values = Object.values(parsed).filter((v: any) => typeof v === 'string');
@@ -278,12 +304,12 @@ CRITICAL PEDAGOGICAL MANDATE:
             practicePrompt: parsed.practicePrompt || undefined,
             source: 'gemini'
           });
-        } catch {
-          return sendJson(res, 200, {
-            text: rawText,
-            source: 'gemini'
-          });
         }
+
+        return sendJson(res, 200, {
+          text: rawText,
+          source: 'gemini'
+        });
       } catch {
         continue;
       }

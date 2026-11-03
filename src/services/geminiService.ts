@@ -13,13 +13,12 @@ import {
 
 // Default key empty: API key is securely injected via VITE_GEMINI_API_KEY environment variable
 export const DEFAULT_GEMINI_API_KEY = '';
-export const DEFAULT_GEMINI_MODEL = 'gemini-flash-lite-latest';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
 export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
 export const GEMINI_FALLBACK_MODELS = [
   'gemini-3-flash-preview',
-  'gemini-3.1-flash-lite-preview',
-  'gemini-flash-latest',
-  'gemini-3.8-flash'
+  'gemini-3.5-flash',
+  'gemini-flash-lite-latest'
 ];
 
 export interface CaminoResponse {
@@ -346,7 +345,7 @@ JSON OUTPUT SCHEMA:
   // Keeps Gemini API key 100% private and invisible to browser / client DevTools
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9500);
+    const timeoutId = setTimeout(() => controller.abort(), 16000);
 
     let response: Response;
     try {

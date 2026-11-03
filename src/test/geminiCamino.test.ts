@@ -21,7 +21,7 @@ describe('Gemini Camino AI Service', () => {
 
   it('provides the default key configuration and correct model identifier', () => {
     expect(typeof DEFAULT_GEMINI_API_KEY).toBe('string');
-    expect(['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.8-flash']).toContain(GEMINI_MODEL);
+    expect(['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.8-flash']).toContain(GEMINI_MODEL);
   });
 
   it('masks the API key securely for UI display', () => {
