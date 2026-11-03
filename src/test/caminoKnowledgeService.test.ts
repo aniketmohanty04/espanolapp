@@ -4,6 +4,7 @@ import {
   findTrainedCaminoResponse,
   getCaminoTrainingExemplars,
   enforceProperSpanishPedagogy,
+  getSpanishCardHeading,
   resetCaminoKnowledge
 } from '../services/caminoKnowledgeService';
 import { CaminoResponse } from '../services/geminiService';
@@ -71,5 +72,52 @@ describe('Camino Knowledge & Self-Training Service', () => {
     const exemplars = getCaminoTrainingExemplars('tell me about verbs');
     expect(exemplars).toContain('CAMINO PEDAGOGICAL TRAINING EXEMPLARS');
     expect(exemplars).toContain('"spanishText"');
+  });
+
+  it('retrieves pre-seeded knowledge for feeling bad sentence request', () => {
+    const res = findTrainedCaminoResponse('write a sentence where you are feeling bad');
+    expect(res).not.toBeNull();
+    expect(res?.spanishText).toBe('Me siento mal.');
+    expect(res?.englishText).toContain('I feel bad');
+  });
+
+  it('dynamically assigns Spanish card header titles and icons based on student intent', () => {
+    // 1. Sentence generation
+    expect(getSpanishCardHeading('write a sentence where you are feeling bad')).toEqual({
+      title: 'Tu Frase en Español',
+      icon: '✍️'
+    });
+    expect(getSpanishCardHeading('Can you try writing a sentence in Spanish telling me how you are feeling using muy bien?')).toEqual({
+      title: 'Tu Frase en Español',
+      icon: '✍️'
+    });
+
+    // 2. Translation
+    expect(getSpanishCardHeading('how do you say summer in spanish')).toEqual({
+      title: 'Traducción en Español',
+      icon: '🌐'
+    });
+
+    // 3. Grammar
+    expect(getSpanishCardHeading('difference between ser and estar')).toEqual({
+      title: 'Explicación de Gramática',
+      icon: '📚'
+    });
+    expect(getSpanishCardHeading('how to conjugate hablar')).toEqual({
+      title: 'Explicación de Gramática',
+      icon: '📚'
+    });
+
+    // 4. Vocabulary / lists
+    expect(getSpanishCardHeading('all adjectives ending in e nor feminine nor masculine')).toEqual({
+      title: 'Vocabulario en Español',
+      icon: '📖'
+    });
+
+    // 5. Default
+    expect(getSpanishCardHeading('hello camino')).toEqual({
+      title: 'Respuesta en Español',
+      icon: '🇪🇸'
+    });
   });
 });

@@ -4,6 +4,7 @@ import { ALL_CITIES, getCityById } from '../data/citiesData';
 import { City, Level } from '../types';
 import { askCaminoGemini } from '../services/geminiService';
 import { formatTeacherText } from './FloatingChatbot';
+import { getSpanishCardHeading } from '../services/caminoKnowledgeService';
 import { speakSpanish as speakSpanishNative, stopSpanishSpeech } from '../services/spanishSpeechService';
 import { 
   Compass, 
@@ -26,7 +27,9 @@ import {
   Settings, 
   User,
   Heart,
-  Volume2
+  Volume2,
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 
 interface JourneyHubProps {
@@ -52,6 +55,8 @@ interface ChatMessage {
   englishText?: string;
   correctionNotice?: string;
   practicePrompt?: string;
+  queryPrompt?: string;
+  failed?: boolean;
   source?: 'gemini' | 'fallback';
 }
 
@@ -152,6 +157,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
   ]);
   const [chatInput, setChatInput] = useState<string>('');
   const [isCaminoLoading, setIsCaminoLoading] = useState<boolean>(false);
+  const [lastFailedQuery, setLastFailedQuery] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Dynamic pedagogical thinking steps shown while Camino processes
@@ -271,21 +277,26 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
         pronunciation: response.pronunciation,
         correctionNotice: response.correctionNotice,
         practicePrompt: response.practicePrompt,
+        queryPrompt: textToSend,
         source: response.source
       };
 
       setMessages(prev => [...prev, caminoMsg]);
+      setLastFailedQuery(null);
     } catch (err) {
       console.warn('Error fetching Gemini Camino response:', err);
+      setLastFailedQuery(textToSend);
       setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'camino',
-          text: `Como tu profesor de español, aquí tienes la instrucción para "${textToSend}":`,
-          spanishText: `¿Cómo se dice "${textToSend}" en español?`,
-          englishText: 'To ask how to say any word, use: "¿Cómo se dice [palabra] en español?". You can also ask me about verb conjugations (hablar, comer, vivir, ser, estar) or write a sentence for me to correct!',
-          practicePrompt: '¿Cómo se dice "amigo" en español?',
+          text: '¡Vaya! Hubo un problema al conectar con el servicio de Camino AI. Por favor, comprueba tu conexión o pulsa en reintentar.',
+          failed: true,
+          queryPrompt: textToSend,
+
+
+
           source: 'fallback'
         }
       ]);
@@ -1282,8 +1293,16 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                           {/* Header badge & Audio pronunciation button */}
                           <div className="flex items-center justify-between gap-2 border-b border-[#F4E3D2] pb-2.5">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#E05615] to-[#EA580C] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs">
-                              <span>🇪🇸</span>
-                              <span>Respuesta en Español</span>
+
+                              {(() => {
+                                const heading = getSpanishCardHeading(msg.queryPrompt, msg.spanishText, msg.englishText);
+                                return (
+                                  <>
+                                    <span>{heading.icon}</span>
+                                    <span>{heading.title}</span>
+                                  </>
+                                );
+                              })()}
                             </span>
 
                             <button
@@ -1359,6 +1378,26 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                           </div>
                           <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:translate-x-0.5 transition-transform" />
                         </button>
+                      )}
+
+                      {/* Failed retry button if network or Gemini encountered error */}
+                      {msg.failed && (
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span className="font-medium text-amber-900">
+                              No pudimos contactar a Camino AI en este momento.
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSendChat(msg.queryPrompt || lastFailedQuery || undefined)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E05615] hover:bg-[#C2410C] text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Reintentar</span>
+                          </button>
+                        </div>
                       )}
 
                       <div className="flex items-center justify-between pt-1 border-t border-[#F2ECE1]">

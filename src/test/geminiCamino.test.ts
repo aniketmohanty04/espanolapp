@@ -425,8 +425,37 @@ describe('Gemini Camino AI Service — Dynamic AI (No Pre-Set Answers)', () => {
       expect(res.spanishText).not.toContain('Estudio español con mi profesor Camino');
     });
 
+    it('handles the bug query: "write a sentence where you are feeling bad" returning "Me siento mal."', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          text: 'To express feeling bad in Spanish, you can use the verb "sentirse" or "estar".',
+          spanishText: 'Me siento mal.',
+          pronunciation: 'meh SYEN-toh mahl',
+          englishText: 'I feel bad.',
+          source: 'gemini'
+        })
+      })));
+
+      const res = await askCaminoGemini('write a sentence where you are feeling bad', {
+        cityName: 'Toledo'
+      });
+
+      expect(res.spanishText).toBe('Me siento mal.');
+      expect(res.englishText?.toLowerCase()).toContain('bad');
+      expect(res.text).not.toContain('As your Spanish Teacher in Toledo');
+      expect(res.spanishText).not.toContain('Estudio español con mi profesor Camino');
+      expect(res.text).not.toContain('To ask how to say any word');
+    });
+
     it('offline engine also satisfies intent requirements when network is unavailable without fabricated personas', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Offline test')));
+
+      // 0. Feeling bad
+      const res0 = await askCaminoGemini('write a sentence where you are feeling bad', { cityName: 'Toledo' });
+      expect(res0.spanishText).toBe('Me siento mal.');
+      expect(res0.text).not.toContain('As your Spanish Teacher in Toledo');
+      expect(res0.spanishText).not.toContain('Estudio español con mi profesor Camino');
 
       // 1. Sentence feeling muy bien
       const res1 = await askCaminoGemini("Can you try writing a sentence in Spanish telling me how you are feeling using 'muy bien'?", { cityName: 'Toledo' });

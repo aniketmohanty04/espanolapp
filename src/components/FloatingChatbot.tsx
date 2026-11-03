@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGame, ActiveQuizState } from '../context/GameContext';
 import { askCaminoGemini, CaminoResponse, CaminoContext, transcribeSpanishAudioWithGemini } from '../services/geminiService';
 import { speakSpanish } from '../services/spanishSpeechService';
+import { getSpanishCardHeading } from '../services/caminoKnowledgeService';
 import { getCityById } from '../data/citiesData';
 import { 
   Bot, 
@@ -42,6 +43,7 @@ export interface ChatMessage {
   timestamp: string;
   isReviewContext?: boolean;
   failed?: boolean;
+  queryPrompt?: string;
 }
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -63,7 +65,7 @@ export function formatTeacherText(content: string): React.ReactNode {
   // 1. Normalize inline bullets and section markers onto their own lines
   const normalized = content
     // Convert inline bullets (preceded by anything other than newline) to newlines with bullet
-    .replace(/([^\n])\s*[•●▪]\s*/g, '$1\n• ')
+    .replace(/([^\n])\s*[•●▪\u2022\u25cf\u25aa\u2023\u2043\u2219]\s*/g, '$1\n• ')
     // Convert numbered lists like " 1. ", " 2. " onto newlines
     .replace(/([^\n])\s+(\d+\.\s+)/g, '$1\n$2')
     // Split section markers onto their own line
@@ -77,12 +79,14 @@ export function formatTeacherText(content: string): React.ReactNode {
       return <div key={lineIdx} className="h-1.5" />;
     }
 
-    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ');
+    const isDefinitionBullet = /^\*\*[^*]+\*\*\s*(\(|-|:)/.test(trimmed);
+    const isIndentedItem = /^\s{2,}\*\*/.test(line);
+    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ') || isDefinitionBullet || isIndentedItem;
     const isNumbered = /^\d+\.\s+/.test(trimmed);
     const isHeading = /^#{1,4}\s+/.test(trimmed);
 
     // Strip leading bullet symbol or heading for custom stylish rendering
-    const displayText = isBullet
+    const displayText = (trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* '))
       ? trimmed.replace(/^[•\-*]\s*/, '')
       : isNumbered
       ? trimmed.replace(/^\d+\.\s*/, '')
@@ -500,6 +504,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
         englishText: response.englishText,
         correctionNotice: response.correctionNotice,
         practicePrompt: response.practicePrompt,
+        queryPrompt: query,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isReviewContext: Boolean(isQuizActive && isQuizAnswered)
       };
@@ -689,7 +694,15 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
                       {msg.spanishText && (
                         <div className="mt-2 p-2 bg-[#F6F0E6] border border-[#E6DAC8] rounded-xl flex items-start justify-between space-x-2 text-[#24140E]">
                           <div className="space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#C2410C]">Español</span>
+                            {(() => {
+                              const heading = getSpanishCardHeading(msg.queryPrompt, msg.spanishText, msg.englishText);
+                              return (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#C2410C] flex items-center space-x-1">
+                                  <span>{heading.icon}</span>
+                                  <span>{heading.title}</span>
+                                </span>
+                              );
+                            })()}
                             <div className="font-bold text-xs sm:text-sm text-[#8B2500] leading-snug">
                               {formatTeacherText(msg.spanishText)}
                             </div>

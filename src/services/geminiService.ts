@@ -1555,6 +1555,47 @@ function getFallbackCaminoResponse(
     };
   }
 
+  if (
+    (lower.includes('bad') || lower.includes('mal') || lower.includes('unwell')) &&
+    (isSentenceGenRequest || lower.includes('feeling') || lower.includes('feel') || lower.includes('where you are'))
+  ) {
+    return {
+      text: "To express feeling bad or unwell in Spanish, you can use the reflexive verb 'sentirse' or 'estar':\n\n• **Me siento mal.** (I feel bad / I am feeling unwell.)\n• **Estoy mal.** (I am doing poorly / feeling bad.)\n\nRule: Use 'me siento' with adverbs like 'bien' or 'mal' to describe your physical or emotional state.",
+      spanishText: 'Me siento mal.',
+      pronunciation: 'meh SYEN-toh mahl',
+      englishText: 'I feel bad. / I am feeling bad.',
+      practicePrompt: '¿Cómo te sientes hoy? Prueba a responder con: "Me siento..." o "Estoy..."',
+      source: 'fallback'
+    };
+  }
+
+  // General sentence request for feelings (e.g. "write a sentence where you are feeling sad/happy/tired")
+  const feelingMatch = lower.match(/(?:write|make|create|give me)\s+(?:a|an)?\s*(?:sentence|phrase).*?(?:feeling|feel|are)\s+([a-z]+)/i);
+  if (feelingMatch && feelingMatch[1]) {
+    const feeling = feelingMatch[1].toLowerCase();
+    const feelingsMap: Record<string, { es: string; pron: string; en: string }> = {
+      bad: { es: 'Me siento mal.', pron: 'meh SYEN-toh mahl', en: 'I feel bad.' },
+      good: { es: 'Me siento muy bien.', pron: 'meh SYEN-toh mwee byen', en: 'I feel very good.' },
+      well: { es: 'Me siento bien.', pron: 'meh SYEN-toh byen', en: 'I feel well.' },
+      happy: { es: 'Estoy feliz.', pron: 'ehs-TOY feh-LEES', en: 'I am happy.' },
+      sad: { es: 'Estoy triste.', pron: 'ehs-TOY TREES-teh', en: 'I am sad.' },
+      tired: { es: 'Estoy cansado.', pron: 'ehs-TOY kahn-SAH-doh', en: 'I am tired.' },
+      sick: { es: 'Estoy enfermo.', pron: 'ehs-TOY ehn-FEHR-moh', en: 'I am sick.' },
+      hungry: { es: 'Tengo hambre.', pron: 'TEHN-goh AHM-breh', en: 'I am hungry.' },
+      thirsty: { es: 'Tengo sed.', pron: 'TEHN-goh sehd', en: 'I am thirsty.' },
+    };
+    if (feelingsMap[feeling]) {
+      return {
+        text: `Here is a sentence in Spanish expressing feeling ${feeling}:\n\n• **${feelingsMap[feeling].es}** (${feelingsMap[feeling].en})`,
+        spanishText: feelingsMap[feeling].es,
+        pronunciation: feelingsMap[feeling].pron,
+        englishText: feelingsMap[feeling].en,
+        practicePrompt: '¿Cómo te sientes tú hoy?',
+        source: 'fallback'
+      };
+    }
+  }
+
   // INTENT B: TRANSLATION REQUESTS ("Translate I am a student into Spanish", "Tell me how to say I am hungry in Spanish")
   if (lower.includes('student') && (lower.includes('i am a student') || lower.includes('soy estudiante') || lower.includes('translate'))) {
     return {
@@ -1874,12 +1915,25 @@ function getFallbackCaminoResponse(
   // 18. CLEAN INTENT-ALIGNED TEACHER FALLBACK
   // Never introduce fabricated locations ("in Toledo"), fake personas, or canned unrelated sentences.
   const cleanQuery = userQuery.replace(/[¿?¡!]/g, '').trim();
+  const isQuestion = lower.includes('?') || lower.startsWith('how') || lower.startsWith('what') || lower.startsWith('why') || lower.startsWith('where') || lower.startsWith('can you');
+
+  if (isQuestion) {
+    return {
+      text: `Regarding your question about "${cleanQuery}": Camino can help explain Spanish grammar, vocabulary, conjugations, and sentence construction! Try asking specifically, such as "¿Cómo se dice gracias en español?" or "Why ser vs estar?".`,
+      spanishText: '¡Pregúntame en español!',
+      pronunciation: 'preh-GOON-tah-meh ehn ehs-pah-NYOHL',
+      englishText: 'Ask me in Spanish! Ask about any word, phrase, or grammar rule.',
+      practicePrompt: '¿Qué palabra en español te gustaría aprender hoy?',
+      source: 'fallback'
+    };
+  }
+
   return {
-    text: `Here is the Spanish expression for "${cleanQuery}":`,
-    spanishText: `¿Cómo se dice "${cleanQuery}" en español?`,
-    pronunciation: 'KOH-moh seh DEE-seh ehn ehs-pah-NYOHL',
-    englishText: `To ask how to say any word or phrase in Spanish, use: "¿Cómo se dice [palabra] en español?".`,
-    practicePrompt: `Prueba a decir: "¿Cómo se dice '${cleanQuery}' en español?"`,
+    text: `Here is how to practice "${cleanQuery}" in Spanish:`,
+    spanishText: `Me gustaría practicar "${cleanQuery}".`,
+    pronunciation: `meh goos-tah-REE-ah prahk-tee-KAHR "${cleanQuery}"`,
+    englishText: `I would like to practice "${cleanQuery}".`,
+    practicePrompt: '¿Quieres que practiquemos juntos con un ejemplo?',
     source: 'fallback'
   };
 }

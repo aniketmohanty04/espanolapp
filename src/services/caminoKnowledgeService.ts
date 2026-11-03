@@ -21,7 +21,7 @@ export interface LearnedKnowledgeEntry {
   useCount: number;
 }
 
-const STORAGE_KEY = 'aventura_camino_trained_knowledge';
+const STORAGE_KEY = 'aventura_camino_trained_knowledge_v4';
 const MAX_ENTRIES = 60;
 
 // In-memory cache for fast access and non-browser / test environments
@@ -114,6 +114,18 @@ const SEED_KNOWLEDGE: Array<{ query: string; topic: string; response: CaminoResp
       practicePrompt: '¿Por qué estás feliz hoy?',
       source: 'gemini'
     }
+  },
+  {
+    query: 'write a sentence where you are feeling bad',
+    topic: 'sentence_feeling',
+    response: {
+      text: 'To express how you are feeling, you can use the verb "sentirse" (to feel) or "estar" (to be):\n\n• **Me siento mal.** (I feel bad / I am feeling unwell.)\n• **Estoy mal.** (I am doing poorly / feeling bad.)\n\nRule: Use "me siento" with adverbs like "bien" (well) or "mal" (bad) to describe your physical or emotional state.',
+      spanishText: 'Me siento mal.',
+      pronunciation: 'meh SYEN-toh mahl',
+      englishText: 'I feel bad. / I am feeling bad.',
+      practicePrompt: '¿Cómo te sientes hoy? Puedes practicar diciendo: "Me siento bien" o "Me siento mal".',
+      source: 'gemini'
+    }
   }
 ];
 
@@ -139,9 +151,21 @@ function loadKnowledge(): LearnedKnowledgeEntry[] {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          memoryStore = parsed;
-          isLoaded = true;
-          return memoryStore;
+          // Filter out legacy corrupted or irrelevant fallback entries
+          const valid = parsed.filter(e => {
+            const combined = `${e?.response?.text || ''} ${e?.response?.englishText || ''} ${e?.response?.spanishText || ''}`;
+            return (
+              !combined.includes('profesor Camino') &&
+              !combined.includes('Teacher in Toledo') &&
+              !combined.includes('To ask how to say any word') &&
+              !combined.includes('in Toledo')
+            );
+          });
+          if (valid.length > 0) {
+            memoryStore = valid;
+            isLoaded = true;
+            return memoryStore;
+          }
         }
       }
     }
@@ -333,6 +357,18 @@ export function findTrainedCaminoResponse(
     }
   }
 
+  const isSentenceFeelingBad = (
+    (normalized.includes('feeling bad') || normalized.includes('feel bad') || normalized.includes('estoy mal') || normalized.includes('siento mal')) &&
+    (normalized.includes('sentence') || normalized.includes('write') || normalized.includes('writing') || normalized.includes('frase') || normalized.includes('where you are'))
+  );
+  if (isSentenceFeelingBad) {
+    const entry = entries.find(e => e.topic === 'sentence_feeling' && (e.query.includes('feeling bad') || e.response.spanishText?.includes('mal')));
+    if (entry) {
+      entry.useCount += 1;
+      return entry.response;
+    }
+  }
+
   // 4. Keyword overlap match
   if (queryKeywords.length >= 2) {
     let bestMatch: LearnedKnowledgeEntry | null = null;
@@ -425,4 +461,92 @@ export function enforceProperSpanishPedagogy(res: CaminoResponse): CaminoRespons
   }
 
   return cleaned;
+}
+
+/**
+ * Returns dynamic card header badge based on student query and pedagogical intent:
+ * - "TU FRASE EN ESPAÑOL" for sentence generation and feeling descriptions
+ * - "TRADUCCIÓN EN ESPAÑOL" for translation requests
+ * - "EXPLICACIÓN DE GRAMÁTICA" for grammar rules, conjugations, ser vs estar
+ * - "VOCABULARIO EN ESPAÑOL" for vocabulary lists or adjective/verb catalogues
+ * - "RESPUESTA EN ESPAÑOL" for general tutor queries
+ */
+export function getSpanishCardHeading(
+  query?: string,
+  spanishText?: string,
+  englishText?: string
+): { title: string; icon: string } {
+  const q = (query || '').toLowerCase();
+  const s = (spanishText || '').toLowerCase();
+  const e = (englishText || '').toLowerCase();
+
+  // 1. Sentence generation / feeling descriptions
+  if (
+    q.includes('sentence') ||
+    q.includes('frase') ||
+    q.includes('write a') ||
+    q.includes('writing a') ||
+    q.includes('make a sentence') ||
+    q.includes('feeling') ||
+    q.includes('feel') ||
+    q.includes('how you are feeling') ||
+    q.includes('me siento') ||
+    q.includes('estoy feliz') ||
+    q.includes('muy bien') ||
+    q.includes('bad') ||
+    q.includes('mal')
+  ) {
+    return { title: 'Tu Frase en Español', icon: '✍️' };
+  }
+
+  // 2. Translation requests
+  if (
+    q.includes('translate') ||
+    q.includes('translation') ||
+    q.includes('how to say') ||
+    q.includes('how do you say') ||
+    q.includes('in spanish') ||
+    q.includes('como se dice') ||
+    q.includes('traduce') ||
+    q.includes('traducción')
+  ) {
+    return { title: 'Traducción en Español', icon: '🌐' };
+  }
+
+  // 3. Grammar explanations / conjugation rules
+  if (
+    q.includes('grammar') ||
+    q.includes('gramática') ||
+    q.includes('conjugat') ||
+    q.includes('rule') ||
+    q.includes('regla') ||
+    q.includes('ser vs estar') ||
+    q.includes('por que') ||
+    q.includes('why') ||
+    q.includes('explain') ||
+    q.includes('difference between') ||
+    s.includes('regla') ||
+    s.includes('conjugación')
+  ) {
+    return { title: 'Explicación de Gramática', icon: '📚' };
+  }
+
+  // 4. Vocabulary / lists / adjectives / verbs
+  if (
+    q.includes('list') ||
+    q.includes('lista') ||
+    q.includes('adjective') ||
+    q.includes('verb') ||
+    q.includes('vocabulary') ||
+    q.includes('vocabulario') ||
+    q.includes('gender') ||
+    s.includes('adjetivos') ||
+    s.includes('verbos') ||
+    e.includes('list of')
+  ) {
+    return { title: 'Vocabulario en Español', icon: '📖' };
+  }
+
+  // 5. Default
+  return { title: 'Respuesta en Español', icon: '🇪🇸' };
 }
