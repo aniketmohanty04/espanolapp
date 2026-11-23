@@ -70,10 +70,20 @@ const GameMain: React.FC = () => {
      Protected by cryptographic authentication and RLS
      Dedicated Routes: /admin/login and /admin/dashboard
      ======================================================== */
-  if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard') {
+  const isDirectAdminUrl = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/admin') ||
+    window.location.search.includes('admin=') ||
+    window.location.hash === '#admin'
+  );
+
+  if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard' || isDirectAdminUrl) {
+    const adminInitial = currentScreen === 'admin-dashboard' || (typeof window !== 'undefined' && window.location.pathname === '/admin/dashboard')
+      ? 'admin-dashboard'
+      : 'admin-login';
+
     return (
       <AdminScreen
-        initialScreen={currentScreen}
+        initialScreen={adminInitial}
         onBackToGame={() => {
           if (typeof window !== 'undefined') {
             window.history.pushState(null, '', '/');

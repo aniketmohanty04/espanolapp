@@ -145,12 +145,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storageService.purgeLocalProgress();
     }
 
+    const isAtAdminRoute = typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/admin') ||
+      window.location.search.includes('admin=') ||
+      window.location.hash === '#admin'
+    );
+
     const sessionEmail = authDatabaseService.getCurrentSessionEmail();
     if (sessionEmail && supabaseService.getConfig().isConfigured) {
       authDatabaseService.loadUserProgressAsync(sessionEmail).then(remoteProg => {
         if (remoteProg) {
           setProgress(reconcileProgression(remoteProg));
-          setCurrentScreen('world-map');
+          if (!isAtAdminRoute) {
+            setCurrentScreen('world-map');
+          }
         }
         setIsRemoteSyncReady(true);
       }).catch(err => {
@@ -159,7 +167,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } else {
       setIsRemoteSyncReady(true);
-      if (!sessionEmail) {
+      if (!sessionEmail && !isAtAdminRoute) {
         setCurrentScreen('auth');
       }
     }
