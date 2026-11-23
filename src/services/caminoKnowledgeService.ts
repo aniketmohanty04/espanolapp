@@ -21,7 +21,7 @@ export interface LearnedKnowledgeEntry {
   useCount: number;
 }
 
-const STORAGE_KEY = 'aventura_camino_trained_knowledge_v4';
+const STORAGE_KEY = 'aventura_camino_trained_knowledge_v5';
 const MAX_ENTRIES = 60;
 
 // In-memory cache for fast access and non-browser / test environments
