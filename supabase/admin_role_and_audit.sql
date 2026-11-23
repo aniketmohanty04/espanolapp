@@ -15,10 +15,18 @@ create index if not exists player_progress_role_idx on public.player_progress (l
 create or replace function public.protect_player_role()
 returns trigger as $$
 begin
-  -- If not service_role, preserve the existing role value
-  if (auth.role() is null or auth.role() <> 'service_role') then
-    new.role = old.role;
+  -- If executed directly by DBA in Supabase SQL Editor (postgres or supabase_admin), allow it
+  if current_user in ('postgres', 'supabase_admin') then
+    return new;
   end if;
+
+  -- If executed by backend service_role API, allow it
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  -- If executed by client (anon or authenticated user via PostgREST), preserve existing role
+  new.role = old.role;
   return new;
 end;
 $$ language plpgsql security definer;
