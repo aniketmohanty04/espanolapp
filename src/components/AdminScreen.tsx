@@ -1241,7 +1241,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                     type="text"
                     required
                     value={editingQuestion.id}
-                    onChange={(e) => setEditingQuestion({ ...editingQuestion, id: sanitizeText(e.target.value) })}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, id: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-[#FAF7F2] text-xs font-mono"
                   />
                 </div>
@@ -1272,7 +1272,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   rows={2}
                   required
                   value={editingQuestion.prompt}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, prompt: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, prompt: e.target.value })}
                   placeholder="¿Cómo se saluda por la mañana en España?"
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-medium focus:ring-1 focus:ring-[#E05615]"
                 />
@@ -1285,7 +1285,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 <input
                   type="text"
                   value={editingQuestion.englishPrompt || ''}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, englishPrompt: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, englishPrompt: e.target.value })}
                   placeholder="How do you greet in the morning in Spain?"
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs"
                 />
@@ -1334,7 +1334,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                           onChange={(e) => {
                             const updated = [...(editingQuestion.options || [])];
                             const oldVal = updated[idx];
-                            updated[idx] = sanitizeText(e.target.value);
+                            updated[idx] = e.target.value;
                             const nextQ = { ...editingQuestion, options: updated };
                             if (editingQuestion.correctAnswer === oldVal) {
                               nextQ.correctAnswer = updated[idx];
@@ -1372,7 +1372,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                     type="text"
                     required
                     value={Array.isArray(editingQuestion.correctAnswer) ? editingQuestion.correctAnswer.join(', ') : editingQuestion.correctAnswer}
-                    onChange={(e) => setEditingQuestion({ ...editingQuestion, correctAnswer: sanitizeText(e.target.value) })}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, correctAnswer: e.target.value })}
                     placeholder="Respuesta exacta esperada"
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-emerald-950"
                   />
@@ -1387,7 +1387,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   rows={2}
                   required
                   value={editingQuestion.explanation}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })}
                   placeholder="¡Buenos días! es el saludo habitual por la mañana..."
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs focus:ring-1 focus:ring-[#E05615]"
                 />
@@ -1400,7 +1400,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 <input
                   type="text"
                   value={editingQuestion.englishExplanation || ''}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, englishExplanation: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, englishExplanation: e.target.value })}
                   placeholder="Buenos días is plural and uses 'buenos' matching 'días'..."
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs"
                 />
@@ -1461,7 +1461,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                     type="text"
                     required
                     value={editingLevel.id}
-                    onChange={(e) => setEditingLevel({ ...editingLevel, id: sanitizeText(e.target.value) })}
+                    onChange={(e) => setEditingLevel({ ...editingLevel, id: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-[#FAF7F2] text-xs font-mono"
                   />
                 </div>
@@ -1485,7 +1485,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   type="text"
                   required
                   value={editingLevel.title}
-                  onChange={(e) => setEditingLevel({ ...editingLevel, title: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, title: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold"
                 />
               </div>
@@ -1495,7 +1495,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 <input
                   type="text"
                   value={editingLevel.subtitle}
-                  onChange={(e) => setEditingLevel({ ...editingLevel, subtitle: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, subtitle: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs"
                 />
               </div>
@@ -1535,7 +1535,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   type="text"
                   required
                   value={editingLevel.syllabusTopic}
-                  onChange={(e) => setEditingLevel({ ...editingLevel, syllabusTopic: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, syllabusTopic: e.target.value })}
                   placeholder="e.g. Saludos y Presentaciones"
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-[#E05615]"
                 />
@@ -1546,7 +1546,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 <textarea
                   rows={2}
                   value={editingLevel.description}
-                  onChange={(e) => setEditingLevel({ ...editingLevel, description: sanitizeText(e.target.value) })}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, description: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs"
                 />
               </div>

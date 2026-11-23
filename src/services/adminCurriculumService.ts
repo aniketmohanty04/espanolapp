@@ -58,8 +58,42 @@ export function sanitizeText(input: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
+    .replace(/&#39;/g, "'");
+}
+
+/**
+ * Sanitizes and trims a Question object before persisting.
+ */
+export function sanitizeQuestion(q: Question): Question {
+  return {
+    ...q,
+    id: sanitizeText(q.id).trim(),
+    prompt: sanitizeText(q.prompt).trim(),
+    englishPrompt: q.englishPrompt ? sanitizeText(q.englishPrompt).trim() : undefined,
+    audioText: q.audioText ? sanitizeText(q.audioText).trim() : undefined,
+    options: q.options ? q.options.map(opt => sanitizeText(opt).trim()) : undefined,
+    correctAnswer: Array.isArray(q.correctAnswer)
+      ? q.correctAnswer.map(ans => sanitizeText(ans).trim())
+      : sanitizeText(q.correctAnswer).trim(),
+    explanation: sanitizeText(q.explanation).trim(),
+    englishExplanation: q.englishExplanation ? sanitizeText(q.englishExplanation).trim() : undefined,
+    hints: q.hints ? q.hints.map(h => sanitizeText(h).trim()) : []
+  };
+}
+
+/**
+ * Sanitizes and trims a Level object before persisting.
+ */
+export function sanitizeLevel(lvl: Level): Level {
+  return {
+    ...lvl,
+    id: sanitizeText(lvl.id).trim(),
+    cityId: sanitizeText(lvl.cityId).trim(),
+    title: sanitizeText(lvl.title).trim(),
+    subtitle: sanitizeText(lvl.subtitle).trim(),
+    syllabusTopic: sanitizeText(lvl.syllabusTopic).trim(),
+    description: sanitizeText(lvl.description).trim()
+  };
 }
 
 /**
@@ -299,7 +333,8 @@ export function importCurriculumJson(jsonString: string): { success: boolean; er
  * Updates an existing question or adds it if not present.
  */
 export function saveQuestion(cityId: string, levelId: string, question: Question): ValidationResult {
-  const validation = validateQuestion(question);
+  const cleanQuestion = sanitizeQuestion(question);
+  const validation = validateQuestion(cleanQuestion);
   if (!validation.valid) {
     return validation;
   }
@@ -313,11 +348,11 @@ export function saveQuestion(cityId: string, levelId: string, question: Question
   // Check if it belongs to a level
   const level = city.levels.find(l => l.id === levelId);
   if (level) {
-    const existingIndex = level.questions.findIndex(q => q.id === question.id);
+    const existingIndex = level.questions.findIndex(q => q.id === cleanQuestion.id);
     if (existingIndex >= 0) {
-      level.questions[existingIndex] = question;
+      level.questions[existingIndex] = cleanQuestion;
     } else {
-      level.questions.push(question);
+      level.questions.push(cleanQuestion);
     }
     saveCustomCurriculum(cities);
     return { valid: true, errors: [] };
@@ -325,11 +360,11 @@ export function saveQuestion(cityId: string, levelId: string, question: Question
 
   // Check if it belongs to a boss mission
   if (city.bossMission && (levelId === 'boss' || levelId === city.bossMission.id)) {
-    const existingIndex = city.bossMission.questions.findIndex(q => q.id === question.id);
+    const existingIndex = city.bossMission.questions.findIndex(q => q.id === cleanQuestion.id);
     if (existingIndex >= 0) {
-      city.bossMission.questions[existingIndex] = question;
+      city.bossMission.questions[existingIndex] = cleanQuestion;
     } else {
-      city.bossMission.questions.push(question);
+      city.bossMission.questions.push(cleanQuestion);
     }
     saveCustomCurriculum(cities);
     return { valid: true, errors: [] };
@@ -372,7 +407,8 @@ export function deleteQuestion(cityId: string, levelId: string, questionId: stri
  * Saves (adds or updates) a Level within a City.
  */
 export function saveLevel(cityId: string, level: Level): ValidationResult {
-  const validation = validateLevel(level);
+  const cleanLevel = sanitizeLevel(level);
+  const validation = validateLevel(cleanLevel);
   if (!validation.valid) {
     return validation;
   }
@@ -383,17 +419,17 @@ export function saveLevel(cityId: string, level: Level): ValidationResult {
     return { valid: false, errors: [`No se encontró la ciudad con ID: ${cityId}`] };
   }
 
-  const existingIdx = city.levels.findIndex(l => l.id === level.id);
+  const existingIdx = city.levels.findIndex(l => l.id === cleanLevel.id);
   if (existingIdx >= 0) {
     // Preserve existing questions if not provided
-    if (!level.questions || level.questions.length === 0) {
-      level.questions = city.levels[existingIdx].questions;
+    if (!cleanLevel.questions || cleanLevel.questions.length === 0) {
+      cleanLevel.questions = city.levels[existingIdx].questions;
     }
-    city.levels[existingIdx] = level;
+    city.levels[existingIdx] = cleanLevel;
   } else {
     // New level
-    if (!level.questions) level.questions = [];
-    city.levels.push(level);
+    if (!cleanLevel.questions) cleanLevel.questions = [];
+    city.levels.push(cleanLevel);
   }
 
   // Ensure levels are sorted by levelNumber
