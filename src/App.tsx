@@ -18,6 +18,7 @@ import { FinalAssessmentModal } from './components/FinalAssessmentModal';
 import { JourneyHub } from './components/JourneyHub';
 import { OutOfLivesModal } from './components/OutOfLivesModal';
 import { FloatingChatbot } from './components/FloatingChatbot';
+import { AdminScreen } from './components/AdminScreen';
 import { getCityById, getLevelById, getNextCity, ALL_CITIES } from './data/citiesData';
 import { Level } from './types';
 
@@ -63,6 +64,18 @@ const GameMain: React.FC = () => {
   const activeCity = activeCityId ? getCityById(activeCityId) : null;
   const activeLevel = (activeCityId && activeLevelId) ? getLevelById(activeCityId, activeLevelId) : null;
   const activeBossCity = activeBossCityId ? getCityById(activeBossCityId) : null;
+
+  /* ========================================================
+     SCREEN: ADMIN PORTAL (SECURE CONTENT & CURRICULUM MANAGEMENT)
+     Protected by cryptographic authentication and RLS
+     ======================================================== */
+  if (currentScreen === 'admin') {
+    return (
+      <AdminScreen
+        onBackToGame={() => setCurrentScreen(currentUserEmail ? 'world-map' : 'auth')}
+      />
+    );
+  }
 
   /* ========================================================
      SCREEN 1: AUTH SCREEN (LOGIN / REGISTER / FORGOT PASSWORD)

@@ -5,7 +5,7 @@ export interface VocabularyHint {
   translation: string; // English meaning of that keyword
 }
 
-export type QuestionType = 'multiple-choice' | 'fill-blank' | 'word-order' | 'dialogue';
+export type QuestionType = 'multiple-choice' | 'fill-blank' | 'word-order' | 'dialogue' | 'listening' | 'speaking' | 'true-false' | 'matching';
 
 export type GameScreen = 
   | 'welcome' 
@@ -18,7 +18,8 @@ export type GameScreen =
   | 'level' 
   | 'boss' 
   | 'festival'
-  | 'city-unlock';
+  | 'city-unlock'
+  | 'admin';
 
 export type AvatarStyle = 'adventurer' | 'explorer' | 'scholar' | 'artist';
 export type SkinTone = 'light' | 'medium-light' | 'medium' | 'medium-dark' | 'dark';

@@ -167,6 +167,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Determine initial screen: if client is not logged in, the 1st screen is Login ('auth')
   const getInitialScreen = (): GameScreen => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === 'true' || urlParams.get('admin') === '1' || window.location.hash === '#admin') {
+        return 'admin';
+      }
+    }
     const sessionEmail = authDatabaseService.getCurrentSessionEmail();
     if (!sessionEmail) return 'auth';
     return 'world-map';

@@ -22,7 +22,8 @@ import {
   Home,
   LogOut,
   Cloud,
-  Heart
+  Heart,
+  Shield
 } from 'lucide-react';
 import { supabaseService } from '../services/supabaseClient';
 import { formatLifeTimer } from './OutOfLivesModal';
@@ -50,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFestival,
   onOpenLivesModal
 }) => {
-  const { progress, logoutUser, currentUserEmail } = useGame();
+  const { progress, logoutUser, currentUserEmail, setCurrentScreen } = useGame();
   const secondsUntilNextLife = useLifeCountdown();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -466,6 +467,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-[#24140E] transition-colors" />
+              </button>
+
+              {/* Panel de Administración */}
+              <button
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setCurrentScreen('admin');
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white hover:bg-orange-50/50 border-2 border-[#E8DFD5] hover:border-[#E05615] transition-all group text-left shadow-xs cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#E05615] border border-orange-200 flex items-center justify-center font-bold">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
+                      Panel de Administración
+                    </span>
+                    <span className="text-[11px] text-[#7A6B60] block leading-tight">
+                      Editar preguntas, respuestas y niveles (A1)
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-[#E05615] transition-colors" />
               </button>
 
               {/* Cerrar Sesión / Cambiar Cuenta */}

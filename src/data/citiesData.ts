@@ -5,13 +5,30 @@ import { MODULE3_CITIES } from './cities/module3Cities';
 import { MODULE4_CITIES } from './cities/module4Cities';
 import { MODULE5_CITIES } from './cities/module5Cities';
 
-export const ALL_CITIES: City[] = [
-  ...MODULE1_CITIES,
-  ...MODULE2_CITIES,
-  ...MODULE3_CITIES,
-  ...MODULE4_CITIES,
-  ...MODULE5_CITIES,
-];
+function initCurriculum(): City[] {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem('aventura_custom_curriculum_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.cities && Array.isArray(parsed.cities) && parsed.cities.length > 0) {
+          return parsed.cities;
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return [
+    ...MODULE1_CITIES,
+    ...MODULE2_CITIES,
+    ...MODULE3_CITIES,
+    ...MODULE4_CITIES,
+    ...MODULE5_CITIES,
+  ];
+}
+
+export const ALL_CITIES: City[] = initCurriculum();
 
 export function getCityById(cityId: string): City | undefined {
   return ALL_CITIES.find(c => c.id === cityId);
