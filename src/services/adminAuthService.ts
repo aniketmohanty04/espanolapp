@@ -254,6 +254,95 @@ export async function authenticateAdmin(
 }
 
 /**
+ * Verifies the admin session with the serverless backend (/api/admin/session).
+ * Falls back to local session verification if offline.
+ */
+export async function verifyAdminSessionServer(): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/session', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        return true;
+      }
+      if (res.status === 401 || res.status === 403) {
+        logoutAdmin();
+        return false;
+      }
+    } catch {
+      // Backend unavailable; fallback to local token check
+    }
+  }
+  return isAdminAuthenticated();
+}
+
+/**
+ * Logs into the admin portal using the server-side API endpoint (/api/admin/login).
+ * Falls back to local cryptographic check if running offline or in unit tests.
+ */
+export async function loginAdminServer(
+  emailInput: string,
+  passwordInput: string
+): Promise<{ success: boolean; error?: string; remainingSeconds?: number }> {
+  const cleanEmail = (emailInput || '').trim().toLowerCase();
+  const cleanPassword = (passwordInput || '').trim();
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword })
+      });
+
+      if (res.ok) {
+        // Successful server authentication
+        resetAttemptTracker();
+        const now = Date.now();
+        const session: AdminSession = {
+          token: generateSessionToken(),
+          email: cleanEmail,
+          authenticatedAt: now,
+          expiresAt: now + SESSION_LIFETIME_MS
+        };
+        inMemorySession = session;
+        if (window.sessionStorage) {
+          try {
+            window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+          } catch {
+            // fallback
+          }
+        }
+        return { success: true };
+      }
+
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          error: data.message || 'Demasiados intentos fallidos. Espera 15 minutos.'
+        };
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        return {
+          success: false,
+          error: 'Invalid credentials or insufficient privileges.'
+        };
+      }
+    } catch {
+      // Fallback to local cryptographic check
+    }
+  }
+
+  // Fallback to client-side cryptographic authentication (unit test & offline mode)
+  return authenticateAdmin(cleanEmail, cleanPassword);
+}
+
+/**
  * Checks whether the current user holds an active, unexpired admin session.
  */
 export function isAdminAuthenticated(): boolean {

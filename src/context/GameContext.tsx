@@ -168,9 +168,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Determine initial screen: if client is not logged in, the 1st screen is Login ('auth')
   const getInitialScreen = (): GameScreen => {
     if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('admin') === 'true' || urlParams.get('admin') === '1' || window.location.hash === '#admin') {
-        return 'admin';
+      if (pathname === '/admin/dashboard') {
+        return 'admin-dashboard';
+      }
+      if (
+        pathname === '/admin/login' ||
+        pathname === '/admin' ||
+        pathname.startsWith('/admin/') ||
+        urlParams.get('admin') === 'true' ||
+        urlParams.get('admin') === '1' ||
+        window.location.hash === '#admin'
+      ) {
+        return 'admin-login';
       }
     }
     const sessionEmail = authDatabaseService.getCurrentSessionEmail();
@@ -179,6 +190,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const [currentScreen, setCurrentScreen] = useState<GameScreen>(getInitialScreen);
+
+  // Synchronize browser popstate navigation for /admin routes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      if (pathname === '/admin/dashboard') {
+        setCurrentScreen('admin-dashboard');
+      } else if (pathname === '/admin/login' || pathname === '/admin' || pathname.startsWith('/admin/')) {
+        setCurrentScreen('admin-login');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [activeCityId, setActiveCityId] = useState<string | null>(null);
   const [activeLevelId, setActiveLevelId] = useState<string | null>(null);
   const [activeBossCityId, setActiveBossCityId] = useState<string | null>(null);

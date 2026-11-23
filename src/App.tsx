@@ -68,11 +68,18 @@ const GameMain: React.FC = () => {
   /* ========================================================
      SCREEN: ADMIN PORTAL (SECURE CONTENT & CURRICULUM MANAGEMENT)
      Protected by cryptographic authentication and RLS
+     Dedicated Routes: /admin/login and /admin/dashboard
      ======================================================== */
-  if (currentScreen === 'admin') {
+  if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard') {
     return (
       <AdminScreen
-        onBackToGame={() => setCurrentScreen(currentUserEmail ? 'world-map' : 'auth')}
+        initialScreen={currentScreen}
+        onBackToGame={() => {
+          if (typeof window !== 'undefined') {
+            window.history.pushState(null, '', '/');
+          }
+          setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
+        }}
       />
     );
   }

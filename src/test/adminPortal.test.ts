@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+declare const Buffer: any;
 import { 
   authenticateAdmin, 
   isAdminAuthenticated, 
@@ -294,6 +295,98 @@ describe('Admin Portal & Security Test Suite', () => {
       const res = importCurriculumJson(malformed);
       expect(res.success).toBe(false);
       expect(res.error).toContain('no contiene un catálogo de ciudades válido');
+    });
+  });
+
+  describe('6. Server Guard & Cryptographic RBAC Verification (requireAdmin)', () => {
+    it('generates, signs and verifies a valid admin token with HMAC-SHA256', async () => {
+      const { signAdminToken, verifyAdminToken } = await import('../../api/admin/requireAdmin');
+      const now = Date.now();
+      const token = signAdminToken({
+        sessionId: 'test-session-uuid',
+        userId: 'admin-1',
+        email: 'admin@aventura.es',
+        role: 'admin',
+        issuedAt: now,
+        expiresAt: now + 3600000
+      });
+
+      expect(typeof token).toBe('string');
+      expect(token.split('.').length).toBe(3);
+
+      const verified = verifyAdminToken(token);
+      expect(verified).not.toBeNull();
+      expect(verified?.email).toBe('admin@aventura.es');
+      expect(verified?.role).toBe('admin');
+    });
+
+    it('rejects tampered tokens where client attempts privilege escalation to admin', async () => {
+      const { signAdminToken, verifyAdminToken } = await import('../../api/admin/requireAdmin');
+      const now = Date.now();
+      const validToken = signAdminToken({
+        sessionId: 'test-session-uuid',
+        userId: 'user-1',
+        email: 'student@example.com',
+        role: 'admin',
+        issuedAt: now,
+        expiresAt: now + 3600000
+      });
+
+      // Tamper with payload (middle segment)
+      const parts = validToken.split('.');
+      const decodedPayload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+      decodedPayload.email = 'attacker@evil.com';
+      const tamperedPayload = Buffer.from(JSON.stringify(decodedPayload)).toString('base64url');
+      const forgedToken = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
+
+      // Verification MUST fail due to HMAC signature mismatch
+      const result = verifyAdminToken(forgedToken);
+      expect(result).toBeNull();
+    });
+
+    it('rejects expired admin tokens', async () => {
+      const { signAdminToken, verifyAdminToken } = await import('../../api/admin/requireAdmin');
+      const past = Date.now() - 5000;
+      const expiredToken = signAdminToken({
+        sessionId: 'expired-session',
+        userId: 'admin-1',
+        email: 'admin@aventura.es',
+        role: 'admin',
+        issuedAt: past - 10000,
+        expiresAt: past
+      });
+
+      const result = verifyAdminToken(expiredToken);
+      expect(result).toBeNull();
+    });
+
+    it('requireAdmin guard returns 401 when no token is present and 403 on invalid role', async () => {
+      const { requireAdmin } = await import('../../api/admin/requireAdmin');
+      
+      let statusCode = 0;
+      let jsonPayload: any = null;
+      const mockRes: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return {
+            json: (data: any) => { jsonPayload = data; }
+          };
+        }
+      };
+
+      // 1. No token -> 401 Unauthorized
+      const unauthReq: any = { headers: {} };
+      const outcome1 = await requireAdmin(unauthReq, mockRes);
+      expect(outcome1).toBeNull();
+      expect(statusCode).toBe(401);
+      expect(jsonPayload?.error).toBe('Unauthorized');
+
+      // 2. Invalid or non-admin token -> 403 Forbidden
+      const badReq: any = { headers: { authorization: 'Bearer invalid.bogus.token' } };
+      const outcome2 = await requireAdmin(badReq, mockRes);
+      expect(outcome2).toBeNull();
+      expect(statusCode).toBe(403);
+      expect(jsonPayload?.error).toBe('Forbidden');
     });
   });
 });

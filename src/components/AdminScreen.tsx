@@ -9,6 +9,8 @@ import {
 import { 
   isAdminAuthenticated, 
   authenticateAdmin, 
+  loginAdminServer,
+  verifyAdminSessionServer,
   logoutAdmin, 
   getLockoutRemainingSeconds,
   getAdminEmail
@@ -56,9 +58,10 @@ import {
 
 interface AdminScreenProps {
   onBackToGame: () => void;
+  initialScreen?: 'admin-login' | 'admin-dashboard' | 'admin';
 }
 
-export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame }) => {
+export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialScreen }) => {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(isAdminAuthenticated());
   const [emailInput, setEmailInput] = useState<string>('admin@aventura.es');
@@ -66,6 +69,38 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame }) => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState<boolean>(false);
   const [lockoutSeconds, setLockoutSeconds] = useState<number>(getLockoutRemainingSeconds());
+
+  // Check server session validity on mount
+  useEffect(() => {
+    let isMounted = true;
+    verifyAdminSessionServer().then((valid) => {
+      if (!isMounted) return;
+      setIsAuthenticated(valid);
+      if (!valid && initialScreen === 'admin-dashboard') {
+        setAuthError('Invalid credentials or insufficient privileges.');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/admin/login') {
+          window.history.replaceState(null, '', '/admin/login');
+        }
+      } else if (valid && typeof window !== 'undefined' && window.location.pathname !== '/admin/dashboard') {
+        window.history.replaceState(null, '', '/admin/dashboard');
+      }
+    });
+    return () => { isMounted = false; };
+  }, [initialScreen]);
+
+  // Keep route pathname in sync with authentication state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isAuthenticated) {
+      if (window.location.pathname !== '/admin/dashboard') {
+        window.history.replaceState(null, '', '/admin/dashboard');
+      }
+    } else {
+      if (window.location.pathname !== '/admin/login') {
+        window.history.replaceState(null, '', '/admin/login');
+      }
+    }
+  }, [isAuthenticated]);
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<'questions' | 'levels' | 'tester' | 'security'>('questions');
@@ -141,15 +176,18 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame }) => {
     setIsSubmittingAuth(true);
     setAuthError(null);
 
-    const result = await authenticateAdmin(emailInput, passwordInput);
+    const result = await loginAdminServer(emailInput, passwordInput);
     setIsSubmittingAuth(false);
 
     if (result.success) {
       setIsAuthenticated(true);
       setPasswordInput('');
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/admin/dashboard');
+      }
       refreshCurriculum();
     } else {
-      setAuthError(result.error || 'Error al autenticar');
+      setAuthError(result.error || 'Invalid credentials or insufficient privileges.');
       if (result.remainingSeconds) {
         setLockoutSeconds(result.remainingSeconds);
       }
@@ -157,10 +195,20 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame }) => {
   };
 
   // Handle Logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+      }
+    } catch {
+      // ignore
+    }
     logoutAdmin();
     setIsAuthenticated(false);
     setPasswordInput('');
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '/admin/login');
+    }
   };
 
   // Handle Revert to Factory Defaults

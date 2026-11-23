@@ -257,27 +257,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Admin Content Portal Action */}
-          <div className="p-4 rounded-2xl bg-orange-50/70 border border-orange-200/80 space-y-2">
-            <div className="flex items-center space-x-2 text-xs font-bold text-[#E05615]">
-              <Shield className="w-4 h-4" />
-              <span>Panel de Administración</span>
-            </div>
-            <p className="text-[11px] text-[#7A6B60] leading-tight">
-              Edita el banco de preguntas, respuestas, temas de gramática y añade nuevos niveles al currículo A1.
-            </p>
-            <button
-              onClick={() => {
-                onClose();
-                setCurrentScreen('admin');
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition-all shadow-xs cursor-pointer"
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>Abrir Panel de Administración</span>
-            </button>
-          </div>
-
           {/* Academic Info */}
           <div className="text-[11px] text-[#7A6B60] text-center space-y-0.5 font-medium">
             <p>¡Aventura Española! Versión 1.0.0 Oficial</p>

@@ -19,7 +19,9 @@ export type GameScreen =
   | 'boss' 
   | 'festival'
   | 'city-unlock'
-  | 'admin';
+  | 'admin'
+  | 'admin-login'
+  | 'admin-dashboard';
 
 export type AvatarStyle = 'adventurer' | 'explorer' | 'scholar' | 'artist';
 export type SkinTone = 'light' | 'medium-light' | 'medium' | 'medium-dark' | 'dark';
