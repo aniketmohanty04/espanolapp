@@ -413,20 +413,18 @@ export function hasAdminPortalAccess(): boolean {
     const params = new URLSearchParams(window.location.search);
     const configuredKey = (
       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_ACCESS_KEY) ||
-      'admin2026'
+      'espanavit2029'
     ).toLowerCase().trim();
 
-    // Check URL parameters for access key
+    // Check URL parameters for access key (e.g. ?key=espanavit2029)
     const candidate = (
       params.get('key') ||
       params.get('access') ||
       params.get('portal') ||
-      params.get('auth') ||
-      params.get('admin') ||
       ''
     ).toLowerCase().trim();
 
-    if (candidate && (candidate === configuredKey || candidate === 'admin' || candidate === 'true' || candidate === '1')) {
+    if (candidate && candidate === configuredKey) {
       try {
         window.sessionStorage.setItem(ADMIN_ACCESS_KEY_STORAGE, 'granted');
       } catch {}

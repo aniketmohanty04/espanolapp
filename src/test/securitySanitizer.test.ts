@@ -128,5 +128,43 @@ describe('Security & Input Sanitization Suite', () => {
       logoutAdmin();
       expect(hasAdminPortalAccess()).toBe(false);
     });
+
+    it('rejects generic or outdated keys like ?key=admin', () => {
+      logoutAdmin();
+      const mockStorage = new Map<string, string>();
+      const originalWindow = (globalThis as any).window;
+      (globalThis as any).window = {
+        location: { search: '?key=admin' },
+        sessionStorage: {
+          getItem: (k: string) => mockStorage.get(k) || null,
+          setItem: (k: string, v: string) => mockStorage.set(k, v),
+          removeItem: (k: string) => mockStorage.delete(k)
+        }
+      };
+      try {
+        expect(hasAdminPortalAccess()).toBe(false);
+      } finally {
+        (globalThis as any).window = originalWindow;
+      }
+    });
+
+    it('grants portal access when ?key=espanavit2029 is provided', () => {
+      logoutAdmin();
+      const mockStorage = new Map<string, string>();
+      const originalWindow = (globalThis as any).window;
+      (globalThis as any).window = {
+        location: { search: '?key=espanavit2029' },
+        sessionStorage: {
+          getItem: (k: string) => mockStorage.get(k) || null,
+          setItem: (k: string, v: string) => mockStorage.set(k, v),
+          removeItem: (k: string) => mockStorage.delete(k)
+        }
+      };
+      try {
+        expect(hasAdminPortalAccess()).toBe(true);
+      } finally {
+        (globalThis as any).window = originalWindow;
+      }
+    });
   });
 });
