@@ -414,21 +414,24 @@ export function hasAdminPortalAccess(): boolean {
     const configuredKey = (
       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_ACCESS_KEY) ||
       'espanavit2029'
-    ).toLowerCase().trim();
+    );
 
-    // Check URL parameters for access key (e.g. ?key=espanavit2029)
-    const candidate = (
-      params.get('key') ||
-      params.get('access') ||
-      params.get('portal') ||
-      ''
-    ).toLowerCase().trim();
-
-    if (candidate && candidate === configuredKey) {
-      try {
-        window.sessionStorage.setItem(ADMIN_ACCESS_KEY_STORAGE, 'granted');
-      } catch {}
-      return true;
+    // Strictly check for ?key= in the URL with zero tolerance for spaces, extra chars, or casing
+    if (params.has('key')) {
+      const candidate = params.get('key');
+      // Exact match check: not a letter short, not a letter long, no whitespace
+      if (candidate === configuredKey) {
+        try {
+          window.sessionStorage.setItem(ADMIN_ACCESS_KEY_STORAGE, 'granted');
+        } catch {}
+        return true;
+      } else {
+        // Any incorrect key attempt invalidates previous portal grant
+        try {
+          window.sessionStorage.removeItem(ADMIN_ACCESS_KEY_STORAGE);
+        } catch {}
+        return false;
+      }
     }
 
     try {

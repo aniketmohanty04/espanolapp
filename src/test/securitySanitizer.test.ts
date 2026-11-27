@@ -148,6 +148,40 @@ describe('Security & Input Sanitization Suite', () => {
       }
     });
 
+    it('strictly rejects any key that is a letter short, long, or has spaces or wrong casing', () => {
+      logoutAdmin();
+      const mockStorage = new Map<string, string>();
+      const originalWindow = (globalThis as any).window;
+
+      const testInvalidKeys = [
+        '?key=espanavit202',      // 1 letter short
+        '?key=espanavit20299',    // 1 letter long
+        '?key= espanavit2029',    // leading space
+        '?key=espanavit2029 ',    // trailing space
+        '?key=espanavit 2029',    // internal space
+        '?key=Espanavit2029',     // wrong case
+        '?key=espanavit_2029',    // typo with underscore
+        '?access=espanavit2029',  // wrong param name
+        '?portal=espanavit2029',  // wrong param name
+      ];
+
+      try {
+        for (const search of testInvalidKeys) {
+          (globalThis as any).window = {
+            location: { search },
+            sessionStorage: {
+              getItem: (k: string) => mockStorage.get(k) || null,
+              setItem: (k: string, v: string) => mockStorage.set(k, v),
+              removeItem: (k: string) => mockStorage.delete(k)
+            }
+          };
+          expect(hasAdminPortalAccess()).toBe(false);
+        }
+      } finally {
+        (globalThis as any).window = originalWindow;
+      }
+    });
+
     it('grants portal access when ?key=espanavit2029 is provided', () => {
       logoutAdmin();
       const mockStorage = new Map<string, string>();

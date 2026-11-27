@@ -72,11 +72,7 @@ const GameMain: React.FC = () => {
      Protected by cryptographic authentication, RLS, and Route Cloaking
      Dedicated Routes: /admin/login and /admin/dashboard
      ======================================================== */
-  const isDirectAdminUrl = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/admin') ||
-    window.location.search.includes('admin=') ||
-    window.location.hash === '#admin'
-  );
+  const isDirectAdminUrl = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
   if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard' || isDirectAdminUrl) {
     // ROUTE CLOAKING: If unauthenticated user tries to probe /admin without access token, cloak with 404
