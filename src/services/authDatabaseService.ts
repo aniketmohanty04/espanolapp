@@ -85,22 +85,72 @@ const memoryUsers: Record<string, DatabaseUser> = {};
 const memoryProgress: Record<string, PlayerProgress> = {};
 let memoryCurrentEmail: string | null = null;
 
-// Simple fast SHA-256 / hashing function with cross-platform support
-export async function hashPassword(password: string): Promise<string> {
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_PREFIX = 'pbkdf2_sha256';
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.length % 2 === 0 ? hex : '0' + hex;
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+function getWebCrypto(): Crypto | null {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle) {
+    return globalThis.crypto;
+  }
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    return window.crypto;
+  }
+  return null;
+}
+
+async function derivePbkdf2Hex(password: string, saltBytes: Uint8Array, iterations: number): Promise<string> {
+  const webCrypto = getWebCrypto();
+  if (!webCrypto) {
+    throw new Error('Web Crypto API is unavailable for secure password hashing.');
+  }
+  const encoder = new TextEncoder();
+  const keyMaterial = await webCrypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  const derivedBits = await webCrypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: saltBytes.buffer.slice(saltBytes.byteOffset, saltBytes.byteOffset + saltBytes.byteLength) as ArrayBuffer,
+      iterations,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+  return bytesToHex(new Uint8Array(derivedBits));
+}
+
+async function computeLegacyHash(password: string): Promise<string> {
   const normalized = password.trim();
-  try {
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+  const webCrypto = getWebCrypto();
+  if (webCrypto) {
+    try {
       const encoder = new TextEncoder();
       const data = encoder.encode(normalized + '_salt_aventura_2026');
-      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const hashBuffer = await webCrypto.subtle.digest('SHA-256', data);
+      return bytesToHex(new Uint8Array(hashBuffer));
+    } catch {
+      // fallback
     }
-  } catch {
-    // fallback
   }
 
-  // Pure JS string hashing fallback (guaranteed to work in all JS/Node runtimes)
   let hash1 = 0xdeadbeef;
   let hash2 = 0x41c6ce57;
   for (let i = 0; i < normalized.length; i++) {
@@ -111,6 +161,58 @@ export async function hashPassword(password: string): Promise<string> {
   hash1 = Math.imul(hash1 ^ (hash1 >>> 16), 2246822507) ^ Math.imul(hash2 ^ (hash2 >>> 13), 3266489909);
   hash2 = Math.imul(hash2 ^ (hash2 >>> 16), 2246822507) ^ Math.imul(hash1 ^ (hash1 >>> 13), 3266489909);
   return 'h_' + (4294967296 * (2097151 & hash2) + (hash1 >>> 0)).toString(16);
+}
+
+/**
+ * Hashes a password using PBKDF2-HMAC-SHA256 (100,000 iterations) with a unique
+ * cryptographically random 16-byte per-user salt.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const normalized = password.trim();
+  const webCrypto = getWebCrypto();
+  if (webCrypto) {
+    const salt = new Uint8Array(16);
+    webCrypto.getRandomValues(salt);
+    const hashHex = await derivePbkdf2Hex(normalized, salt, PBKDF2_ITERATIONS);
+    return `${PBKDF2_PREFIX}$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${hashHex}`;
+  }
+  return computeLegacyHash(normalized);
+}
+
+/**
+ * Verifies a plaintext password against a stored PBKDF2 or legacy hash in constant time.
+ * Signals `needsRehash` when a legacy hash succeeds so callers can upgrade it transparently.
+ */
+export async function verifyPassword(
+  password: string,
+  storedHash: string
+): Promise<{ valid: boolean; needsRehash: boolean }> {
+  const normalized = password.trim();
+  if (!storedHash || typeof storedHash !== 'string') {
+    return { valid: false, needsRehash: false };
+  }
+
+  if (storedHash.startsWith(`${PBKDF2_PREFIX}$`)) {
+    const parts = storedHash.split('$');
+    if (parts.length !== 4) return { valid: false, needsRehash: false };
+    const iterations = parseInt(parts[1], 10);
+    const saltHex = parts[2];
+    const expectedHex = parts[3];
+    if (!Number.isFinite(iterations) || iterations < 10_000 || !saltHex || !expectedHex) {
+      return { valid: false, needsRehash: false };
+    }
+    try {
+      const derivedHex = await derivePbkdf2Hex(normalized, hexToBytes(saltHex), iterations);
+      return { valid: timingSafeHashEqual(derivedHex, expectedHex), needsRehash: false };
+    } catch {
+      return { valid: false, needsRehash: false };
+    }
+  }
+
+  // Legacy SHA-256 or fallback verification
+  const legacyCandidate = await computeLegacyHash(normalized);
+  const valid = timingSafeHashEqual(legacyCandidate, storedHash);
+  return { valid, needsRehash: valid };
 }
 
 function getStoredUsers(): Record<string, DatabaseUser> {
@@ -381,14 +483,13 @@ export const authDatabaseService = {
     // Ensure database is initialized with demo data
     await this.init();
 
-    const passwordHash = await hashPassword(passCheck.value);
-
     // 1. Try remote cloud lookup first if Supabase is connected
     if (supabaseService.getConfig().isConfigured) {
       try {
         const remoteData = await supabaseService.fetchRemoteUser(normEmail);
         if (remoteData) {
-          if (!timingSafeHashEqual(remoteData.user.passwordHash, passwordHash)) {
+          const check = await verifyPassword(passCheck.value, remoteData.user.passwordHash);
+          if (!check.valid) {
             const fail = recordFailedLogin(normEmail);
             if (fail.locked) {
               throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada por 10 minutos.`);
@@ -397,6 +498,12 @@ export const authDatabaseService = {
           }
 
           clearLoginAttempts(normEmail);
+
+          // Transparently upgrade legacy SHA-256 hash to PBKDF2-SHA256 on successful login
+          if (check.needsRehash) {
+            remoteData.user.passwordHash = await hashPassword(passCheck.value);
+            supabaseService.saveRemoteUser(remoteData.user, remoteData.progress).catch(() => {});
+          }
 
           // Cache in local storage for offline resilience, preserving whichever has more progress
           const users = getStoredUsers();
@@ -446,7 +553,8 @@ export const authDatabaseService = {
       throw new Error('No existe ninguna cuenta con este correo electrónico. Por favor, regístrate.');
     }
 
-    if (!timingSafeHashEqual(user.passwordHash, passwordHash)) {
+    const localCheck = await verifyPassword(passCheck.value, user.passwordHash);
+    if (!localCheck.valid) {
       const fail = recordFailedLogin(normEmail);
       if (fail.locked) {
         throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada por 10 minutos.`);
@@ -455,6 +563,11 @@ export const authDatabaseService = {
     }
 
     clearLoginAttempts(normEmail);
+
+    // Transparently upgrade legacy hash to PBKDF2-SHA256
+    if (localCheck.needsRehash) {
+      user.passwordHash = await hashPassword(passCheck.value);
+    }
 
     // Update last login timestamp
     user.lastLoginAt = new Date().toISOString();

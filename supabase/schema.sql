@@ -9,6 +9,7 @@ create table if not exists public.player_progress (
   email text unique not null,
   display_name text not null default 'Viajero',
   password_hash text not null,
+  role text not null default 'user' check (role in ('user', 'admin')),
   progress jsonb not null default '{}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -20,18 +21,28 @@ create index if not exists player_progress_email_idx on public.player_progress (
 -- 3. Enable Row Level Security (RLS)
 alter table public.player_progress enable row level security;
 
--- 4. Set RLS policies allowing the game client (using the public anon key) to read, insert, and update player records
+-- 4. Strict Row-Level Security (RLS) policies — NEVER leave tables open with using (true)
 drop policy if exists "Allow game anon select" on public.player_progress;
-create policy "Allow game anon select" on public.player_progress
-  for select using (true);
-
 drop policy if exists "Allow game anon insert" on public.player_progress;
-create policy "Allow game anon insert" on public.player_progress
-  for insert with check (true);
-
 drop policy if exists "Allow game anon update" on public.player_progress;
-create policy "Allow game anon update" on public.player_progress
-  for update using (true);
+
+drop policy if exists "Player Self Read Policy" on public.player_progress;
+create policy "Player Self Read Policy" on public.player_progress
+  for select using (auth.uid()::text = id or auth.role() = 'service_role');
+
+drop policy if exists "Player Self Insert Policy" on public.player_progress;
+create policy "Player Self Insert Policy" on public.player_progress
+  for insert with check (auth.uid()::text = id or auth.role() = 'service_role');
+
+drop policy if exists "Player Self Update Policy" on public.player_progress;
+create policy "Player Self Update Policy" on public.player_progress
+  for update
+  using (auth.uid()::text = id or auth.role() = 'service_role')
+  with check (auth.uid()::text = id or auth.role() = 'service_role');
+
+drop policy if exists "Disallow Client Delete Policy" on public.player_progress;
+create policy "Disallow Client Delete Policy" on public.player_progress
+  for delete using (auth.role() = 'service_role');
 
 -- 5. Optional trigger to automatically update 'updated_at' on save
 create or replace function public.handle_updated_at()

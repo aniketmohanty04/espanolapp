@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { authDatabaseService } from '../services/authDatabaseService';
+import { authDatabaseService, hashPassword, verifyPassword } from '../services/authDatabaseService';
 import { supabaseService } from '../services/supabaseClient';
 import { INITIAL_PROGRESS } from '../services/storageService';
 import { PlayerProgress } from '../types';
@@ -211,6 +211,23 @@ describe('Authentication & Database Progress Service', () => {
     await expect(
       authDatabaseService.resetPasswordAndRestart('aniket@viajes.es', '12')
     ).rejects.toThrow('La nueva contraseña debe tener al menos 4 caracteres');
+  });
+
+  it('hashes passwords with PBKDF2-SHA256 and unique random per-user salts', async () => {
+    const hashA = await hashPassword('miSecretoSeguro2026!');
+    const hashB = await hashPassword('miSecretoSeguro2026!');
+
+    expect(hashA.startsWith('pbkdf2_sha256$100000$')).toBe(true);
+    expect(hashB.startsWith('pbkdf2_sha256$100000$')).toBe(true);
+    // Unique random salts guarantee different hashes for identical passwords
+    expect(hashA).not.toBe(hashB);
+
+    const checkValid = await verifyPassword('miSecretoSeguro2026!', hashA);
+    expect(checkValid.valid).toBe(true);
+    expect(checkValid.needsRehash).toBe(false);
+
+    const checkWrong = await verifyPassword('wrongPassword!', hashA);
+    expect(checkWrong.valid).toBe(false);
   });
 });
 

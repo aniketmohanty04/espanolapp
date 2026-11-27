@@ -171,26 +171,42 @@ export default async function handler(req: any, res: any) {
   let authenticatedUserId = 'admin-root';
   let authenticatedRole = 'user';
 
+function safeConstantTimeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function verifyStoredPassword(password: string, storedHash: string): boolean {
+  if (!storedHash || typeof storedHash !== 'string') return false;
+  if (storedHash.startsWith('pbkdf2_sha256$')) {
+    const parts = storedHash.split('$');
+    if (parts.length !== 4) return false;
+    const iterations = parseInt(parts[1], 10);
+    const saltHex = parts[2];
+    const expectedHex = parts[3];
+    if (!Number.isFinite(iterations) || iterations < 10000 || !saltHex || !expectedHex) return false;
+    const derived = crypto.pbkdf2Sync(password, Buffer.from(saltHex, 'hex'), iterations, 32, 'sha256').toString('hex');
+    return safeConstantTimeEqual(derived, expectedHex);
+  }
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + '_salt_aventura_2026');
+  const hash = crypto.createHash('sha256').update(data).digest('hex');
+  return safeConstantTimeEqual(hash, storedHash);
+}
+
   if (userRecord) {
-    // Hash provided password using the database salt
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + '_salt_aventura_2026');
-    const hash = crypto.createHash('sha256').update(data).digest('hex');
-
-    const isMatch = crypto.timingSafeEqual(
-      Buffer.from(hash),
-      Buffer.from(userRecord.password_hash)
-    );
-
-    if (isMatch) {
+    if (verifyStoredPassword(password, userRecord.password_hash)) {
       isAuthenticated = true;
       authenticatedUserId = userRecord.id;
       authenticatedRole = userRecord.role || 'user';
     }
-  } else if (email === expectedAdminEmail) {
-    // Environment configured administrative check
-    const isMatch = password === expectedAdminSecret;
-    if (isMatch) {
+  } else if (email === expectedAdminEmail && expectedAdminSecret) {
+    // Environment configured administrative check (constant-time via SHA-256 digest)
+    const providedDigest = crypto.createHash('sha256').update(password).digest('hex');
+    const expectedDigest = crypto.createHash('sha256').update(expectedAdminSecret).digest('hex');
+    if (safeConstantTimeEqual(providedDigest, expectedDigest)) {
       isAuthenticated = true;
       authenticatedUserId = 'env-admin-01';
       authenticatedRole = 'admin';
