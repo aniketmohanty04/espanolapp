@@ -45,7 +45,7 @@ describe('Serverless /api/camino-chat Proxy Endpoint', () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(204);
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+    expect(res.headers['access-control-allow-origin']).toBe('https://espanolapp.vercel.app');
     expect(res.headers['access-control-allow-methods']).toContain('POST');
   });
 

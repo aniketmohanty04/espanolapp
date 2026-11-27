@@ -364,8 +364,10 @@ export function stripAccents(text: string): string {
  * Computes Levenshtein Distance between two strings.
  */
 export function calculateLevenshteinDistance(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
+  const s1 = a.slice(0, 500);
+  const s2 = b.slice(0, 500);
+  const m = s1.length;
+  const n = s2.length;
   if (m === 0) return n;
   if (n === 0) return m;
 
@@ -376,7 +378,7 @@ export function calculateLevenshteinDistance(a: string, b: string): number {
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
       d[i][j] = Math.min(
         d[i - 1][j] + 1,      // deletion
         d[i][j - 1] + 1,      // insertion

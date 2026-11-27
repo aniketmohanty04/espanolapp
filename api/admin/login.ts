@@ -12,9 +12,9 @@ try {
   // fallback
 }
 const crypto = cryptoModule || (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : null);
-import { signAdminToken, type AdminTokenPayload } from './requireAdmin.ts';
+import { signAdminToken, applyAdminCors, type AdminTokenPayload } from './requireAdmin.ts';
 
-// In-memory rate limiting map (IP and Email based)
+// In-memory rate limiting map (IP and IP+Email based)
 interface RateLimitRecord {
   attempts: number;
   firstAttemptAt: number;
@@ -22,11 +22,23 @@ interface RateLimitRecord {
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
 const MAX_ATTEMPTS = 10;
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const SESSION_LIFETIME_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetSeconds: number } {
   const now = Date.now();
+  if (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+    for (const [k, v] of rateLimitStore.entries()) {
+      if (now - v.firstAttemptAt > WINDOW_MS) {
+        rateLimitStore.delete(k);
+      }
+    }
+    if (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = rateLimitStore.keys().next().value;
+      if (oldestKey) rateLimitStore.delete(oldestKey);
+    }
+  }
   const record = rateLimitStore.get(key);
 
   if (!record) {
@@ -85,56 +97,73 @@ async function recordAuditLog(actorId: string, action: string, metadata: Record<
 }
 
 export default async function handler(req: any, res: any) {
-  // Enforce POST method
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  try {
+    applyAdminCors(req, res, 'POST, OPTIONS');
 
-  // CORS: Restrict to application domain (never allow wildcard '*')
-  const origin = req.headers?.origin || '';
-  const host = req.headers?.host || '';
-  if (origin && (origin.includes(host) || origin.includes('localhost') || origin.includes('vercel.app'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  // Parse Body
-  let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      return res.status(400).json({ error: 'Invalid JSON payload' });
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
     }
-  }
 
-  const email = (body?.email || '').trim().toLowerCase();
-  const password = (body?.password || '').trim();
+    // Enforce POST method
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      return res.status(405).json({ error: 'Method Not Allowed' });
+    }
 
-  // Input Validation
-  if (!email || !password || email.length > 254 || password.length > 128) {
-    return res.status(400).json({ error: 'Invalid credentials format' });
-  }
+    // Enforce JSON Content-Type to prevent CORS simple-request CSRF
+    const contentType = String(req.headers?.['content-type'] || '').toLowerCase();
+    if (!contentType.startsWith('application/json')) {
+      return res.status(415).json({ error: 'Unsupported Media Type. Content-Type must be application/json.' });
+    }
 
-  // Rate Limiting by IP and by Email
-  const clientIp = (req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
-    .toString()
-    .split(',')[0]
-    .trim();
+    // Parse Body
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+      }
+    }
 
-  const ipLimit = checkRateLimit(`ip:${clientIp}`);
-  const emailLimit = checkRateLimit(`email:${email}`);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return res.status(400).json({ error: 'Invalid request body' });
+    }
 
-  if (!ipLimit.allowed || !emailLimit.allowed) {
-    const reset = Math.max(ipLimit.resetSeconds, emailLimit.resetSeconds);
-    res.setHeader('Retry-After', reset.toString());
-    await recordAuditLog(email, 'admin_login_rate_limited', { ip: clientIp, resetSeconds: reset });
-    return res.status(429).json({
-      error: 'Too Many Requests',
-      message: `Too many login attempts. Please wait ${reset} seconds before trying again.`
-    });
-  }
+    if (typeof body.email !== 'string' || typeof body.password !== 'string') {
+      return res.status(400).json({ error: 'Invalid credentials format' });
+    }
+
+    const email = body.email.trim().toLowerCase();
+    const password = body.password;
+
+    // Input Validation
+    if (!email || !password || email.length > 254 || password.length > 128 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid credentials format' });
+    }
+
+    // Rate Limiting by trusted IP and (IP, Email) pair to prevent global email lockout DoS
+    const rawIp =
+      req.headers?.['x-vercel-forwarded-for'] ||
+      req.headers?.['x-vercel-ip'] ||
+      req.headers?.['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      req.headers?.['x-forwarded-for'] ||
+      'unknown';
+    const clientIp = rawIp.toString().split(',')[0].trim();
+
+    const ipLimit = checkRateLimit(`ip:${clientIp}`);
+    const emailLimit = checkRateLimit(`ip_email:${clientIp}:${email}`);
+
+    if (!ipLimit.allowed || !emailLimit.allowed) {
+      const reset = Math.max(ipLimit.resetSeconds, emailLimit.resetSeconds);
+      res.setHeader('Retry-After', reset.toString());
+      await recordAuditLog(email, 'admin_login_rate_limited', { ip: clientIp, resetSeconds: reset });
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: `Too many login attempts. Please wait ${reset} seconds before trying again.`
+      });
+    }
 
   // Fetch admin credentials from Supabase or server environment
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -163,9 +192,9 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // Administrative credentials from server environment secrets or database role
-  const expectedAdminEmail = (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || 'admin@aventura.es').toLowerCase();
-  const expectedAdminSecret = process.env.ADMIN_SECRET_KEY || process.env.VITE_ADMIN_SECRET_KEY || (process.env.NODE_ENV === 'test' ? 'AventuraAdmin2026!' : undefined);
+  // Administrative email from server env (or default 'admin@aventura.es'); secret strictly from server env
+  const expectedAdminEmail = (process.env.ADMIN_EMAIL || 'admin@aventura.es').trim().toLowerCase();
+  const expectedAdminSecret = process.env.ADMIN_SECRET_KEY;
 
   let isAuthenticated = false;
   let authenticatedUserId = 'admin-root';
@@ -229,8 +258,8 @@ function verifyStoredPassword(password: string, storedHash: string): boolean {
     });
   }
 
-  // SUCCESS: Reset rate limit for this account
-  clearRateLimit(`email:${email}`);
+  // SUCCESS: Reset rate limit for this IP+email
+  clearRateLimit(`ip_email:${clientIp}:${email}`);
 
   // Regenerate Session ID to prevent Session Fixation
   const sessionId = crypto.randomUUID();
@@ -247,16 +276,19 @@ function verifyStoredPassword(password: string, storedHash: string): boolean {
 
   const signedToken = signAdminToken(tokenPayload);
 
-  // Set-Cookie: HttpOnly, Secure, SameSite=Lax, Path=/
-  const isProd = process.env.NODE_ENV === 'production';
+  // Set-Cookie: HttpOnly, Secure, SameSite=Strict, Path=/
+  const isSecure =
+    process.env.VERCEL === '1' ||
+    process.env.NODE_ENV === 'production' ||
+    req.headers?.['x-forwarded-proto'] === 'https';
   const cookieFlags = [
     `aventura_admin_token=${encodeURIComponent(signedToken)}`,
     'HttpOnly',
-    'SameSite=Lax',
+    'SameSite=Strict',
     'Path=/',
     `Max-Age=${Math.floor(SESSION_LIFETIME_MS / 1000)}`
   ];
-  if (isProd) {
+  if (isSecure) {
     cookieFlags.push('Secure');
   }
 
@@ -278,4 +310,7 @@ function verifyStoredPassword(password: string, storedHash: string): boolean {
       role: 'admin'
     }
   });
+  } catch {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }

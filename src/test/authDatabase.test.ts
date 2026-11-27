@@ -217,8 +217,8 @@ describe('Authentication & Database Progress Service', () => {
     const hashA = await hashPassword('miSecretoSeguro2026!');
     const hashB = await hashPassword('miSecretoSeguro2026!');
 
-    expect(hashA.startsWith('pbkdf2_sha256$100000$')).toBe(true);
-    expect(hashB.startsWith('pbkdf2_sha256$100000$')).toBe(true);
+    expect(hashA.startsWith('pbkdf2_sha256$600000$')).toBe(true);
+    expect(hashB.startsWith('pbkdf2_sha256$600000$')).toBe(true);
     // Unique random salts guarantee different hashes for identical passwords
     expect(hashA).not.toBe(hashB);
 

@@ -32,7 +32,10 @@ create policy "Player Self Read Policy" on public.player_progress
 
 drop policy if exists "Player Self Insert Policy" on public.player_progress;
 create policy "Player Self Insert Policy" on public.player_progress
-  for insert with check (auth.uid()::text = id or auth.role() = 'service_role');
+  for insert with check (
+    (auth.uid()::text = id and role = 'user')
+    or auth.role() = 'service_role'
+  );
 
 drop policy if exists "Player Self Update Policy" on public.player_progress;
 create policy "Player Self Update Policy" on public.player_progress
@@ -44,19 +47,46 @@ drop policy if exists "Disallow Client Delete Policy" on public.player_progress;
 create policy "Disallow Client Delete Policy" on public.player_progress
   for delete using (auth.role() = 'service_role');
 
--- 5. Optional trigger to automatically update 'updated_at' on save
+-- 5. Triggers: auto-update 'updated_at' and protect 'role' column from client escalation
 create or replace function public.handle_updated_at()
-returns trigger as $$
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
 begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$;
 
 drop trigger if exists set_player_progress_updated_at on public.player_progress;
 create trigger set_player_progress_updated_at
   before update on public.player_progress
   for each row execute procedure public.handle_updated_at();
+
+create or replace function public.protect_player_role()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if auth.role() = 'service_role' or current_user in ('postgres', 'supabase_admin') then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.role := 'user';
+  elsif tg_op = 'UPDATE' and new.role is distinct from old.role then
+    raise exception 'Permission denied: cannot modify role column.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_player_role_immutability on public.player_progress;
+create trigger enforce_player_role_immutability
+  before insert or update on public.player_progress
+  for each row execute procedure public.protect_player_role();
 
 -- ====================================================================
 -- 6. Gemini API Rate Limiting: 20 calls / minute / user

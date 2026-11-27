@@ -229,14 +229,36 @@ export const storageService = {
   },
 
   async importProgress(file: File): Promise<PlayerProgress> {
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error('Archivo de progreso demasiado grande.');
+    }
     const text = await file.text();
-    const parsed = JSON.parse(text);
-    if (!parsed || !parsed.stats || typeof parsed.stats.coins !== 'number') {
+    const parsed = JSON.parse(text, (key, value) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') return undefined;
+      return value;
+    });
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed) ||
+      !parsed.stats ||
+      typeof parsed.stats.coins !== 'number' ||
+      !Number.isFinite(parsed.stats.coins) ||
+      parsed.stats.coins < 0
+    ) {
       throw new Error('Archivo de progreso no válido.');
     }
     const validated: PlayerProgress = {
       ...INITIAL_PROGRESS,
       ...parsed,
+      stats: {
+        ...INITIAL_PROGRESS.stats,
+        ...parsed.stats,
+        coins: Math.max(0, Math.min(1_000_000, Math.floor(parsed.stats.coins))),
+        xp: Number.isFinite(parsed.stats.xp) ? Math.max(0, Math.floor(parsed.stats.xp)) : INITIAL_PROGRESS.stats.xp,
+        streak: Number.isFinite(parsed.stats.streak) ? Math.max(0, Math.floor(parsed.stats.streak)) : INITIAL_PROGRESS.stats.streak,
+        lives: Number.isFinite(parsed.stats.lives) ? Math.max(0, Math.min(5, Math.floor(parsed.stats.lives))) : INITIAL_PROGRESS.stats.lives
+      },
       profile: {
         ...DEFAULT_PROFILE,
         ...(parsed.profile || {}),

@@ -282,10 +282,13 @@ export const supabaseService = {
     if (!client || !email) return null;
 
     try {
+      const normEmail = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normEmail)) return null;
+
       const { data, error } = await client
         .from('player_progress')
-        .select('*')
-        .ilike('email', email.trim())
+        .select('id, email, display_name, password_hash, progress, created_at, updated_at')
+        .eq('email', normEmail)
         .maybeSingle();
 
       if (error) {
@@ -382,7 +385,7 @@ export const supabaseService = {
       const { error } = await client
         .from('player_progress')
         .update(updateData)
-        .ilike('email', normEmail);
+        .eq('email', normEmail);
 
       if (error) {
         console.warn('Supabase saveRemoteProgress error:', error);

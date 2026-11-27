@@ -65,10 +65,12 @@ export async function computeAdminHash(password: string): Promise<string> {
  * Timing-safe string comparison to prevent side-channel timing analysis.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length);
+  let result = a.length ^ b.length;
+  for (let i = 0; i < maxLen; i++) {
+    const ca = i < a.length ? a.charCodeAt(i) : 0;
+    const cb = i < b.length ? b.charCodeAt(i) : 0;
+    result |= ca ^ cb;
   }
   return result === 0;
 }
@@ -94,11 +96,6 @@ export function getAdminEmail(): string {
  */
 let cachedDefaultHash: string | null = null;
 export async function getExpectedAdminHash(): Promise<string> {
-  const envSecret = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_ADMIN_SECRET_KEY : undefined;
-  if (envSecret && envSecret.trim()) {
-    return computeAdminHash(envSecret.trim());
-  }
-
   // In test environments only, allow deterministic test password
   if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.NODE_ENV === 'test') {
     if (!cachedDefaultHash) {
@@ -270,14 +267,22 @@ export async function verifyAdminSessionServer(): Promise<boolean> {
         credentials: 'include'
       });
       if (res.ok) {
-        return true;
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const data = await res.json().catch(() => null);
+          if (data?.authenticated === true) {
+            return true;
+          }
+        }
+        logoutAdmin();
+        return false;
       }
       if (res.status === 401 || res.status === 403) {
         logoutAdmin();
         return false;
       }
     } catch {
-      // Backend unavailable; fallback to local token check
+      // Backend unavailable; fallback to local token check only in test/offline
     }
   }
   return isAdminAuthenticated();
@@ -419,8 +424,8 @@ export function hasAdminPortalAccess(): boolean {
     // Strictly check for ?key= in the URL with zero tolerance for spaces, extra chars, or casing
     if (params.has('key')) {
       const candidate = params.get('key');
-      // Exact match check: not a letter short, not a letter long, no whitespace
-      if (candidate === configuredKey) {
+      // Exact match check: not a letter short, not a letter long, no whitespace (constant-time)
+      if (candidate !== null && timingSafeEqual(candidate, configuredKey)) {
         try {
           window.sessionStorage.setItem(ADMIN_ACCESS_KEY_STORAGE, 'granted');
         } catch {}

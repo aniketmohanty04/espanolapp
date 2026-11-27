@@ -59,7 +59,24 @@ export const CloudDatabaseModal: React.FC<CloudDatabaseModalProps> = ({ isOpen, 
 
   if (!isOpen) return null;
 
+  const isValidSupabaseUrl = (rawUrl: string): boolean => {
+    try {
+      const parsed = new URL(rawUrl.trim());
+      return parsed.protocol === 'https:' && parsed.hostname.endsWith('.supabase.co');
+    } catch {
+      return false;
+    }
+  };
+
   const handleTestConnection = async () => {
+    if (!isValidSupabaseUrl(urlInput)) {
+      setTestResult({
+        success: false,
+        tableReady: false,
+        message: 'Invalid Supabase URL. Must use HTTPS and end with .supabase.co.'
+      });
+      return;
+    }
     setTesting(true);
     setTestResult(null);
     setSyncResult(null);
@@ -70,14 +87,25 @@ export const CloudDatabaseModal: React.FC<CloudDatabaseModalProps> = ({ isOpen, 
   };
 
   const handleSaveAndConnect = async () => {
-    supabaseService.saveConfig(urlInput, keyInput);
-    const updated = supabaseService.getConfig();
-    setConfig(updated);
-    
+    if (!isValidSupabaseUrl(urlInput)) {
+      setTestResult({
+        success: false,
+        tableReady: false,
+        message: 'Invalid Supabase URL. Must use HTTPS and end with .supabase.co.'
+      });
+      return;
+    }
+
     setTesting(true);
-    const res = await supabaseService.testConnection();
+    const res = await supabaseService.testConnection(urlInput, keyInput);
     setTestResult(res);
     setTesting(false);
+
+    if (res.success) {
+      supabaseService.saveConfig(urlInput, keyInput);
+      const updated = supabaseService.getConfig();
+      setConfig(updated);
+    }
   };
 
   const handleDisconnect = () => {
@@ -121,9 +149,10 @@ create table if not exists public.player_progress (
 create index if not exists player_progress_email_idx on public.player_progress (lower(email));
 alter table public.player_progress enable row level security;
 
-create policy "Allow game anon select" on public.player_progress for select using (true);
-create policy "Allow game anon insert" on public.player_progress for insert with check (true);
-create policy "Allow game anon update" on public.player_progress for update using (true);`;
+create policy "Player Self Select Policy" on public.player_progress for select using (auth.uid()::text = id or auth.role() = 'service_role');
+create policy "Player Self Insert Policy" on public.player_progress for insert with check (auth.uid()::text = id or auth.role() = 'service_role');
+create policy "Player Self Update Policy" on public.player_progress for update using (auth.uid()::text = id or auth.role() = 'service_role') with check (auth.uid()::text = id or auth.role() = 'service_role');
+create policy "Disallow Client Delete Policy" on public.player_progress for delete using (auth.role() = 'service_role');`;
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(sqlCode);

@@ -38,14 +38,10 @@ interface RateLimitEntry {
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
 function getClientIdentifier(req: any): string {
-  const authHeader = req.headers?.authorization || '';
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ') && authHeader.length > 20) {
-    let hash = 0;
-    for (let i = 0; i < Math.min(authHeader.length, 64); i++) {
-      hash = (hash << 5) - hash + authHeader.charCodeAt(i);
-      hash |= 0;
-    }
-    return `auth_${hash}`;
+  const vercelFwd = req.headers?.['x-vercel-forwarded-for'] || req.headers?.get?.('x-vercel-forwarded-for');
+  if (vercelFwd) {
+    const firstIp = String(vercelFwd).split(',')[0].trim();
+    if (/^[a-fA-F0-9:.]+$/.test(firstIp)) return `vfwd_${firstIp}`;
   }
 
   const vercelIp = req.headers?.['x-vercel-ip'] || req.headers?.get?.('x-vercel-ip');
@@ -53,6 +49,9 @@ function getClientIdentifier(req: any): string {
 
   const realIp = req.headers?.['x-real-ip'] || req.headers?.get?.('x-real-ip');
   if (realIp) return `real_${String(realIp).trim()}`;
+
+  const remoteAddr = req.socket?.remoteAddress;
+  if (remoteAddr) return `sock_${String(remoteAddr).trim()}`;
 
   const forwarded = req.headers?.['x-forwarded-for'] || req.headers?.get?.('x-forwarded-for');
   if (forwarded) {
@@ -98,20 +97,36 @@ export function getCorsHeaders(req: any) {
   const origin = req?.headers?.origin || req?.headers?.get?.('origin') || '';
   const host = req?.headers?.host || req?.headers?.get?.('host') || '';
   let allowedOrigin = 'https://espanolapp.vercel.app';
-  if (origin) {
-    if (
-      origin.includes(host) ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin.endsWith('.vercel.app') ||
-      origin === 'https://espanolapp.vercel.app'
-    ) {
-      allowedOrigin = origin;
+  if (origin && typeof origin === 'string') {
+    try {
+      const parsed = new URL(origin);
+      const exactOrigin = parsed.origin;
+      const ALLOWED = new Set([
+        'https://espanolapp.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174'
+      ]);
+      if (typeof process !== 'undefined' && process.env?.VERCEL_URL) {
+        ALLOWED.add(`https://${process.env.VERCEL_URL}`);
+      }
+      if (ALLOWED.has(exactOrigin)) {
+        allowedOrigin = exactOrigin;
+      } else if (host && /^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+        if (exactOrigin === `https://${host}`) allowedOrigin = exactOrigin;
+        if ((host.startsWith('localhost') || host.startsWith('127.0.0.1')) && exactOrigin === `http://${host}`) {
+          allowedOrigin = exactOrigin;
+        }
+      }
+    } catch {
+      // keep default
     }
   }
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
+    'Vary': 'Origin',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
@@ -359,6 +374,12 @@ export default async function handler(req: any, res?: any) {
   }
 
   try {
+    const preContentType = String(req.headers?.['content-type'] || req.headers?.get?.('content-type') || '').toLowerCase();
+    if (preContentType && !preContentType.startsWith('multipart/form-data')) {
+      const err = { success: false, error: 'Unsupported Media Type. Expected multipart/form-data.', errorCode: 'UNSUPPORTED_MEDIA_TYPE' };
+      return res?.status ? res.status(415).json(err) : new Response(JSON.stringify(err), { status: 415, headers: getCorsHeaders(req) });
+    }
+
     let totalBytes = 0;
     const chunks: Uint8Array[] = [];
     if (req.body && typeof req.body.getReader === 'function') {
@@ -421,18 +442,23 @@ export default async function handler(req: any, res?: any) {
     });
 
     const formData = await fakeReq.formData();
-    const audioEntry = formData.get('audio') as File | null;
-    const referenceTextRaw = formData.get('referenceText') as string | null;
-    const localeRaw = formData.get('locale') as string | null;
+    const audioEntry = formData.get('audio');
+    const referenceTextRaw = formData.get('referenceText');
+    const localeRaw = formData.get('locale');
 
-    if (!audioEntry) {
-      const err = { success: false, error: "Missing 'audio' file in form data.", errorCode: 'MISSING_AUDIO' };
-      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: CORS_HEADERS });
+    if (!audioEntry || typeof audioEntry === 'string' || typeof (audioEntry as any).arrayBuffer !== 'function') {
+      const err = { success: false, error: "Missing or invalid 'audio' file in form data.", errorCode: 'MISSING_AUDIO' };
+      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: getCorsHeaders(req) });
     }
 
-    if (!referenceTextRaw || referenceTextRaw.trim().length === 0) {
-      const err = { success: false, error: "Missing 'referenceText' parameter.", errorCode: 'MISSING_REFERENCE_TEXT' };
-      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: CORS_HEADERS });
+    if (typeof referenceTextRaw !== 'string' || referenceTextRaw.trim().length === 0) {
+      const err = { success: false, error: "Missing or invalid 'referenceText' parameter.", errorCode: 'MISSING_REFERENCE_TEXT' };
+      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: getCorsHeaders(req) });
+    }
+
+    if (localeRaw !== null && typeof localeRaw !== 'string') {
+      const err = { success: false, error: "Invalid 'locale' parameter.", errorCode: 'INVALID_LOCALE' };
+      return res?.status ? res.status(400).json(err) : new Response(JSON.stringify(err), { status: 400, headers: getCorsHeaders(req) });
     }
 
     const referenceText = referenceTextRaw.trim();
@@ -547,30 +573,26 @@ export default async function handler(req: any, res?: any) {
 
     if (!azureRes.ok) {
       let errorCode = 'AZURE_ERROR';
-      let errorMsg = `Azure Speech returned HTTP ${azureRes.status}`;
+      let errorMsg = 'Pronunciation service temporarily unavailable.';
       let guidance = 'Ocurrió un error en el proveedor de evaluación de voz.';
 
-      if (azureRes.status === 401) {
-        errorCode = 'AZURE_UNAUTHORIZED';
-        errorMsg = 'Invalid or expired Azure Speech key.';
-        guidance = 'Clave de Azure Speech inválida o expirada en el servidor.';
-      } else if (azureRes.status === 403) {
-        errorCode = 'AZURE_QUOTA_EXCEEDED';
-        errorMsg = 'Azure Speech resource limit or quota exceeded.';
-        guidance = 'Límite de cuota del servicio Azure alcanzado temporalmente.';
+      if (azureRes.status === 401 || azureRes.status === 403) {
+        errorCode = 'SPEECH_SERVICE_UNAVAILABLE';
+        errorMsg = 'Pronunciation service temporarily unavailable.';
+        guidance = 'El servicio de evaluación de voz no está disponible temporalmente.';
       } else if (azureRes.status === 429) {
         errorCode = 'AZURE_RATE_LIMITED';
-        errorMsg = 'Azure Speech rate limit exceeded.';
-        guidance = 'Demasiadas peticiones simultáneas a Azure. Espera un momento.';
+        errorMsg = 'Pronunciation service is busy. Please try again shortly.';
+        guidance = 'Demasiadas peticiones simultáneas. Espera un momento.';
       } else if (azureRes.status === 400) {
         errorCode = 'AZURE_BAD_AUDIO';
-        errorMsg = 'Azure rejected the audio format.';
-        guidance = 'Formato de audio no reconocido por Azure. Habla claro y prueba de nuevo.';
+        errorMsg = 'Audio format rejected by speech processor.';
+        guidance = 'Formato de audio no reconocido. Habla claro y prueba de nuevo.';
       }
 
       const err = { success: false, error: errorMsg, errorCode, guidance };
-      const code = azureRes.status >= 500 ? 502 : azureRes.status;
-      return res?.status ? res.status(code).json(err) : new Response(JSON.stringify(err), { status: code, headers: CORS_HEADERS });
+      const code = azureRes.status >= 500 || azureRes.status === 401 || azureRes.status === 403 ? 502 : azureRes.status;
+      return res?.status ? res.status(code).json(err) : new Response(JSON.stringify(err), { status: code, headers: getCorsHeaders(req) });
     }
 
     const azureData = (await azureRes.json()) as any;

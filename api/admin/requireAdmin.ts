@@ -32,12 +32,53 @@ export interface AdminTokenPayload {
 }
 
 // Server-side secret key (never exposed to client browser)
+// CRITICAL: ADMIN_JWT_SECRET MUST be set in Vercel environment variables.
+// Without it, the server refuses to sign or verify admin tokens.
 export function getJwtSecret(): string {
-  if (typeof process !== 'undefined' && process.env?.ADMIN_JWT_SECRET) {
-    return process.env.ADMIN_JWT_SECRET;
+  const secret = typeof process !== 'undefined' ? process.env?.ADMIN_JWT_SECRET : undefined;
+  if (secret && typeof secret === 'string' && secret.trim().length >= 16) {
+    return secret.trim();
   }
-  // Deterministic fallback derived from server environment
-  return 'aventura_secure_server_admin_jwt_secret_2026_x89a1';
+  // FAIL CLOSED: refuse to operate without a proper secret
+  throw new Error('ADMIN_JWT_SECRET environment variable is not set or too short. Admin authentication is disabled for security.');
+}
+
+/**
+ * Strict exact-origin allowlist check for admin endpoints.
+ */
+export function applyAdminCors(req: any, res: any, methods: string): void {
+  const origin = req?.headers?.origin || '';
+  const host = req?.headers?.host || '';
+  res.setHeader('Vary', 'Origin');
+  if (!origin || typeof origin !== 'string') return;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+    const exactOrigin = parsed.origin;
+    const allowed = new Set<string>([
+      'https://espanolapp.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174'
+    ]);
+    if (typeof process !== 'undefined' && process.env?.VERCEL_URL) {
+      allowed.add(`https://${process.env.VERCEL_URL}`);
+    }
+    let isAllowed = allowed.has(exactOrigin);
+    if (!isAllowed && host && /^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+      if (exactOrigin === `https://${host}`) isAllowed = true;
+      if ((host.startsWith('localhost') || host.startsWith('127.0.0.1')) && exactOrigin === `http://${host}`) isAllowed = true;
+    }
+    if (isAllowed) {
+      res.setHeader('Access-Control-Allow-Origin', exactOrigin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', methods);
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
+  } catch {
+    // Invalid origin URL; omit CORS headers
+  }
 }
 
 /**
@@ -79,8 +120,13 @@ export function verifyAdminToken(token: string): AdminTokenPayload | null {
   }
 
   try {
+    const decodedHeader = JSON.parse(Buffer.from(header, 'base64url').toString('utf8'));
+    if (!decodedHeader || decodedHeader.alg !== 'HS256' || decodedHeader.typ !== 'JWT') {
+      return null;
+    }
     const payload: AdminTokenPayload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     if (!payload || payload.role !== 'admin') return null;
+    if (typeof payload.expiresAt !== 'number' || !Number.isFinite(payload.expiresAt)) return null;
     if (Date.now() > payload.expiresAt) return null;
     return payload;
   } catch {

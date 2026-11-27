@@ -8,18 +8,36 @@ declare const process: any;
 function setCors(req: any, res: any) {
   const origin = req?.headers?.origin || '';
   const host = req?.headers?.host || '';
-  if (
-    origin &&
-    (origin.includes(host) ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin.endsWith('.vercel.app') ||
-      origin === 'https://espanolapp.vercel.app')
-  ) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', 'https://espanolapp.vercel.app');
+  res.setHeader('Vary', 'Origin');
+
+  let allowedOrigin = 'https://espanolapp.vercel.app';
+  if (origin && typeof origin === 'string') {
+    try {
+      const parsed = new URL(origin);
+      const exactOrigin = parsed.origin;
+      const ALLOWED = new Set([
+        'https://espanolapp.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174'
+      ]);
+      if (typeof process !== 'undefined' && process.env?.VERCEL_URL) {
+        ALLOWED.add(`https://${process.env.VERCEL_URL}`);
+      }
+      if (ALLOWED.has(exactOrigin)) {
+        allowedOrigin = exactOrigin;
+      } else if (host && /^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+        if (exactOrigin === `https://${host}`) allowedOrigin = exactOrigin;
+        if ((host.startsWith('localhost') || host.startsWith('127.0.0.1')) && exactOrigin === `http://${host}`) {
+          allowedOrigin = exactOrigin;
+        }
+      }
+    } catch {
+      // keep default
+    }
   }
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
 }
 
 export default async function handler(req: any, res: any) {

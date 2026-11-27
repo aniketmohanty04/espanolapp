@@ -1350,6 +1350,14 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
       // ========================================================
       // Update Shop / Station Floating Tags (MERGED FEATURE!)
       // ========================================================
+      const escapeHtml = (unsafe: string): string =>
+        String(unsafe ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+
       stationElements.forEach(item => {
         const d = Math.hypot(playerPos.x - item.pos.x, playerPos.z - item.pos.z);
         const isNearby = d < 3.8;
@@ -1364,7 +1372,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
                 ? 'bg-[#1C2133]/90 text-amber-300 border-amber-400/50'
                 : 'bg-slate-900/80 text-slate-400 border-slate-700'
             }">
-              <span>${st.status === 'completed' ? '✔' : st.status === 'locked' ? '🔒' : '🏪'} ${st.label}</span>
+              <span>${st.status === 'completed' ? '✔' : st.status === 'locked' ? '🔒' : '🏪'} ${escapeHtml(st.label)}</span>
             </div>
             ${
               isNearby
@@ -1398,7 +1406,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
                 ? 'bg-rose-950/90 text-rose-300 border-rose-500 glow-red'
                 : 'bg-slate-900/90 text-slate-400 border-slate-700'
             }">
-              <span>👑 ${currentBoss.label}</span>
+              <span>👑 ${escapeHtml(currentBoss.label)}</span>
             </div>
             ${
               isNearBoss
@@ -1407,7 +1415,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
                       E · Misión Jefe (Boss)
                     </button>`
                   : `<div class="mt-1 px-3 py-1 bg-slate-900/90 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 shadow flex items-center gap-1">
-                      🔒 Completa 10 niveles primero (${currentBoss.completedCount ?? 0}/10)
+                      🔒 Completa 10 niveles primero (${escapeHtml(String(currentBoss.completedCount ?? 0))}/10)
                     </div>`
                 : ''
             }
@@ -1431,7 +1439,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
               ? 'bg-emerald-950/80 text-emerald-300 border-emerald-400'
               : 'bg-rose-950/80 text-rose-300 border-rose-500/60'
           }">
-            <span>${isGateOpen ? '🚪 ' + (currentGate?.targetCityName || 'Siguiente Ciudad') : '🔒 Camino Cerrado'}</span>
+            <span>${isGateOpen ? '🚪 ' + escapeHtml(currentGate?.targetCityName || 'Siguiente Ciudad') : '🔒 Camino Cerrado'}</span>
           </div>
         `;
         projectToScreen(22, 5.5, 0, gateTagEl);
@@ -1448,7 +1456,7 @@ export const Adventure3DScene: React.FC<Adventure3DSceneProps> = ({
 
           c.tagEl.innerHTML = isNear ? `
             <button class="pointer-events-auto px-3 py-1 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs rounded-xl shadow-xl border border-white hover:scale-105 active:scale-95 transition-all cursor-pointer">
-              [E] Recoger ${c.name}
+              [E] Recoger ${escapeHtml(c.name)}
             </button>
           ` : '';
 

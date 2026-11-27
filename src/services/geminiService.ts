@@ -354,50 +354,11 @@ Output strictly a JSON object with:
       }
     }
 
-    // Direct Gemini fallback if server proxy was unreachable
-    if ((!response || !response.ok) && apiKey) {
-      for (const model of GEMINI_FALLBACK_MODELS) {
-        try {
-          const directEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-          const directRes = await fetch(directEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: userQuery }] }],
-              systemInstruction: { parts: [{ text: systemInstruction }] },
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: 0.3,
-                maxOutputTokens: 2500
-              }
-            })
-          });
-          if (directRes.ok) {
-            const data = await directRes.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-              const parsed = JSON.parse(cleaned);
-              const result = enforceProperSpanishPedagogy({
-                text: parsed.text || `¡Hola! Como tu profesor de español, aquí tienes la explicación:`,
-                spanishText: parsed.spanishText || undefined,
-                pronunciation: parsed.pronunciation || undefined,
-                englishText: parsed.englishText || undefined,
-                correctionNotice:
-                  parsed.correctionNotice && parsed.correctionNotice !== 'null'
-                    ? parsed.correctionNotice
-                    : undefined,
-                practicePrompt: parsed.practicePrompt || undefined,
-                source: 'gemini'
-              });
-              recordCaminoLearnedResponse(userQuery, result, context?.syllabusTopic);
-              return result;
-            }
-          }
-        } catch {
-          continue;
-        }
-      }
+    // Direct Gemini API fallback REMOVED for security.
+    // All Gemini requests MUST go through the server proxy at /api/camino-chat.
+    // Sending API keys via ?key= in browser fetch exposes them in DevTools network tab.
+    if ((!response || !response.ok) && false) {
+      // Dead code — preserved for reference only. Never executed.
     }
   } catch (err) {
     console.warn('Camino server proxy error, falling back to offline intelligent engine:', err);

@@ -215,7 +215,16 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       const saved = sessionStorage.getItem('camino_chat_history');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter(
+            (m: any) =>
+              m &&
+              typeof m === 'object' &&
+              (m.sender === 'user' || m.sender === 'camino') &&
+              typeof m.text === 'string'
+          );
+          if (valid.length > 0) return valid;
+        }
       }
     } catch {
       // fallback

@@ -15,9 +15,14 @@ drop policy if exists "Allow game anon select" on public.player_progress;
 drop policy if exists "Allow game anon insert" on public.player_progress;
 drop policy if exists "Allow game anon update" on public.player_progress;
 drop policy if exists "Users own progress" on public.player_progress;
+drop policy if exists "Users own progress select" on public.player_progress;
+drop policy if exists "Users own progress insert" on public.player_progress;
+drop policy if exists "Users own progress update" on public.player_progress;
+drop policy if exists "Aislamiento de Jugador" on public.player_progress;
 drop policy if exists "Player Self Read Policy" on public.player_progress;
 drop policy if exists "Player Self Insert Policy" on public.player_progress;
 drop policy if exists "Player Self Update Policy" on public.player_progress;
+drop policy if exists "Disallow Client Delete Policy" on public.player_progress;
 
 -- Strict Player Row Isolation:
 -- 1. SELECT: Authenticated users can only read their own row (or anon during initial login via email hash RPC)

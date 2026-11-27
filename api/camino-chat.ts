@@ -53,18 +53,36 @@ async function parseJsonBody(req: any): Promise<any> {
 function setCorsHeaders(req: any, res: any) {
   const origin = req?.headers?.origin || '';
   const host = req?.headers?.host || '';
-  if (
-    !origin ||
-    origin.includes(host) ||
-    origin.includes('localhost') ||
-    origin.includes('127.0.0.1') ||
-    origin.endsWith('.vercel.app') ||
-    origin === 'https://espanolapp.vercel.app'
-  ) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', 'https://espanolapp.vercel.app');
+  res.setHeader('Vary', 'Origin');
+
+  let allowedOrigin = 'https://espanolapp.vercel.app';
+  if (origin && typeof origin === 'string') {
+    try {
+      const parsed = new URL(origin);
+      const exactOrigin = parsed.origin;
+      const ALLOWED = new Set([
+        'https://espanolapp.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174'
+      ]);
+      if (typeof process !== 'undefined' && process.env?.VERCEL_URL) {
+        ALLOWED.add(`https://${process.env.VERCEL_URL}`);
+      }
+      if (ALLOWED.has(exactOrigin)) {
+        allowedOrigin = exactOrigin;
+      } else if (host && /^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+        if (exactOrigin === `https://${host}`) allowedOrigin = exactOrigin;
+        if ((host.startsWith('localhost') || host.startsWith('127.0.0.1')) && exactOrigin === `http://${host}`) {
+          allowedOrigin = exactOrigin;
+        }
+      }
+    } catch {
+      // keep default
+    }
   }
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
@@ -90,30 +108,48 @@ export default async function handler(req: any, res: any) {
     return sendJson(res, 405, { error: 'Method not allowed. Use POST.' }, req);
   }
 
+  // Reject non-JSON Content-Type when header is explicitly provided (prevents text/plain CSRF)
+  const ct = String(req.headers?.['content-type'] || '').toLowerCase();
+  if (ct && !ct.startsWith('application/json')) {
+    return sendJson(res, 415, { error: 'Unsupported Media Type. Expected application/json.' }, req);
+  }
+
   try {
     const body = await parseJsonBody(req);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return sendJson(res, 400, { error: 'Invalid JSON request body.' }, req);
+    }
     const action = body.action || 'chat';
+    if (action !== 'chat' && action !== 'transcribe') {
+      return sendJson(res, 400, { error: 'Invalid action. Must be "chat" or "transcribe".' }, req);
+    }
 
-    // 3. API Key resolution (Server-side environment secrets)
+    // 3. API Key resolution (Strictly server-side environment secret — never VITE_ or client override)
     const apiKey = (
       (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
-      (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) ||
-      body.apiKeyOverride ||
       ''
     ).trim();
 
     if (!apiKey) {
       return sendJson(res, 500, {
-        error: 'Gemini API key is not configured on the server. Please configure GEMINI_API_KEY in your server environment.'
+        error: 'Gemini API key is not configured on the server.'
       }, req);
     }
 
     // 4. Action: Audio Transcription
     if (action === 'transcribe') {
       const { audioBase64, mimeType, promptText } = body;
-      if (!audioBase64 || typeof audioBase64 !== 'string') {
-        return sendJson(res, 400, { error: 'audioBase64 string is required for transcription.' });
+      if (!audioBase64 || typeof audioBase64 !== 'string' || audioBase64.length > 7 * 1024 * 1024 || !/^[A-Za-z0-9+/=]+$/.test(audioBase64)) {
+        return sendJson(res, 400, { error: 'Valid audioBase64 string is required for transcription.' }, req);
       }
+      const ALLOWED_AUDIO_MIMES = new Set(['audio/webm', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/mpeg']);
+      const safeMime = typeof mimeType === 'string' && ALLOWED_AUDIO_MIMES.has(mimeType.split(';')[0].trim().toLowerCase())
+        ? mimeType.split(';')[0].trim().toLowerCase()
+        : 'audio/webm';
+      const safePromptText =
+        typeof promptText === 'string' && promptText.trim().length > 0
+          ? promptText.trim().slice(0, 600)
+          : 'You are an expert Spanish speech recognition transcriber. Listen carefully and output JSON: {"transcript": "Spanish words spoken", "confidence": 0.95}';
 
       for (const model of CANDIDATE_MODELS) {
         try {
@@ -133,14 +169,12 @@ export default async function handler(req: any, res: any) {
                     parts: [
                       {
                         inlineData: {
-                          mimeType: mimeType || 'audio/webm',
+                          mimeType: safeMime,
                           data: audioBase64
                         }
                       },
                       {
-                        text:
-                          promptText ||
-                          'You are an expert Spanish speech recognition transcriber. Listen carefully and output JSON: {"transcript": "Spanish words spoken", "confidence": 0.95}'
+                        text: safePromptText
                       }
                     ]
                   }
@@ -170,20 +204,23 @@ export default async function handler(req: any, res: any) {
               success: true,
               transcript: parsed.transcript.trim(),
               confidence: parsed.confidence || 0.9
-            });
+            }, req);
           }
         } catch {
           continue;
         }
       }
 
-      return sendJson(res, 502, { error: 'All Gemini candidate models failed to transcribe audio.' });
+      return sendJson(res, 502, { error: 'Audio transcription service unavailable.' }, req);
     }
 
     // 5. Action: Camino AI Chat Tutor
     const { prompt, systemInstruction, chatHistory } = body;
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
-      return sendJson(res, 400, { error: 'prompt is required.' });
+      return sendJson(res, 400, { error: 'prompt is required.' }, req);
+    }
+    if (prompt.length > 2000) {
+      return sendJson(res, 400, { error: 'prompt exceeds maximum length of 2000 characters.' }, req);
     }
 
     // Build multi-turn conversational contents for Gemini with role alternation
@@ -194,7 +231,7 @@ export default async function handler(req: any, res: any) {
       const recent = chatHistory.slice(-6);
       for (const item of recent) {
         if (!item || typeof item !== 'object' || !item.text || typeof item.text !== 'string') continue;
-        const text = item.text.trim();
+        const text = item.text.trim().slice(0, 2000);
         if (!text) continue;
         const role = item.role === 'model' || item.role === 'assistant' || item.role === 'tutor' ? 'model' : 'user';
 
@@ -262,7 +299,12 @@ Output strictly a JSON object with:
   "practicePrompt": "An optional, short follow-up practice challenge or null if not needed."
 }`;
 
-    const effectiveSystemInstruction = systemInstruction || defaultSystemInstruction;
+    // Only accept bounded string systemInstruction if provided; otherwise use server default
+    const safeClientInstruction =
+      typeof systemInstruction === 'string' && systemInstruction.trim().length > 0
+        ? systemInstruction.trim().slice(0, 8000)
+        : '';
+    const effectiveSystemInstruction = safeClientInstruction || defaultSystemInstruction;
 
     for (const model of CANDIDATE_MODELS) {
       try {
@@ -348,19 +390,19 @@ Output strictly a JSON object with:
                 : undefined,
             practicePrompt: parsed.practicePrompt || undefined,
             source: 'gemini'
-          });
+          }, req);
         }
 
         return sendJson(res, 200, {
           text: rawText,
           source: 'gemini'
-        });
+        }, req);
       } catch {
         continue;
       }
     }
 
-    return sendJson(res, 502, { error: 'All Gemini candidate models failed to generate response.' });
+    return sendJson(res, 502, { error: 'AI tutor service is temporarily unavailable.' }, req);
   } catch {
     return sendJson(res, 500, { error: 'Internal server error processing Camino request' }, req);
   }

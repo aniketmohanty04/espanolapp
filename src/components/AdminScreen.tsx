@@ -62,8 +62,8 @@ interface AdminScreenProps {
 }
 
 export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialScreen }) => {
-  // Auth state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(isAdminAuthenticated());
+  // Auth state — always verify with server before unlocking dashboard UI
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [emailInput, setEmailInput] = useState<string>('admin@aventura.es');
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);

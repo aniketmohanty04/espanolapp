@@ -72,10 +72,12 @@ export function clearLoginAttempts(email: string): void {
  * Constant-time string equality to prevent timing analysis attacks on hashes.
  */
 function timingSafeHashEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length);
+  let result = a.length ^ b.length;
+  for (let i = 0; i < maxLen; i++) {
+    const ca = i < a.length ? a.charCodeAt(i) : 0;
+    const cb = i < b.length ? b.charCodeAt(i) : 0;
+    result |= ca ^ cb;
   }
   return result === 0;
 }
@@ -85,7 +87,9 @@ const memoryUsers: Record<string, DatabaseUser> = {};
 const memoryProgress: Record<string, PlayerProgress> = {};
 let memoryCurrentEmail: string | null = null;
 
-const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_ITERATIONS = 600_000;
+const MIN_PBKDF2_ITERATIONS = 10_000;
+const MAX_PBKDF2_ITERATIONS = 2_000_000;
 const PBKDF2_PREFIX = 'pbkdf2_sha256';
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -93,6 +97,9 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function hexToBytes(hex: string): Uint8Array {
+  if (!/^[0-9a-fA-F]+$/.test(hex)) {
+    throw new Error('Invalid hex string');
+  }
   const clean = hex.length % 2 === 0 ? hex : '0' + hex;
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) {
@@ -164,24 +171,24 @@ async function computeLegacyHash(password: string): Promise<string> {
 }
 
 /**
- * Hashes a password using PBKDF2-HMAC-SHA256 (100,000 iterations) with a unique
+ * Hashes a password using PBKDF2-HMAC-SHA256 (600,000 iterations) with a unique
  * cryptographically random 16-byte per-user salt.
  */
 export async function hashPassword(password: string): Promise<string> {
   const normalized = password.trim();
   const webCrypto = getWebCrypto();
-  if (webCrypto) {
-    const salt = new Uint8Array(16);
-    webCrypto.getRandomValues(salt);
-    const hashHex = await derivePbkdf2Hex(normalized, salt, PBKDF2_ITERATIONS);
-    return `${PBKDF2_PREFIX}$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${hashHex}`;
+  if (!webCrypto) {
+    throw new Error('Web Crypto API is required for secure password hashing.');
   }
-  return computeLegacyHash(normalized);
+  const salt = new Uint8Array(16);
+  webCrypto.getRandomValues(salt);
+  const hashHex = await derivePbkdf2Hex(normalized, salt, PBKDF2_ITERATIONS);
+  return `${PBKDF2_PREFIX}$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${hashHex}`;
 }
 
 /**
  * Verifies a plaintext password against a stored PBKDF2 or legacy hash in constant time.
- * Signals `needsRehash` when a legacy hash succeeds so callers can upgrade it transparently.
+ * Signals `needsRehash` when a legacy or lower-iteration hash succeeds so callers can upgrade it transparently.
  */
 export async function verifyPassword(
   password: string,
@@ -198,12 +205,19 @@ export async function verifyPassword(
     const iterations = parseInt(parts[1], 10);
     const saltHex = parts[2];
     const expectedHex = parts[3];
-    if (!Number.isFinite(iterations) || iterations < 10_000 || !saltHex || !expectedHex) {
+    if (
+      !Number.isFinite(iterations) ||
+      iterations < MIN_PBKDF2_ITERATIONS ||
+      iterations > MAX_PBKDF2_ITERATIONS ||
+      !saltHex ||
+      !expectedHex
+    ) {
       return { valid: false, needsRehash: false };
     }
     try {
       const derivedHex = await derivePbkdf2Hex(normalized, hexToBytes(saltHex), iterations);
-      return { valid: timingSafeHashEqual(derivedHex, expectedHex), needsRehash: false };
+      const valid = timingSafeHashEqual(derivedHex, expectedHex);
+      return { valid, needsRehash: valid && iterations < PBKDF2_ITERATIONS };
     } catch {
       return { valid: false, needsRehash: false };
     }
