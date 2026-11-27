@@ -1,7 +1,7 @@
 // Serverless Function: /api/admin/session
 // Verifies active admin session using the server-side requireAdmin guard.
 
-import { requireAdmin } from './requireAdmin';
+import { requireAdmin } from './requireAdmin.ts';
 
 export default async function handler(req: any, res: any) {
   // CORS check

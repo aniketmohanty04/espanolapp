@@ -2,6 +2,7 @@ import { PlayerProgress, PlayerProfile } from '../types';
 import { INITIAL_PROGRESS, DEFAULT_PROFILE, DEFAULT_CHARACTER } from './storageService';
 import { supabaseService } from './supabaseClient';
 import { reconcileProgression } from '../data/citiesData';
+import { sanitizeEmail, sanitizeUsername, sanitizePassword } from '../utils/securitySanitizer';
 
 export interface DatabaseUser {
   id: string;
@@ -21,6 +22,63 @@ export interface AuthResult {
 const DB_USERS_KEY = 'aventura_db_users_v1';
 const DB_PROGRESS_PREFIX = 'aventura_db_progress_v1_';
 const DB_SESSION_KEY = 'aventura_db_session_v1';
+
+// Brute-force login attempt tracker (defense against password spraying)
+interface LoginAttemptTracker {
+  attempts: number;
+  lockoutUntil: number | null;
+}
+const loginAttemptMap = new Map<string, LoginAttemptTracker>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+export function checkLoginLockout(email: string): { locked: boolean; remainingSeconds: number } {
+  const norm = email.trim().toLowerCase();
+  const record = loginAttemptMap.get(norm);
+  if (!record || !record.lockoutUntil) return { locked: false, remainingSeconds: 0 };
+  const now = Date.now();
+  if (now > record.lockoutUntil) {
+    loginAttemptMap.delete(norm);
+    return { locked: false, remainingSeconds: 0 };
+  }
+  const remainingSeconds = Math.ceil((record.lockoutUntil - now) / 1000);
+  return { locked: true, remainingSeconds };
+}
+
+export function recordFailedLogin(email: string): { locked: boolean; remainingSeconds: number } {
+  const norm = email.trim().toLowerCase();
+  const now = Date.now();
+  let record = loginAttemptMap.get(norm);
+  if (!record) {
+    record = { attempts: 1, lockoutUntil: null };
+    loginAttemptMap.set(norm, record);
+    return { locked: false, remainingSeconds: 0 };
+  }
+
+  record.attempts += 1;
+  if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
+    record.lockoutUntil = now + LOGIN_LOCKOUT_MS;
+    const remainingSeconds = Math.ceil(LOGIN_LOCKOUT_MS / 1000);
+    return { locked: true, remainingSeconds };
+  }
+  return { locked: false, remainingSeconds: 0 };
+}
+
+export function clearLoginAttempts(email: string): void {
+  loginAttemptMap.delete(email.trim().toLowerCase());
+}
+
+/**
+ * Constant-time string equality to prevent timing analysis attacks on hashes.
+ */
+function timingSafeHashEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
 
 // In-memory fallback for test and non-browser environments
 const memoryUsers: Record<string, DatabaseUser> = {};
@@ -205,13 +263,20 @@ export const authDatabaseService = {
     displayName: string,
     currentGuestProgress?: PlayerProgress
   ): Promise<AuthResult> {
-    const normEmail = email.trim().toLowerCase();
-    if (!normEmail || !normEmail.includes('@')) {
-      throw new Error('Por favor, introduce una dirección de correo electrónico válida.');
+    const emailCheck = sanitizeEmail(email);
+    if (!emailCheck.isValid) {
+      throw new Error(emailCheck.error);
     }
-    if (!password || password.trim().length < 4) {
-      throw new Error('La contraseña debe tener al menos 4 caracteres.');
+    const normEmail = emailCheck.value;
+
+    const passCheck = sanitizePassword(password, 6, 128);
+    if (!passCheck.isValid) {
+      throw new Error(passCheck.error);
     }
+
+    const nameCheck = sanitizeUsername(displayName, 50);
+    const cleanedName = nameCheck.value.trim().replace(/^years$/i, '').replace(/^viajero$/i, '');
+    const finalName = cleanedName || normEmail.split('@')[0] || 'Aventurero';
 
     // Check remote cloud first if configured
     if (supabaseService.getConfig().isConfigured) {
@@ -231,11 +296,9 @@ export const authDatabaseService = {
       throw new Error('Ya existe una cuenta registrada con este correo electrónico. Por favor, inicia sesión.');
     }
 
-    const passwordHash = await hashPassword(password);
+    const passwordHash = await hashPassword(passCheck.value);
     const now = new Date().toISOString();
     const userId = `usr_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
-    const sanitizedName = displayName.trim().replace(/^years$/i, '').replace(/^viajero$/i, '');
-    const finalName = sanitizedName || normEmail.split('@')[0] || 'Aventurero';
 
     const newUser: DatabaseUser = {
       id: userId,
@@ -298,27 +361,42 @@ export const authDatabaseService = {
    * Log in with email and password, returning their saved progress from where they left off
    */
   async login(email: string, password: string): Promise<AuthResult> {
-    const normEmail = email.trim().toLowerCase();
-    if (!normEmail) {
-      throw new Error('Por favor, introduce tu correo electrónico.');
+    const emailCheck = sanitizeEmail(email);
+    if (!emailCheck.isValid) {
+      throw new Error(emailCheck.error);
     }
-    if (!password) {
-      throw new Error('Por favor, introduce tu contraseña.');
+    const normEmail = emailCheck.value;
+
+    const passCheck = sanitizePassword(password, 1, 128);
+    if (!passCheck.isValid) {
+      throw new Error(passCheck.error);
+    }
+
+    // Check brute-force lockout
+    const lockout = checkLoginLockout(normEmail);
+    if (lockout.locked) {
+      throw new Error(`Demasiados intentos fallidos. Acceso bloqueado temporalmente por ${Math.ceil(lockout.remainingSeconds / 60)} min.`);
     }
 
     // Ensure database is initialized with demo data
     await this.init();
 
-    const passwordHash = await hashPassword(password);
+    const passwordHash = await hashPassword(passCheck.value);
 
     // 1. Try remote cloud lookup first if Supabase is connected
     if (supabaseService.getConfig().isConfigured) {
       try {
         const remoteData = await supabaseService.fetchRemoteUser(normEmail);
         if (remoteData) {
-          if (remoteData.user.passwordHash !== passwordHash) {
+          if (!timingSafeHashEqual(remoteData.user.passwordHash, passwordHash)) {
+            const fail = recordFailedLogin(normEmail);
+            if (fail.locked) {
+              throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada por 10 minutos.`);
+            }
             throw new Error('Contraseña incorrecta. Por favor, verifica tus datos e inténtalo de nuevo.');
           }
+
+          clearLoginAttempts(normEmail);
 
           // Cache in local storage for offline resilience, preserving whichever has more progress
           const users = getStoredUsers();
@@ -368,9 +446,15 @@ export const authDatabaseService = {
       throw new Error('No existe ninguna cuenta con este correo electrónico. Por favor, regístrate.');
     }
 
-    if (user.passwordHash !== passwordHash) {
+    if (!timingSafeHashEqual(user.passwordHash, passwordHash)) {
+      const fail = recordFailedLogin(normEmail);
+      if (fail.locked) {
+        throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada por 10 minutos.`);
+      }
       throw new Error('Contraseña incorrecta. Por favor, verifica tus datos e inténtalo de nuevo.');
     }
+
+    clearLoginAttempts(normEmail);
 
     // Update last login timestamp
     user.lastLoginAt = new Date().toISOString();

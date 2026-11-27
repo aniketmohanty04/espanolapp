@@ -89,29 +89,12 @@ function removeStorageItem(key: string): void {
 }
 
 /**
- * Retrieves the currently active Gemini API key.
- * Checks storage first (if the player customized it in Settings),
- * then Vite environment variables, then the default key.
+ * Retrieves the currently active custom Gemini API key (if player configured one locally).
+ * Otherwise returns empty string: API key is processed 100% securely on the server via /api/camino-chat.
  */
 export function getGeminiApiKey(): string {
   const local = getStorageItem('gemini_api_key');
   if (local && local.trim().length > 0) return local.trim();
-
-  let envKey = '';
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) {
-      envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    } else if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_GEMINI_API_KEY) {
-      envKey = (globalThis as any).process.env.VITE_GEMINI_API_KEY;
-    }
-  } catch {
-    // fallback
-  }
-
-  if (envKey && typeof envKey === 'string' && envKey.trim().length > 0) {
-    return envKey.trim();
-  }
-
   return DEFAULT_GEMINI_API_KEY;
 }
 

@@ -94,6 +94,29 @@ function checkRateLimit(clientId: string): boolean {
   return true;
 }
 
+export function getCorsHeaders(req: any) {
+  const origin = req?.headers?.origin || req?.headers?.get?.('origin') || '';
+  const host = req?.headers?.host || req?.headers?.get?.('host') || '';
+  let allowedOrigin = '*';
+  if (origin) {
+    if (
+      origin.includes(host) ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.endsWith('.vercel.app') ||
+      origin === 'https://espanolapp.vercel.app'
+    ) {
+      allowedOrigin = origin;
+    }
+  }
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept',

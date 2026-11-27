@@ -50,12 +50,31 @@ async function parseJsonBody(req: any): Promise<any> {
   });
 }
 
-function sendJson(res: any, status: number, data: any) {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCorsHeaders(req: any, res: any) {
+  const origin = req.headers?.origin || '';
+  const host = req.headers?.host || '';
+  if (
+    !origin ||
+    origin.includes(host) ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.endsWith('.vercel.app') ||
+    origin === 'https://espanolapp.vercel.app'
+  ) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+function sendJson(res: any, status: number, data: any, req?: any) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  if (req) {
+    setCorsHeaders(req, res);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.end(JSON.stringify(data));
 }
 
@@ -63,16 +82,14 @@ export default async function handler(req: any, res: any) {
   // 1. CORS Preflight
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    setCorsHeaders(req, res);
     res.end();
     return;
   }
 
   // 2. HTTP Method restriction
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Method not allowed. Use POST.' });
+    return sendJson(res, 405, { error: 'Method not allowed. Use POST.' }, req);
   }
 
   try {
@@ -90,7 +107,7 @@ export default async function handler(req: any, res: any) {
     if (!apiKey) {
       return sendJson(res, 500, {
         error: 'Gemini API key is not configured on the server. Please configure GEMINI_API_KEY in your server environment.'
-      });
+      }, req);
     }
 
     // 4. Action: Audio Transcription

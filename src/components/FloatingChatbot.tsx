@@ -4,6 +4,7 @@ import { askCaminoGemini, CaminoResponse, CaminoContext, transcribeSpanishAudioW
 import { speakSpanish } from '../services/spanishSpeechService';
 import { getSpanishCardHeading } from '../services/caminoKnowledgeService';
 import { getCityById } from '../data/citiesData';
+import { sanitizeText } from '../utils/securitySanitizer';
 import { 
   Bot, 
   Send, 
@@ -448,8 +449,10 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
       return;
     }
 
-    const query = (customText ?? inputValue).trim();
-    if (!query || isLoading) return;
+    const rawQuery = (customText ?? inputValue).trim();
+    if (!rawQuery || isLoading) return;
+    const query = sanitizeText(rawQuery, 500);
+    if (!query) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,

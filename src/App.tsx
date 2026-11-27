@@ -19,6 +19,8 @@ import { JourneyHub } from './components/JourneyHub';
 import { OutOfLivesModal } from './components/OutOfLivesModal';
 import { FloatingChatbot } from './components/FloatingChatbot';
 import { AdminScreen } from './components/AdminScreen';
+import { NotFoundScreen } from './components/NotFoundScreen';
+import { hasAdminPortalAccess, isAdminAuthenticated } from './services/adminAuthService';
 import { getCityById, getLevelById, getNextCity, ALL_CITIES } from './data/citiesData';
 import { Level } from './types';
 
@@ -67,7 +69,7 @@ const GameMain: React.FC = () => {
 
   /* ========================================================
      SCREEN: ADMIN PORTAL (SECURE CONTENT & CURRICULUM MANAGEMENT)
-     Protected by cryptographic authentication and RLS
+     Protected by cryptographic authentication, RLS, and Route Cloaking
      Dedicated Routes: /admin/login and /admin/dashboard
      ======================================================== */
   const isDirectAdminUrl = typeof window !== 'undefined' && (
@@ -77,6 +79,20 @@ const GameMain: React.FC = () => {
   );
 
   if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard' || isDirectAdminUrl) {
+    // ROUTE CLOAKING: If unauthenticated user tries to probe /admin without access token, cloak with 404
+    if (!isAdminAuthenticated() && !hasAdminPortalAccess()) {
+      return (
+        <NotFoundScreen
+          onBackToHome={() => {
+            if (typeof window !== 'undefined') {
+              window.history.pushState(null, '', '/');
+            }
+            setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
+          }}
+        />
+      );
+    }
+
     const adminInitial = currentScreen === 'admin-dashboard' || (typeof window !== 'undefined' && window.location.pathname === '/admin/dashboard')
       ? 'admin-dashboard'
       : 'admin-login';

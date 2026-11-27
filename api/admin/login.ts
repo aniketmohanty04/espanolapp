@@ -12,7 +12,7 @@ try {
   // fallback
 }
 const crypto = cryptoModule || (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : null);
-import { signAdminToken, AdminTokenPayload } from './requireAdmin';
+import { signAdminToken, type AdminTokenPayload } from './requireAdmin.ts';
 
 // In-memory rate limiting map (IP and Email based)
 interface RateLimitRecord {
@@ -163,9 +163,9 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // Fallback default admin credentials from environment or secured salt
-  const expectedAdminEmail = (process.env.VITE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@aventura.es').toLowerCase();
-  const expectedAdminSecret = process.env.VITE_ADMIN_SECRET_KEY || process.env.ADMIN_SECRET_KEY || 'AventuraAdmin2026!';
+  // Administrative credentials from server environment secrets or database role
+  const expectedAdminEmail = (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || 'admin@aventura.es').toLowerCase();
+  const expectedAdminSecret = process.env.ADMIN_SECRET_KEY || process.env.VITE_ADMIN_SECRET_KEY || (process.env.NODE_ENV === 'test' ? 'AventuraAdmin2026!' : undefined);
 
   let isAuthenticated = false;
   let authenticatedUserId = 'admin-root';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, User, Sparkles, AlertCircle, CheckCircle2, KeyRound, RotateCcw } from 'lucide-react';
 import { useGame } from '../context/GameContext';
+import { sanitizeEmail, sanitizePassword, sanitizeUsername } from '../utils/securitySanitizer';
 
 interface AuthScreenProps {
   mode: 'login' | 'register' | 'forgot-password';
@@ -29,15 +30,37 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setLoading(true);
 
     try {
+      // 1. Strict Input Sanitization & Format Validation
+      const emailRes = sanitizeEmail(email);
+      if (!emailRes.isValid) {
+        setError(emailRes.error || 'Correo electrónico no válido.');
+        setLoading(false);
+        return;
+      }
+
+      const passRes = sanitizePassword(password, mode === 'login' ? 1 : 6, 128);
+      if (!passRes.isValid) {
+        setError(passRes.error || 'Contraseña no válida.');
+        setLoading(false);
+        return;
+      }
+
       if (mode === 'login') {
-        const res = await loginUser(email, password);
+        const res = await loginUser(emailRes.value, passRes.value);
         if (!res.success) {
           setError(res.error || 'Credenciales no válidas. Por favor, revisa tus datos.');
         } else {
           setSuccessMsg('¡Bienvenido de vuelta! Cargando tu progreso guardado...');
         }
       } else if (mode === 'register') {
-        const res = await registerUser(email, password, name);
+        const nameRes = sanitizeUsername(name, 50);
+        if (!nameRes.isValid) {
+          setError(nameRes.error || 'Nombre de usuario no válido.');
+          setLoading(false);
+          return;
+        }
+
+        const res = await registerUser(emailRes.value, passRes.value, nameRes.value);
         if (!res.success) {
           setError(res.error || 'No se pudo crear la cuenta.');
         } else {
@@ -45,16 +68,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         }
       } else {
         // Forgot password flow
-        if (password.trim().length < 4) {
-          setError('La nueva contraseña debe tener al menos 4 caracteres.');
-          return;
-        }
         if (password !== confirmPassword) {
           setError('Las contraseñas no coinciden. Por favor, asegúrate de que sean idénticas.');
+          setLoading(false);
           return;
         }
 
-        const res = await resetPasswordAndRestart(email, password);
+        const res = await resetPasswordAndRestart(emailRes.value, passRes.value);
         if (!res.success) {
           setError(res.error || 'No se pudo restablecer la contraseña.');
         } else {

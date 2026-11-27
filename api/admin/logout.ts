@@ -1,7 +1,7 @@
 // Serverless Function: /api/admin/logout
 // Clears the admin session HttpOnly cookie and records logout in audit_log.
 
-import { requireAdmin } from './requireAdmin';
+import { requireAdmin } from './requireAdmin.ts';
 
 declare const process: any;
 

@@ -18,6 +18,7 @@ import { MODULE2_CITIES } from '../data/cities/module2Cities';
 import { MODULE3_CITIES } from '../data/cities/module3Cities';
 import { MODULE4_CITIES } from '../data/cities/module4Cities';
 import { MODULE5_CITIES } from '../data/cities/module5Cities';
+import { sanitizeText as cleanSecureText } from '../utils/securitySanitizer';
 
 const STORAGE_CURRICULUM_KEY = 'aventura_custom_curriculum_v1';
 
@@ -49,16 +50,11 @@ export function getFactoryDefaultCities(): City[] {
 }
 
 /**
- * Sanitizes input text: strips HTML/script tags and trims excessive whitespace.
+ * Sanitizes input text: strips HTML/script tags, control characters, and trims excessive whitespace.
  */
 export function sanitizeText(input: string): string {
   if (typeof input !== 'string') return '';
-  return input
-    .replace(/<[^>]*>/g, '') // Strip HTML tags
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+  return cleanSecureText(input, 5000);
 }
 
 /**

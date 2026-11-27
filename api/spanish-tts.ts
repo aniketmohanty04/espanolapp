@@ -5,10 +5,25 @@
 declare const Buffer: any;
 declare const process: any;
 
+function setCors(req: any, res: any) {
+  const origin = req.headers?.origin || '';
+  const host = req.headers?.host || '';
+  if (
+    !origin ||
+    origin.includes(host) ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.endsWith('.vercel.app') ||
+    origin === 'https://espanolapp.vercel.app'
+  ) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // Support CORS preflight
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    setCors(req, res);
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.statusCode = 204;
@@ -20,7 +35,7 @@ export default async function handler(req: any, res: any) {
   if (req.method === 'HEAD') {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    setCors(req, res);
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     res.end();
     return;
