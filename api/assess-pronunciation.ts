@@ -97,7 +97,7 @@ function checkRateLimit(clientId: string): boolean {
 export function getCorsHeaders(req: any) {
   const origin = req?.headers?.origin || req?.headers?.get?.('origin') || '';
   const host = req?.headers?.host || req?.headers?.get?.('host') || '';
-  let allowedOrigin = '*';
+  let allowedOrigin = 'https://espanolapp.vercel.app';
   if (origin) {
     if (
       origin.includes(host) ||
@@ -118,7 +118,7 @@ export function getCorsHeaders(req: any) {
 }
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://espanolapp.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -648,9 +648,8 @@ export default async function handler(req: any, res?: any) {
       ? res.status(200).json(responsePayload)
       : new Response(JSON.stringify(responsePayload), { status: 200, headers: CORS_HEADERS });
 
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    const errObj = { success: false, error: `Server error: ${errorMsg}`, errorCode: 'INTERNAL_SERVER_ERROR' };
+  } catch {
+    const errObj = { success: false, error: 'Internal server error assessing pronunciation', errorCode: 'INTERNAL_SERVER_ERROR' };
     return res?.status ? res.status(500).json(errObj) : new Response(JSON.stringify(errObj), { status: 500, headers: CORS_HEADERS });
   }
 }

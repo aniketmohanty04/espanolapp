@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
   if (env.SUPABASE_SERVICE_ROLE_KEY) process.env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 
   return {
+    build: {
+      sourcemap: false
+    },
     plugins: [
       tailwindcss(),
       react(),

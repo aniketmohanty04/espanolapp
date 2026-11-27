@@ -51,8 +51,8 @@ async function parseJsonBody(req: any): Promise<any> {
 }
 
 function setCorsHeaders(req: any, res: any) {
-  const origin = req.headers?.origin || '';
-  const host = req.headers?.host || '';
+  const origin = req?.headers?.origin || '';
+  const host = req?.headers?.host || '';
   if (
     !origin ||
     origin.includes(host) ||
@@ -62,6 +62,8 @@ function setCorsHeaders(req: any, res: any) {
     origin === 'https://espanolapp.vercel.app'
   ) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://espanolapp.vercel.app');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -70,11 +72,7 @@ function setCorsHeaders(req: any, res: any) {
 function sendJson(res: any, status: number, data: any, req?: any) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
-  if (req) {
-    setCorsHeaders(req, res);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
+  setCorsHeaders(req, res);
   res.end(JSON.stringify(data));
 }
 
@@ -363,8 +361,7 @@ Output strictly a JSON object with:
     }
 
     return sendJson(res, 502, { error: 'All Gemini candidate models failed to generate response.' });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return sendJson(res, 500, { error: 'Internal server error processing Camino request', details: message });
+  } catch {
+    return sendJson(res, 500, { error: 'Internal server error processing Camino request' }, req);
   }
 }

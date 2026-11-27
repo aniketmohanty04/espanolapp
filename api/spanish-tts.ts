@@ -6,17 +6,19 @@ declare const Buffer: any;
 declare const process: any;
 
 function setCors(req: any, res: any) {
-  const origin = req.headers?.origin || '';
-  const host = req.headers?.host || '';
+  const origin = req?.headers?.origin || '';
+  const host = req?.headers?.host || '';
   if (
-    !origin ||
-    origin.includes(host) ||
-    origin.includes('localhost') ||
-    origin.includes('127.0.0.1') ||
-    origin.endsWith('.vercel.app') ||
-    origin === 'https://espanolapp.vercel.app'
+    origin &&
+    (origin.includes(host) ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.endsWith('.vercel.app') ||
+      origin === 'https://espanolapp.vercel.app')
   ) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://espanolapp.vercel.app');
   }
 }
 
@@ -86,15 +88,15 @@ export default async function handler(req: any, res: any) {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      setCors(req, res);
       res.end(Buffer.from(buffer));
     } finally {
       clearTimeout(timeoutId);
     }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
     res.statusCode = 502;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Failed to synthesize Spanish speech', details: message }));
+    setCors(req, res);
+    res.end(JSON.stringify({ error: 'Failed to synthesize Spanish speech' }));
   }
 }
