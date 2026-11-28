@@ -28,7 +28,8 @@ import {
   sanitizeText,
   validateQuestion,
   validateLevel,
-  syncCurriculumToCloud
+  syncCurriculumToCloud,
+  loadAdminOwnCurriculum
 } from '../services/adminCurriculumService';
 import {
   AssignmentItem,
@@ -39,7 +40,7 @@ import {
   saveLocalAssignments,
   sanitizeAssignment,
   syncAssignmentsToCloud,
-  loadCloudAssignments,
+  loadAdminOwnAssignments,
   loadAdminSubmissions,
   loadAdminRoster,
   saveAdminRoster
@@ -139,8 +140,14 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    loadCloudAssignments().then((cloud) => {
-      if (cloud.length > 0) setAssignmentsList(cloud);
+    loadAdminOwnAssignments().then((cloud) => {
+      setAssignmentsList(cloud);
+    });
+    loadAdminOwnCurriculum().then((ownCities) => {
+      if (ownCities) {
+        setCities(ownCities);
+        setHasCustomEdits(isCustomCurriculumActive());
+      }
     });
     loadAdminSubmissions().then(setAdminSubmissions);
     loadAdminRoster(getAdminEmail() || 'admin').then(setAdminRoster);
@@ -160,12 +167,19 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
     setIsSavingRoster(true);
     const res = await saveAdminRoster(getAdminEmail() || 'admin', nextRoster);
     setIsSavingRoster(false);
-    setAdminRoster(res.students);
-    setRosterEmailInput('');
-    setNotification({
-      message: res.success ? `Saved ${res.students.length} student(s) in your teachership roster.` : `Saved locally (${res.error || 'offline'}).`,
-      type: res.success ? 'success' : 'info'
-    });
+    if (res.success) {
+      setAdminRoster(res.students);
+      setRosterEmailInput('');
+      setNotification({
+        message: `Saved ${res.students.length} registered student(s) in your teachership roster.`,
+        type: 'success'
+      });
+    } else {
+      setNotification({
+        message: res.error || 'Failed to add student(s) to roster.',
+        type: 'error'
+      });
+    }
   };
 
   const handleRemoveRosterEmail = async (emailToRemove: string) => {

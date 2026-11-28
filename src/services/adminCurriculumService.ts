@@ -210,6 +210,37 @@ export function isCustomCurriculumActive(): boolean {
  * Loads custom curriculum from storage and syncs it into ALL_CITIES.
  * Returns the currently active cities list.
  */
+export async function loadAdminOwnCurriculum(): Promise<City[] | null> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') return null;
+  try {
+    const res = await fetch('/api/admin/curriculum?mode=admin', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    if (data?.success && Array.isArray(data.cities) && data.cities.length > 0) {
+      activeCustomCities = data.cities;
+      syncWithGameCities(activeCustomCities!);
+      return activeCustomCities;
+    } else if (data?.success && data.cities === null) {
+      const defaults = getFactoryDefaultCities();
+      activeCustomCities = null;
+      syncWithGameCities(defaults);
+      try {
+        window.localStorage.removeItem(STORAGE_CURRICULUM_KEY);
+      } catch {
+        // ignore
+      }
+      return defaults;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export function getActiveCurriculum(): City[] {
   if (activeCustomCities) {
     return activeCustomCities;
@@ -270,9 +301,10 @@ export async function syncCurriculumToCloud(cities: City[]): Promise<{ success: 
 }
 
 let lastLoadedCloudUpdatedAt: string | null = null;
+let lastLoadedStudentEmail: string | null = null;
 let lastCloudFetchAt = 0;
 
-export async function loadCloudCurriculum(force = false): Promise<boolean> {
+export async function loadCloudCurriculum(force = false, studentEmail?: string): Promise<boolean> {
   if (typeof window === 'undefined' || typeof fetch !== 'function') {
     return false;
   }
@@ -280,15 +312,22 @@ export async function loadCloudCurriculum(force = false): Promise<boolean> {
   if (window.location?.pathname?.startsWith('/admin')) {
     return false;
   }
-  // Rate-limit client polling to at most once every 5 seconds unless forced
+  const cleanEmail = (studentEmail || '').trim().toLowerCase();
+  const emailChanged = cleanEmail !== (lastLoadedStudentEmail || '');
+  // Rate-limit client polling to at most once every 5 seconds unless forced or user changed
   const now = Date.now();
-  if (!force && now - lastCloudFetchAt < 5000) {
+  if (!force && !emailChanged && now - lastCloudFetchAt < 5000) {
     return false;
   }
   lastCloudFetchAt = now;
+  lastLoadedStudentEmail = cleanEmail;
+
+  const query = cleanEmail && cleanEmail !== 'guest'
+    ? `?studentEmail=${encodeURIComponent(cleanEmail)}`
+    : '';
 
   try {
-    const res = await fetch('/api/admin/curriculum', {
+    const res = await fetch(`/api/admin/curriculum${query}`, {
       method: 'GET',
       cache: 'no-store'
     });
@@ -309,11 +348,12 @@ export async function loadCloudCurriculum(force = false): Promise<boolean> {
         (c: any) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string' && Array.isArray(c.levels)
       )
     ) {
-      // Skip redundant re-renders if cloud version hasn't changed
-      if (data.updatedAt && data.updatedAt === lastLoadedCloudUpdatedAt) {
+      // Skip redundant re-renders if cloud version hasn't changed for this student
+      const versionKey = `${cleanEmail}::${data.updatedAt || ''}`;
+      if (!emailChanged && data.updatedAt && versionKey === lastLoadedCloudUpdatedAt) {
         return false;
       }
-      lastLoadedCloudUpdatedAt = data.updatedAt || String(now);
+      lastLoadedCloudUpdatedAt = versionKey;
       activeCustomCities = data.cities;
       syncWithGameCities(activeCustomCities!);
       try {

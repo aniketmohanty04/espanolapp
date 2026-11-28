@@ -47,37 +47,78 @@ export default async function handler(req: any, res: any) {
 
     const { url, serviceKey, anonKey } = getSupabaseEnv();
 
-    // 1. PUBLIC READ: Fetch published curriculum overrides for all players
+    // 1. READ: Per-admin isolated curriculum (base curriculum is built-in for everyone;
+    // admin additions/edits are stored per-admin and only returned to that admin or students in their roster)
     if (req.method === 'GET') {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      const mode = String(req.query?.mode || '');
+      const studentEmail = String(req.query?.studentEmail || '').trim().toLowerCase();
       const readKey = serviceKey || anonKey;
       if (!url || !readKey) {
         return res.status(200).json({ success: true, cities: null });
       }
 
       try {
-        const response = await fetch(
-          `${url}/rest/v1/curriculum_content?id=eq.active_curriculum&select=data,curriculum_version,updated_at`,
-          {
-            headers: {
-              'apikey': readKey,
-              'Authorization': `Bearer ${readKey}`
-            }
-          }
-        );
+        // If Admin Portal is requesting its own curriculum
+        if (mode === 'admin') {
+          const admin = await requireAdmin(req, res);
+          if (!admin) return;
+          const adminKey = String(admin.email || '').trim().toLowerCase();
+          const resByAdmin = await fetch(
+            `${url}/rest/v1/curriculum_content?id=eq.curriculum_by_admin&select=data,updated_at`,
+            { headers: { 'apikey': serviceKey || readKey, 'Authorization': `Bearer ${serviceKey || readKey}` } }
+          );
+          if (!resByAdmin.ok) return res.status(200).json({ success: true, cities: null });
+          const rows = await resByAdmin.json();
+          const byAdmin = (Array.isArray(rows) && rows[0]?.data && typeof rows[0].data === 'object') ? rows[0].data : {};
+          const adminCities = Array.isArray(byAdmin[adminKey]) && byAdmin[adminKey].length > 0 ? byAdmin[adminKey] : null;
+          return res.status(200).json({
+            success: true,
+            cities: adminCities,
+            version: 1,
+            updatedAt: rows[0]?.updated_at || null
+          });
+        }
 
-        if (!response.ok) {
+        // Student read: check which admin roster(s) include this studentEmail
+        if (!studentEmail || studentEmail === 'guest' || !serviceKey) {
           return res.status(200).json({ success: true, cities: null });
         }
 
-        const rows = await response.json();
-        const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+        const [rosterRes, currRes] = await Promise.all([
+          fetch(`${url}/rest/v1/curriculum_content?id=eq.admin_teachership_rosters&select=data`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+          }),
+          fetch(`${url}/rest/v1/curriculum_content?id=eq.curriculum_by_admin&select=data,updated_at`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+          })
+        ]);
+
+        const rosterRows = rosterRes.ok ? await rosterRes.json() : [];
+        const rosters = (Array.isArray(rosterRows) && rosterRows[0]?.data && typeof rosterRows[0].data === 'object') ? rosterRows[0].data : {};
+
+        let matchedAdmin: string | null = null;
+        for (const [adm, students] of Object.entries(rosters)) {
+          if (Array.isArray(students) && students.some(s => String(s).trim().toLowerCase() === studentEmail)) {
+            matchedAdmin = adm.trim().toLowerCase();
+            break;
+          }
+        }
+
+        if (!matchedAdmin) {
+          // Student is not in any admin's roster -> only factory base questions
+          return res.status(200).json({ success: true, cities: null });
+        }
+
+        const currRows = currRes.ok ? await currRes.json() : [];
+        const byAdmin = (Array.isArray(currRows) && currRows[0]?.data && typeof currRows[0].data === 'object') ? currRows[0].data : {};
+        const adminCities = Array.isArray(byAdmin[matchedAdmin]) && byAdmin[matchedAdmin].length > 0 ? byAdmin[matchedAdmin] : null;
 
         return res.status(200).json({
           success: true,
-          cities: Array.isArray(row?.data) && row.data.length > 0 ? row.data : null,
-          version: row?.curriculum_version || 1,
-          updatedAt: row?.updated_at || null
+          cities: adminCities,
+          version: 1,
+          updatedAt: currRows[0]?.updated_at || null
         });
       } catch {
         return res.status(200).json({ success: true, cities: null });
@@ -98,18 +139,33 @@ export default async function handler(req: any, res: any) {
         });
       }
 
+      const adminKey = String(admin.email || '').trim().toLowerCase();
+
       if (req.method === 'DELETE') {
-        const delRes = await fetch(
-          `${url}/rest/v1/curriculum_content?id=eq.active_curriculum`,
-          {
-            method: 'DELETE',
-            headers: {
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`,
-              'Prefer': 'return=minimal'
-            }
-          }
+        const existingRes = await fetch(
+          `${url}/rest/v1/curriculum_content?id=eq.curriculum_by_admin&select=data`,
+          { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
         );
+        const rows = existingRes.ok ? await existingRes.json().catch(() => []) : [];
+        const byAdmin = (Array.isArray(rows) && rows[0]?.data && typeof rows[0].data === 'object') ? rows[0].data : {};
+        delete byAdmin[adminKey];
+
+        const delRes = await fetch(`${url}/rest/v1/curriculum_content`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+            'Prefer': 'resolution=merge-duplicates,return=minimal'
+          },
+          body: JSON.stringify({
+            id: 'curriculum_by_admin',
+            curriculum_version: 1,
+            data: byAdmin,
+            modified_by: adminKey,
+            updated_at: new Date().toISOString()
+          })
+        });
 
         if (!delRes.ok) {
           return res.status(502).json({
@@ -118,7 +174,7 @@ export default async function handler(req: any, res: any) {
           });
         }
 
-        await recordAuditLog(admin.userId, 'curriculum_reset', { email: admin.email });
+        await recordAuditLog(admin.userId, 'curriculum_reset', { email: adminKey });
         return res.status(200).json({ success: true, reset: true });
       }
 
@@ -149,6 +205,14 @@ export default async function handler(req: any, res: any) {
         }
       }
 
+      const existingRes = await fetch(
+        `${url}/rest/v1/curriculum_content?id=eq.curriculum_by_admin&select=data`,
+        { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+      );
+      const existingRows = existingRes.ok ? await existingRes.json().catch(() => []) : [];
+      const byAdmin = (Array.isArray(existingRows) && existingRows[0]?.data && typeof existingRows[0].data === 'object') ? existingRows[0].data : {};
+      byAdmin[adminKey] = body.cities;
+
       const upsertRes = await fetch(`${url}/rest/v1/curriculum_content`, {
         method: 'POST',
         headers: {
@@ -158,10 +222,10 @@ export default async function handler(req: any, res: any) {
           'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify({
-          id: 'active_curriculum',
+          id: 'curriculum_by_admin',
           curriculum_version: 1,
-          data: body.cities,
-          modified_by: admin.email,
+          data: byAdmin,
+          modified_by: adminKey,
           updated_at: new Date().toISOString()
         })
       });

@@ -39,6 +39,64 @@ async function recordAuditLog(actorId: string, action: string, metadata: Record<
 
 const VALID_TYPES = new Set(['written', 'mcq', 'fill', 'surprise-test']);
 
+async function getAllRosters(url: string, serviceKey: string): Promise<Record<string, string[]>> {
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/curriculum_content?id=eq.admin_teachership_rosters&select=data`,
+      {
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`
+        }
+      }
+    );
+    if (!response.ok) return {};
+    const rows = await response.json();
+    const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    return row?.data && typeof row.data === 'object' ? row.data : {};
+  } catch {
+    return {};
+  }
+}
+
+async function getAdminsForStudent(url: string, serviceKey: string, studentEmail: string): Promise<Set<string>> {
+  const cleanEmail = studentEmail.trim().toLowerCase();
+  if (!cleanEmail || cleanEmail === 'guest') return new Set();
+  const rosters = await getAllRosters(url, serviceKey);
+  const admins = new Set<string>();
+  for (const [adminEmail, students] of Object.entries(rosters)) {
+    if (Array.isArray(students) && students.some(s => String(s).trim().toLowerCase() === cleanEmail)) {
+      admins.add(adminEmail.trim().toLowerCase());
+    }
+  }
+  return admins;
+}
+
+async function findUnregisteredEmails(url: string, serviceKey: string, emails: string[]): Promise<string[]> {
+  if (emails.length === 0) return [];
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/player_progress?select=email`,
+      {
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`
+        }
+      }
+    );
+    if (!response.ok) return emails;
+    const rows = await response.json();
+    const registered = new Set<string>(
+      Array.isArray(rows)
+        ? rows.map((r: any) => String(r?.email || '').trim().toLowerCase()).filter(Boolean)
+        : []
+    );
+    return emails.filter(e => !registered.has(e.trim().toLowerCase()));
+  } catch {
+    return emails;
+  }
+}
+
 export default async function handler(req: any, res: any) {
   try {
     applyAdminCors(req, res, 'GET, POST, PUT, OPTIONS');
@@ -54,16 +112,17 @@ export default async function handler(req: any, res: any) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       const mode = String(req.query?.mode || '');
 
-      // Admin-only: fetch all student submissions
-      if (mode === 'admin_submissions') {
+      // Admin-only: fetch this admin's own assignments
+      if (mode === 'admin_manage') {
         const admin = await requireAdmin(req, res);
         if (!admin) return;
+        const adminKey = String(admin.email || '').trim().toLowerCase();
         if (!url || !serviceKey) {
-          return res.status(200).json({ success: true, submissions: {} });
+          return res.status(200).json({ success: true, assignments: [] });
         }
         try {
           const response = await fetch(
-            `${url}/rest/v1/curriculum_content?id=eq.assignment_submissions&select=data`,
+            `${url}/rest/v1/curriculum_content?id=eq.active_assignments&select=data,updated_at`,
             {
               headers: {
                 'apikey': serviceKey,
@@ -71,11 +130,52 @@ export default async function handler(req: any, res: any) {
               }
             }
           );
-          if (!response.ok) return res.status(200).json({ success: true, submissions: {} });
+          if (!response.ok) return res.status(200).json({ success: true, assignments: [] });
           const rows = await response.json();
           const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-          const submissions = row?.data && typeof row.data === 'object' ? row.data : {};
-          return res.status(200).json({ success: true, submissions });
+          const allAssignments = Array.isArray(row?.data) ? row.data : [];
+          const mine = allAssignments.filter(
+            (a: any) => !a?.createdBy || String(a.createdBy).trim().toLowerCase() === adminKey
+          );
+          return res.status(200).json({ success: true, assignments: mine, updatedAt: row?.updated_at || null });
+        } catch {
+          return res.status(200).json({ success: true, assignments: [] });
+        }
+      }
+
+      // Admin-only: fetch student submissions for this admin's assignments
+      if (mode === 'admin_submissions') {
+        const admin = await requireAdmin(req, res);
+        if (!admin) return;
+        const adminKey = String(admin.email || '').trim().toLowerCase();
+        if (!url || !serviceKey) {
+          return res.status(200).json({ success: true, submissions: {} });
+        }
+        try {
+          const [subRes, asgRes] = await Promise.all([
+            fetch(`${url}/rest/v1/curriculum_content?id=eq.assignment_submissions&select=data`, {
+              headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+            }),
+            fetch(`${url}/rest/v1/curriculum_content?id=eq.active_assignments&select=data`, {
+              headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+            })
+          ]);
+          const subRows = subRes.ok ? await subRes.json() : [];
+          const asgRows = asgRes.ok ? await asgRes.json() : [];
+          const allSubs = (Array.isArray(subRows) && subRows[0]?.data && typeof subRows[0].data === 'object') ? subRows[0].data : {};
+          const allAsgs = (Array.isArray(asgRows) && Array.isArray(asgRows[0]?.data)) ? asgRows[0].data : [];
+          const myAsgIds = new Set(
+            allAsgs
+              .filter((a: any) => !a?.createdBy || String(a.createdBy).trim().toLowerCase() === adminKey)
+              .map((a: any) => a.id)
+          );
+          const filteredSubs: Record<string, any> = {};
+          for (const [asgId, subsByStudent] of Object.entries(allSubs)) {
+            if (myAsgIds.has(asgId)) {
+              filteredSubs[asgId] = subsByStudent;
+            }
+          }
+          return res.status(200).json({ success: true, submissions: filteredSubs });
         } catch {
           return res.status(200).json({ success: true, submissions: {} });
         }
@@ -88,34 +188,25 @@ export default async function handler(req: any, res: any) {
         if (!url || !serviceKey) {
           return res.status(200).json({ success: true, students: [] });
         }
-        try {
-          const response = await fetch(
-            `${url}/rest/v1/curriculum_content?id=eq.admin_teachership_rosters&select=data`,
-            {
-              headers: {
-                'apikey': serviceKey,
-                'Authorization': `Bearer ${serviceKey}`
-              }
-            }
-          );
-          if (!response.ok) return res.status(200).json({ success: true, students: [] });
-          const rows = await response.json();
-          const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-          const rosters = row?.data && typeof row.data === 'object' ? row.data : {};
-          const adminKey = String(admin.email || '').trim().toLowerCase();
-          const students = Array.isArray(rosters[adminKey]) ? rosters[adminKey] : [];
-          return res.status(200).json({ success: true, students });
-        } catch {
-          return res.status(200).json({ success: true, students: [] });
-        }
+        const rosters = await getAllRosters(url, serviceKey);
+        const adminKey = String(admin.email || '').trim().toLowerCase();
+        const students = Array.isArray(rosters[adminKey]) ? rosters[adminKey] : [];
+        return res.status(200).json({ success: true, students });
       }
 
+      // Student read: ONLY return assignments created by an admin whose roster includes this studentEmail
+      const studentEmail = String(req.query?.studentEmail || '').trim().toLowerCase();
       const readKey = serviceKey || anonKey;
-      if (!url || !readKey) {
+      if (!url || !readKey || !studentEmail || studentEmail === 'guest') {
         return res.status(200).json({ success: true, assignments: [] });
       }
 
       try {
+        const allowedAdmins = serviceKey ? await getAdminsForStudent(url, serviceKey, studentEmail) : new Set<string>();
+        if (allowedAdmins.size === 0) {
+          return res.status(200).json({ success: true, assignments: [] });
+        }
+
         const response = await fetch(
           `${url}/rest/v1/curriculum_content?id=eq.active_assignments&select=data,updated_at`,
           {
@@ -132,11 +223,15 @@ export default async function handler(req: any, res: any) {
 
         const rows = await response.json();
         const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-        const assignments = Array.isArray(row?.data) ? row.data : [];
+        const allAssignments = Array.isArray(row?.data) ? row.data : [];
+        const visibleAssignments = allAssignments.filter((a: any) => {
+          const creator = String(a?.createdBy || '').trim().toLowerCase();
+          return creator && allowedAdmins.has(creator);
+        });
 
         return res.status(200).json({
           success: true,
-          assignments,
+          assignments: visibleAssignments,
           updatedAt: row?.updated_at || null
         });
       } catch {
@@ -180,6 +275,24 @@ export default async function handler(req: any, res: any) {
 
         const studentEmail = String(sub.studentEmail || 'guest').trim().toLowerCase().slice(0, 160);
         const assignmentId = String(sub.assignmentId).trim().slice(0, 80);
+
+        if (!studentEmail || studentEmail === 'guest') {
+          return res.status(403).json({ error: 'Registered student login required to submit assignments.' });
+        }
+
+        // Verify student is in the assignment creator's teachership roster
+        const [asgRes, allowedAdmins] = await Promise.all([
+          fetch(`${url}/rest/v1/curriculum_content?id=eq.active_assignments&select=data`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+          }),
+          getAdminsForStudent(url, serviceKey, studentEmail)
+        ]);
+        const asgRows = asgRes.ok ? await asgRes.json().catch(() => []) : [];
+        const asgList = Array.isArray(asgRows) && Array.isArray(asgRows[0]?.data) ? asgRows[0].data : [];
+        const targetAsg = asgList.find((a: any) => a?.id === assignmentId);
+        if (targetAsg?.createdBy && !allowedAdmins.has(String(targetAsg.createdBy).trim().toLowerCase())) {
+          return res.status(403).json({ error: 'You are not enrolled in this instructor’s roster.' });
+        }
 
         const existingRes = await fetch(
           `${url}/rest/v1/curriculum_content?id=eq.assignment_submissions&select=data`,
@@ -260,26 +373,21 @@ export default async function handler(req: any, res: any) {
               .map((s: any) => String(s || '').trim().toLowerCase())
               .filter((s: string) => s.includes('@') && s.length <= 160)
           )
-        );
-        const existingRes = await fetch(
-          `${url}/rest/v1/curriculum_content?id=eq.admin_teachership_rosters&select=data`,
-          {
-            headers: {
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`
-            }
-          }
-        );
-        let rosters: Record<string, string[]> = {};
-        if (existingRes.ok) {
-          const rows = await existingRes.json().catch(() => []);
-          const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-          if (row?.data && typeof row.data === 'object') {
-            rosters = row.data;
-          }
+        ) as string[];
+
+        // Verify all added emails are already registered in the portal (player_progress)
+        const unregistered = await findUnregisteredEmails(url, serviceKey, cleanedStudents);
+        if (unregistered.length > 0) {
+          return res.status(400).json({
+            error: 'Unregistered Student(s)',
+            unregistered,
+            message: `Students must register in the portal first before being added to your roster: ${unregistered.join(', ')}`
+          });
         }
+
+        const rosters = await getAllRosters(url, serviceKey);
         const adminKey = String(admin.email || '').trim().toLowerCase();
-        rosters[adminKey] = cleanedStudents as string[];
+        rosters[adminKey] = cleanedStudents;
 
         const upsertRoster = await fetch(`${url}/rest/v1/curriculum_content`, {
           method: 'POST',
@@ -324,6 +432,37 @@ export default async function handler(req: any, res: any) {
         }
       }
 
+      // Merge only this admin's assignments into active_assignments, preserving other admins' assignments
+      const adminKey = String(admin.email || '').trim().toLowerCase();
+      const taggedMine = body.assignments.map((item: any) => ({
+        ...item,
+        createdBy: adminKey
+      }));
+
+      let otherAdminsAssignments: any[] = [];
+      try {
+        const existingRes = await fetch(
+          `${url}/rest/v1/curriculum_content?id=eq.active_assignments&select=data`,
+          {
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`
+            }
+          }
+        );
+        if (existingRes.ok) {
+          const rows = await existingRes.json().catch(() => []);
+          const existingList = Array.isArray(rows) && Array.isArray(rows[0]?.data) ? rows[0].data : [];
+          otherAdminsAssignments = existingList.filter(
+            (a: any) => a?.createdBy && String(a.createdBy).trim().toLowerCase() !== adminKey
+          );
+        }
+      } catch {
+        // ignore
+      }
+
+      const mergedAssignments = [...taggedMine, ...otherAdminsAssignments];
+
       const upsertRes = await fetch(`${url}/rest/v1/curriculum_content`, {
         method: 'POST',
         headers: {
@@ -335,8 +474,8 @@ export default async function handler(req: any, res: any) {
         body: JSON.stringify({
           id: 'active_assignments',
           curriculum_version: 1,
-          data: body.assignments,
-          modified_by: admin.email,
+          data: mergedAssignments,
+          modified_by: adminKey,
           updated_at: new Date().toISOString()
         })
       });

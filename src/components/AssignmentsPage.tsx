@@ -60,14 +60,14 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    void loadCloudAssignments().then(setAssignments);
+    void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
 
     const onUpdated = () => setAssignments(getLocalAssignments());
-    const onFocus = () => void loadCloudAssignments().then(setAssignments);
+    const onFocus = () => void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
     const timer = window.setInterval(() => {
       setNowMs(Date.now());
       if (document.visibilityState !== 'hidden') {
-        void loadCloudAssignments().then(setAssignments);
+        void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
       }
     }, 30_000);
 
@@ -78,7 +78,7 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
       window.removeEventListener('aventura-assignments-updated', onUpdated);
       window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [currentUserEmail]);
 
   const activeAssignment = assignments.find(a => a.id === activeAssignmentId) || null;
 

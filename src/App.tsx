@@ -68,15 +68,15 @@ const GameMain: React.FC = () => {
   const [, setCurriculumRevision] = useState<number>(0);
 
   useEffect(() => {
-    void loadCloudCurriculum(true);
+    void loadCloudCurriculum(true, currentUserEmail || undefined);
     const onUpdated = () => setCurriculumRevision(prev => prev + 1);
     const onFocusOrVisible = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      void loadCloudCurriculum();
+      void loadCloudCurriculum(false, currentUserEmail || undefined);
     };
     const intervalId = window.setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      void loadCloudCurriculum();
+      void loadCloudCurriculum(false, currentUserEmail || undefined);
     }, 30_000);
 
     window.addEventListener('aventura-curriculum-updated', onUpdated);
@@ -88,7 +88,7 @@ const GameMain: React.FC = () => {
       window.removeEventListener('focus', onFocusOrVisible);
       document.removeEventListener('visibilitychange', onFocusOrVisible);
     };
-  }, []);
+  }, [currentUserEmail]);
 
   const activeCity = activeCityId ? getCityById(activeCityId) : null;
   const activeLevel = (activeCityId && activeLevelId) ? getLevelById(activeCityId, activeLevelId) : null;

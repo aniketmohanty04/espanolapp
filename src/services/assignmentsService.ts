@@ -122,12 +122,20 @@ export async function syncAssignmentsToCloud(
   }
 }
 
-export async function loadCloudAssignments(): Promise<AssignmentItem[]> {
+export async function loadCloudAssignments(studentEmail?: string): Promise<AssignmentItem[]> {
   if (typeof window === 'undefined' || typeof fetch !== 'function') {
     return getLocalAssignments();
   }
+  const cleanEmail = (studentEmail || '').trim().toLowerCase();
+  if (!cleanEmail || cleanEmail === 'guest') {
+    saveLocalAssignments([]);
+    return [];
+  }
   try {
-    const res = await fetch('/api/admin/assignments', { method: 'GET', cache: 'no-store' });
+    const res = await fetch(
+      `/api/admin/assignments?studentEmail=${encodeURIComponent(cleanEmail)}`,
+      { method: 'GET', cache: 'no-store' }
+    );
     if (!res.ok) return getLocalAssignments();
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('application/json')) return getLocalAssignments();
@@ -137,14 +145,34 @@ export async function loadCloudAssignments(): Promise<AssignmentItem[]> {
       k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v
     );
     if (data?.success && Array.isArray(data.assignments)) {
-      if (!data.updatedAt || data.updatedAt !== lastCloudUpdatedAt) {
-        lastCloudUpdatedAt = data.updatedAt || String(Date.now());
-        saveLocalAssignments(data.assignments);
-      }
+      lastCloudUpdatedAt = data.updatedAt || String(Date.now());
+      saveLocalAssignments(data.assignments);
       return data.assignments;
     }
   } catch {
     // fallback to local cache
+  }
+  return getLocalAssignments();
+}
+
+export async function loadAdminOwnAssignments(): Promise<AssignmentItem[]> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    return getLocalAssignments();
+  }
+  try {
+    const res = await fetch('/api/admin/assignments?mode=admin_manage', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return getLocalAssignments();
+    const data = await res.json().catch(() => ({}));
+    if (data?.success && Array.isArray(data.assignments)) {
+      saveLocalAssignments(data.assignments);
+      return data.assignments;
+    }
+  } catch {
+    // fallback
   }
   return getLocalAssignments();
 }
@@ -280,7 +308,7 @@ export async function saveAdminRoster(
     });
     if (res.ok) return { success: true, students: cleaned };
     const data = await res.json().catch(() => ({}));
-    return { success: false, students: cleaned, error: data.error || `HTTP ${res.status}` };
+    return { success: false, students: cleaned, error: data.message || data.error || `HTTP ${res.status}` };
   } catch {
     return { success: false, students: cleaned, error: 'Network error saving roster' };
   }
