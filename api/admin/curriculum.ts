@@ -166,9 +166,10 @@ export default async function handler(req: any, res: any) {
       });
 
       if (!upsertRes.ok) {
+        const errText = await upsertRes.text().catch(() => '');
         return res.status(502).json({
           error: 'Database Error',
-          message: 'Failed to save cloud curriculum. Ensure supabase/admin_rls.sql has been run in Supabase SQL Editor.'
+          message: `Failed to save cloud curriculum (HTTP ${upsertRes.status}). ${errText.slice(0, 120)}`
         });
       }
 

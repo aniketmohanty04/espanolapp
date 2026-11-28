@@ -27,7 +27,8 @@ import {
   importCurriculumJson,
   sanitizeText,
   validateQuestion,
-  validateLevel
+  validateLevel,
+  syncCurriculumToCloud
 } from '../services/adminCurriculumService';
 import { 
   Shield, 
@@ -122,6 +123,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
   const [levelFormErrors, setLevelFormErrors] = useState<string[]>([]);
 
   const [confirmResetOpen, setConfirmResetOpen] = useState<boolean>(false);
+  const [isPublishingLive, setIsPublishingLive] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Question Tester state
@@ -220,6 +222,24 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
       message: '✓ Currículo restablecido a los valores oficiales de fábrica.',
       type: 'success'
     });
+  };
+
+  // Handle Publish Live to Cloud
+  const handlePublishLive = async () => {
+    setIsPublishingLive(true);
+    const res = await syncCurriculumToCloud(getActiveCurriculum());
+    setIsPublishingLive(false);
+    if (res.success) {
+      setNotification({
+        message: '✓ Published live! All users will now see your updated curriculum.',
+        type: 'success'
+      });
+    } else {
+      setNotification({
+        message: `Cloud sync failed: ${res.error || 'Unknown error'}`,
+        type: 'error'
+      });
+    }
   };
 
   // Handle Export JSON
@@ -530,6 +550,16 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
 
           {/* Quick Action Toolbar */}
           <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePublishLive}
+              disabled={isPublishingLive}
+              className="px-3 py-1.5 rounded-xl bg-[#E05615] hover:bg-[#c8490e] text-white text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-60 shadow-xs"
+              title="Publish current curriculum changes live to all users"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>{isPublishingLive ? 'Publishing...' : 'Publish Live'}</span>
+            </button>
+
             <button
               onClick={() => setConfirmResetOpen(true)}
               className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-800 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
