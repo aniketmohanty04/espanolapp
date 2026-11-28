@@ -3,7 +3,7 @@
 
 // @ts-ignore Node built-in module in Vercel serverless runtime
 import crypto from 'node:crypto';
-import { signAdminToken, applyAdminCors, type AdminTokenPayload } from './requireAdmin.ts';
+import { signAdminToken, applyAdminCors, type AdminTokenPayload } from './requireAdmin.js';
 
 declare const process: any;
 declare const Buffer: any;
