@@ -649,58 +649,58 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
             className="flex items-center space-x-2 px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs sm:text-sm font-bold border border-[#E0D5C7] shadow-xs transition-transform hover:scale-105"
           >
             <ArrowLeft className="w-4 h-4 text-[#E05615]" />
-            <span>Volver al Mapa de España</span>
+            <span>Back to Spain Map</span>
           </button>
 
           {/* Festival Title Pill */}
           <div className="flex items-center space-x-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-orange-500/15 border border-amber-300 text-[#B45309] font-black text-xs sm:text-sm shadow-xs">
             <PartyPopper className="w-4 h-4 text-[#E05615]" />
-            <span>La Gran Fiesta • Plaza Mayor de la Celebración</span>
+            <span>La Gran Fiesta • Grand Celebration Plaza</span>
           </div>
 
           {/* Progress & View Toggle */}
           <div className="flex items-center space-x-2">
             
-            {/* 3-Mode Atmosphere Selector (Día / Atardecer / Noche) */}
-            <div className="flex bg-[#EFE7DC] p-1 rounded-full border border-[#E0D5C7] text-xs font-bold" title="Cambiar la iluminación y atmósfera de la Plaza Mayor">
+            {/* 3-Mode Atmosphere Selector (Day / Sunset / Night) */}
+            <div className="flex bg-[#EFE7DC] p-1 rounded-full border border-[#E0D5C7] text-xs font-bold" title="Change lighting & atmosphere of Plaza Mayor">
               <button
                 onClick={() => setAtmosphere('dia')}
                 className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
                   atmosphere === 'dia' ? 'bg-white text-amber-700 font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
                 }`}
-                title="Día Soleado"
+                title="Sunny Day (Día)"
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden md:inline">Día</span>
+                <span className="hidden md:inline">Day</span>
               </button>
               <button
                 onClick={() => setAtmosphere('atardecer')}
                 className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
                   atmosphere === 'atardecer' ? 'bg-orange-500 text-white font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
                 }`}
-                title="Atardecer Dorado"
+                title="Golden Sunset (Atardecer)"
               >
                 <Sunset className="w-3.5 h-3.5 text-amber-200" />
-                <span className="hidden md:inline">Tarde</span>
+                <span className="hidden md:inline">Sunset</span>
               </button>
               <button
                 onClick={() => setAtmosphere('noche')}
                 className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 cursor-pointer ${
                   atmosphere === 'noche' ? 'bg-slate-900 text-amber-300 font-black shadow-xs' : 'text-[#7A6B60] hover:text-[#24140E]'
                 }`}
-                title="Noche de Farolillos"
+                title="Lantern Night (Noche)"
               >
                 <Moon className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Noche</span>
+                <span className="hidden md:inline">Night</span>
               </button>
             </div>
 
             <div className="hidden lg:flex items-center space-x-2 text-xs font-bold px-3 py-1.5 bg-white rounded-full border border-[#E8DFD5] text-[#524136] shadow-xs">
-              <span className="text-[#B45309]">🎪 {visitedStallsCount}/6 Puestos</span>
+              <span className="text-[#B45309]">🎪 {visitedStallsCount}/6 Stalls</span>
               <span>•</span>
-              <span className="text-[#BE185D]">💬 {rewardedDialoguesCount}/14 Amigos</span>
+              <span className="text-[#BE185D]">💬 {rewardedDialoguesCount}/14 Friends</span>
               <span>•</span>
-              <span className="text-emerald-700">📜 {completedMilestonesCount}/8 Sellos</span>
+              <span className="text-emerald-700">📜 {completedMilestonesCount}/8 Stamps</span>
             </div>
 
             <div className="flex bg-[#EFE7DC] p-1 rounded-full border border-[#E0D5C7] text-xs font-bold">
@@ -723,7 +723,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                 }`}
               >
                 <Gamepad2 className="w-3.5 h-3.5" />
-                <span>Plaza 3D</span>
+                <span>3D Plaza</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -733,7 +733,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
                     : 'text-[#7A6B60] hover:text-[#24140E]'
                 }`}
               >
-                📋 Directorio
+                📋 Directory
               </button>
             </div>
           </div>
@@ -751,7 +751,7 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
           <div className="flex items-center space-x-2 truncate">
             <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider shrink-0 animate-pulse">
-              FIESTA EN VIVO
+              LIVE FIESTA
             </span>
             <span className="font-bold truncate text-[11px] sm:text-xs">
               {FESTIVAL_NEWS[tickerIndex]}
@@ -762,29 +762,29 @@ export const FestivalWorld: React.FC<FestivalWorldProps> = ({
             <button
               onClick={() => setShowFountainModal(true)}
               className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-sky-600 hover:bg-sky-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
-              title="Tirar una moneda a la Fuente de los Deseos"
+              title="Toss a coin into the Wishing Fountain (Fuente de los Deseos)"
             >
-              <span>⛲ Deseos</span>
+              <span>⛲ Wishes</span>
             </button>
             <button
               onClick={() => setShowTapasModal(true)}
               className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
-              title="Degustar las 6 tapas tradicionales españolas"
+              title="Taste the 6 traditional Spanish tapas"
             >
               <span>🥘 Tapas</span>
             </button>
             <button
               onClick={() => setShowPassportModal(true)}
               className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
-              title="Abrir el Pasaporte de la Plaza Mayor"
+              title="Open the Plaza Mayor Passport (Pasaporte)"
             >
-              <span>📜 Pasaporte</span>
+              <span>📜 Passport</span>
             </button>
             <button
               onClick={() => setShowWheel(true)}
               className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] shadow-xs transition-transform hover:scale-105 cursor-pointer"
             >
-              <span>🎡 Ruleta</span>
+              <span>🎡 Wheel</span>
             </button>
             <button
               onClick={() => setShowTomatina(true)}
