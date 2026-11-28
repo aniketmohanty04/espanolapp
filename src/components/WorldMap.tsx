@@ -285,17 +285,17 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCity, onOpenFestival
               <button
                 onClick={onOpenFestival}
                 className="group relative flex items-center justify-center hover:scale-115 transition-transform"
-                title="La Gran Fiesta - Celebración y Examen Final"
+                title="Assignments & Worksheets (Tareas y Pruebas)"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-amber-300 via-rose-500 to-yellow-300 p-0.5 shadow-2xl glow-gold flex items-center justify-center border-2 border-white animate-pulse">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-amber-300 via-orange-500 to-yellow-300 p-0.5 shadow-2xl glow-gold flex items-center justify-center border-2 border-white animate-pulse">
                   <div className="w-full h-full bg-[#7a1f26] rounded-full flex items-center justify-center text-xl sm:text-2xl">
-                    🎉
+                    📝
                   </div>
                 </div>
               </button>
               
               <div className="mt-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-[9px] sm:text-[11px] shadow-lg border-2 border-white whitespace-nowrap pointer-events-none">
-                La Gran Fiesta
+                Assignments
               </div>
             </div>
           </div>
@@ -352,13 +352,13 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCity, onOpenFestival
         {/* Bottom Destination Banner */}
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF8EE] via-[#FFF3E8] to-[#FFE8D6] border-2 border-amber-300 flex flex-wrap items-center justify-between gap-3 shadow-sm text-[#24140E]">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">🎊</span>
+            <span className="text-2xl">📝</span>
             <div>
-              <p className="text-sm sm:text-base font-black text-[#24140E] font-serif">Destino Final: La Gran Fiesta y Examen BAESP101</p>
+              <p className="text-sm sm:text-base font-black text-[#24140E] font-serif">Assignments & Worksheets (Tareas y Exámenes)</p>
               <p className="text-xs text-[#6B584D] font-medium">
                 {all15BossesCompleted 
-                  ? '¡Has completado las 15 ciudades! Las puertas de la fiesta están totalmente abiertas.' 
-                  : `Progreso: ${Object.keys(progress.completedBosses).filter(k => progress.completedBosses[k]?.passed).length} de 15 jefes derrotados.`}
+                  ? 'You have completed all 15 cities! Check your active assignments and surprise tests.' 
+                  : `Progress: ${Object.keys(progress.completedBosses).filter(k => progress.completedBosses[k]?.passed).length} of 15 bosses defeated.`}
               </p>
             </div>
           </div>
@@ -366,7 +366,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCity, onOpenFestival
             onClick={onOpenFestival}
             className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center space-x-1.5"
           >
-            <span>Enter The Festival</span>
+            <span>Open Assignments</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

@@ -8,7 +8,7 @@ import { CityScreen } from './components/CityScreen';
 import { LevelModal } from './components/LevelModal';
 import { BossMissionModal } from './components/BossMissionModal';
 import { CityUnlockModal } from './components/CityUnlockModal';
-import { FestivalWorld } from './components/FestivalWorld';
+import { AssignmentsPage } from './components/AssignmentsPage';
 import { ReviewNotebookModal } from './components/ReviewNotebookModal';
 import { StudyPlanModal } from './components/StudyPlanModal';
 import { SyllabusCoverageModal } from './components/SyllabusCoverageModal';
@@ -206,10 +206,7 @@ const GameMain: React.FC = () => {
       {/* Main Screen Router */}
       <main className="grow">
         {isFestivalOpen ? (
-          <FestivalWorld
-            onBackToMap={() => setIsFestivalOpen(false)}
-            onStartFinalAssessment={() => setShowFinalAssessment(true)}
-          />
+          <AssignmentsPage onBackToHome={() => setIsFestivalOpen(false)} />
         ) : activeCity ? (
           <CityScreen
             city={activeCity}

@@ -30,6 +30,16 @@ import {
   validateLevel,
   syncCurriculumToCloud
 } from '../services/adminCurriculumService';
+import {
+  AssignmentItem,
+  AssignmentQuestion,
+  AssignmentType,
+  getLocalAssignments,
+  saveLocalAssignments,
+  sanitizeAssignment,
+  syncAssignmentsToCloud,
+  loadCloudAssignments
+} from '../services/assignmentsService';
 import { 
   Shield, 
   Lock, 
@@ -54,7 +64,10 @@ import {
   Eye,
   X,
   FileCode,
-  Check
+  Check,
+  ClipboardList,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 interface AdminScreenProps {
@@ -104,7 +117,146 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
   }, [isAuthenticated]);
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState<'questions' | 'levels' | 'tester' | 'security'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'levels' | 'tester' | 'assignments' | 'security'>('questions');
+
+  // Assignments state
+  const [assignmentsList, setAssignmentsList] = useState<AssignmentItem[]>(() => getLocalAssignments());
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentItem | null>(null);
+  const [isNewAssignment, setIsNewAssignment] = useState<boolean>(false);
+  const [assignmentErrors, setAssignmentErrors] = useState<string[]>([]);
+  const [isSyncingAssignments, setIsSyncingAssignments] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadCloudAssignments().then((cloud) => {
+      if (cloud.length > 0) setAssignmentsList(cloud);
+    });
+  }, [isAuthenticated]);
+
+  const toLocalDateTimeInput = (iso: string): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const handleOpenNewAssignment = () => {
+    const now = new Date();
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    setEditingAssignment({
+      id: `assign-${Date.now()}`,
+      title: '',
+      description: '',
+      type: 'written',
+      startDate: now.toISOString(),
+      deadline: nextWeek.toISOString(),
+      questions: [
+        { id: `q-${Date.now()}`, prompt: '', type: 'written' }
+      ],
+      createdAt: now.toISOString()
+    });
+    setIsNewAssignment(true);
+    setAssignmentErrors([]);
+  };
+
+  const handleEditAssignment = (item: AssignmentItem) => {
+    setEditingAssignment(JSON.parse(JSON.stringify(item)));
+    setIsNewAssignment(false);
+    setAssignmentErrors([]);
+  };
+
+  const handleSaveAssignment = async () => {
+    if (!editingAssignment) return;
+    const errs: string[] = [];
+    if (!editingAssignment.title.trim()) errs.push('Title is required.');
+    if (!editingAssignment.startDate || isNaN(new Date(editingAssignment.startDate).getTime())) {
+      errs.push('Valid start date & time is required.');
+    }
+    if (!editingAssignment.deadline || isNaN(new Date(editingAssignment.deadline).getTime())) {
+      errs.push('Valid deadline date & time is required.');
+    }
+    if (
+      editingAssignment.startDate &&
+      editingAssignment.deadline &&
+      new Date(editingAssignment.deadline).getTime() <= new Date(editingAssignment.startDate).getTime()
+    ) {
+      errs.push('Deadline must be after the Start Date.');
+    }
+    if (editingAssignment.questions.length === 0) {
+      errs.push('Add at least one question or prompt.');
+    }
+    editingAssignment.questions.forEach((q, idx) => {
+      if (!q.prompt.trim()) errs.push(`Question #${idx + 1} prompt is required.`);
+      if (q.type === 'mcq') {
+        const validOpts = (q.options || []).map(o => o.trim()).filter(Boolean);
+        if (validOpts.length < 2) errs.push(`Question #${idx + 1} (MCQ) needs at least 2 options.`);
+        if (!q.correctAnswer || !validOpts.includes(q.correctAnswer.trim())) {
+          errs.push(`Question #${idx + 1} (MCQ) needs a valid correct answer matching one of the options.`);
+        }
+      }
+      if (q.type === 'fill' && (!q.correctAnswer || !q.correctAnswer.trim())) {
+        errs.push(`Question #${idx + 1} (Fill-in-the-Blank) needs a correct answer.`);
+      }
+    });
+
+    if (errs.length > 0) {
+      setAssignmentErrors(errs);
+      return;
+    }
+
+    const cleaned = sanitizeAssignment({
+      ...editingAssignment,
+      questions: editingAssignment.questions.map(q => ({
+        ...q,
+        options: q.type === 'mcq' ? (q.options || []).map(o => o.trim()).filter(Boolean) : undefined,
+        correctAnswer: q.type === 'written' ? undefined : (q.correctAnswer || '').trim()
+      }))
+    });
+
+    const nextList = isNewAssignment
+      ? [cleaned, ...assignmentsList]
+      : assignmentsList.map(a => (a.id === cleaned.id ? cleaned : a));
+
+    saveLocalAssignments(nextList);
+    setAssignmentsList(nextList);
+    setEditingAssignment(null);
+    setAssignmentErrors([]);
+
+    setIsSyncingAssignments(true);
+    const syncRes = await syncAssignmentsToCloud(nextList);
+    setIsSyncingAssignments(false);
+    if (syncRes.success) {
+      setNotification({ message: 'Assignment saved & published live to students!', type: 'success' });
+    } else {
+      setNotification({ message: `Saved locally, but cloud sync failed: ${syncRes.error || 'Unknown error'}`, type: 'error' });
+    }
+  };
+
+  const handleDeleteAssignment = async (id: string) => {
+    const nextList = assignmentsList.filter(a => a.id !== id);
+    saveLocalAssignments(nextList);
+    setAssignmentsList(nextList);
+    setIsSyncingAssignments(true);
+    const syncRes = await syncAssignmentsToCloud(nextList);
+    setIsSyncingAssignments(false);
+    if (syncRes.success) {
+      setNotification({ message: 'Assignment deleted and synced to cloud.', type: 'info' });
+    } else {
+      setNotification({ message: `Deleted locally, cloud sync failed: ${syncRes.error || 'Unknown error'}`, type: 'error' });
+    }
+  };
+
+  const handleSyncAssignmentsToCloud = async () => {
+    setIsSyncingAssignments(true);
+    const res = await syncAssignmentsToCloud(assignmentsList);
+    setIsSyncingAssignments(false);
+    if (res.success) {
+      setNotification({ message: 'All assignments synced live to Supabase!', type: 'success' });
+    } else {
+      setNotification({ message: `Cloud sync failed: ${res.error || 'Unknown error'}`, type: 'error' });
+    }
+  };
 
   // Curriculum data
   const [cities, setCities] = useState<City[]>(getActiveCurriculum());
@@ -632,6 +784,18 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
           >
             <Sparkles className="w-4 h-4 text-purple-600" />
             <span>Interactive Tester</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('assignments')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center space-x-2 border-b-2 transition cursor-pointer ${
+              activeTab === 'assignments'
+                ? 'border-[#E05615] text-[#E05615] bg-[#FAF7F2]/60'
+                : 'border-transparent text-[#6B584D] hover:text-[#24140E]'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4 text-[#E05615]" />
+            <span>Assignments & Tests</span>
           </button>
 
           <button
@@ -1271,7 +1435,386 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
             </div>
           </div>
         )}
+
+        {/* =================================================================
+           TAB: ASSIGNMENTS & WORKSHEETS (TAREAS Y EXÁMENES)
+           ================================================================= */}
+        {activeTab === 'assignments' && (
+          <div className="space-y-6">
+            <div className="bg-white p-5 rounded-2xl border border-[#E0D5C7] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif font-black text-lg text-[#24140E] flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-[#E05615]" />
+                  <span>Assignments, Worksheets & Surprise Tests</span>
+                </h2>
+                <p className="text-xs text-[#6B584D] mt-0.5">
+                  Create Written, MCQ, Fill-in-the-Blank, or Surprise Test tasks with Start Date and Deadline. Changes publish live to students.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleSyncAssignmentsToCloud}
+                  disabled={isSyncingAssignments}
+                  className="px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs font-bold text-[#4A3528] hover:bg-[#FAF7F2] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#E05615]" />
+                  <span>{isSyncingAssignments ? 'Syncing...' : 'Publish Live'}</span>
+                </button>
+                <button
+                  onClick={handleOpenNewAssignment}
+                  className="px-4 py-2 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Assignment / Test</span>
+                </button>
+              </div>
+            </div>
+
+            {assignmentsList.length === 0 ? (
+              <div className="bg-white p-10 rounded-2xl border border-dashed border-[#DFD2C0] text-center space-y-2">
+                <ClipboardList className="w-10 h-10 text-[#C4B099] mx-auto" />
+                <p className="text-sm font-bold text-[#24140E]">No assignments published yet</p>
+                <p className="text-xs text-[#6B584D]">Click &ldquo;New Assignment / Test&rdquo; to post a worksheet or surprise test for students.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {assignmentsList.map((item) => {
+                  const now = Date.now();
+                  const start = new Date(item.startDate).getTime();
+                  const end = new Date(item.deadline).getTime();
+                  const statusLabel = now < start ? 'Upcoming' : now > end ? 'Closed' : 'Active Now';
+                  const statusColor =
+                    now < start
+                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                      : now > end
+                        ? 'bg-stone-100 text-stone-600 border-stone-200'
+                        : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                  return (
+                    <div key={item.id} className="bg-white p-5 rounded-2xl border border-[#E0D5C7] shadow-xs flex flex-col justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFF4E8] text-[#C2410C] border border-[#FAD6B8]">
+                              {item.type === 'surprise-test' ? '⚡ Surprise Test' : item.type.toUpperCase()}
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusColor}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleEditAssignment(item)}
+                              className="p-1.5 rounded-lg text-[#6B584D] hover:bg-[#FAF7F2] hover:text-[#E05615] cursor-pointer"
+                              title="Edit assignment"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAssignment(item.id)}
+                              className="p-1.5 rounded-lg text-[#6B584D] hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                              title="Delete assignment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <h3 className="font-serif font-bold text-base text-[#24140E]">{item.title}</h3>
+                        {item.description && (
+                          <p className="text-xs text-[#6B584D] line-clamp-2">{item.description}</p>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-[#EFE5D8] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#6B584D]">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-[#E05615]" />
+                          Start: {new Date(item.startDate).toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1 font-semibold text-[#9A3412]">
+                          <Clock className="w-3.5 h-3.5" />
+                          Due: {new Date(item.deadline).toLocaleString()}
+                        </span>
+                        <span className="font-bold text-[#24140E]">{item.questions.length} Qs</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* =====================================================================
+         MODAL: CREATE / EDIT ASSIGNMENT OR SURPRISE TEST
+         ===================================================================== */}
+      {editingAssignment && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[#E0D5C7] shadow-2xl max-w-3xl w-full p-6 space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EFE5D8]">
+              <h3 className="font-serif font-black text-lg text-[#24140E]">
+                {isNewAssignment ? '📝 Create Assignment / Surprise Test' : '✏️ Edit Assignment'}
+              </h3>
+              <button
+                onClick={() => setEditingAssignment(null)}
+                className="p-1 rounded-full text-[#7A6B60] hover:bg-[#FAF7F2] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {assignmentErrors.length > 0 && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
+                <strong className="block font-bold">Please fix the following:</strong>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  {assignmentErrors.map((err, i) => <li key={i}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-[#6B584D] mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={editingAssignment.title}
+                  onChange={(e) => setEditingAssignment({ ...editingAssignment, title: e.target.value })}
+                  placeholder="e.g., Week 2 Worksheet: Present Tense (-AR Verbs)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-sm focus:outline-hidden focus:border-[#E05615]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B584D] mb-1">Assignment Format *</label>
+                <select
+                  value={editingAssignment.type}
+                  onChange={(e) => {
+                    const nextType = e.target.value as AssignmentType;
+                    const qType = nextType === 'surprise-test' ? 'mcq' : nextType;
+                    setEditingAssignment({
+                      ...editingAssignment,
+                      type: nextType,
+                      questions: editingAssignment.questions.map(q => ({
+                        ...q,
+                        type: nextType === 'surprise-test' ? q.type : qType,
+                        options: qType === 'mcq' && (!q.options || q.options.length < 2) ? ['', '', '', ''] : q.options
+                      }))
+                    });
+                  }}
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-sm bg-white focus:outline-hidden focus:border-[#E05615]"
+                >
+                  <option value="written">Written Assignment</option>
+                  <option value="mcq">Multiple Choice (MCQ)</option>
+                  <option value="fill">Fill-in-the-Blank</option>
+                  <option value="surprise-test">⚡ Surprise Test (Mixed / Timed)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B584D] mb-1">Start Date & Time *</label>
+                  <input
+                    type="datetime-local"
+                    value={toLocalDateTimeInput(editingAssignment.startDate)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) setEditingAssignment({ ...editingAssignment, startDate: new Date(val).toISOString() });
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl border border-[#E0D5C7] text-xs focus:outline-hidden focus:border-[#E05615]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B584D] mb-1">Deadline *</label>
+                  <input
+                    type="datetime-local"
+                    value={toLocalDateTimeInput(editingAssignment.deadline)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) setEditingAssignment({ ...editingAssignment, deadline: new Date(val).toISOString() });
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl border border-[#E0D5C7] text-xs focus:outline-hidden focus:border-[#E05615]"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-[#6B584D] mb-1">Instructions / Description</label>
+                <textarea
+                  rows={2}
+                  value={editingAssignment.description}
+                  onChange={(e) => setEditingAssignment({ ...editingAssignment, description: e.target.value })}
+                  placeholder="Instructions for students (e.g. Answer in complete Spanish sentences...)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-sm focus:outline-hidden focus:border-[#E05615]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-[#EFE5D8]">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#24140E]">
+                  Questions ({editingAssignment.questions.length})
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const defaultQType: 'written' | 'mcq' | 'fill' =
+                      editingAssignment.type === 'surprise-test' ? 'mcq' : editingAssignment.type;
+                    const newQ: AssignmentQuestion = {
+                      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      prompt: '',
+                      type: defaultQType,
+                      options: defaultQType === 'mcq' ? ['', '', '', ''] : undefined,
+                      correctAnswer: ''
+                    };
+                    setEditingAssignment({
+                      ...editingAssignment,
+                      questions: [...editingAssignment.questions, newQ]
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-[#FFF4E8] text-[#C2410C] border border-[#FAD6B8] text-xs font-bold hover:bg-[#FFE8D1] flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Question</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {editingAssignment.questions.map((q, idx) => (
+                  <div key={q.id} className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E0D5C7] space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-[#24140E]">Question #{idx + 1}</span>
+                      <div className="flex items-center gap-2">
+                        {editingAssignment.type === 'surprise-test' && (
+                          <select
+                            value={q.type}
+                            onChange={(e) => {
+                              const nextQType = e.target.value as 'written' | 'mcq' | 'fill';
+                              const updated = editingAssignment.questions.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      type: nextQType,
+                                      options: nextQType === 'mcq' ? (item.options && item.options.length >= 2 ? item.options : ['', '', '', '']) : undefined
+                                    }
+                                  : item
+                              );
+                              setEditingAssignment({ ...editingAssignment, questions: updated });
+                            }}
+                            className="px-2 py-1 rounded-lg border border-[#E0D5C7] bg-white text-[11px] font-bold"
+                          >
+                            <option value="mcq">MCQ</option>
+                            <option value="fill">Fill-in-the-Blank</option>
+                            <option value="written">Written</option>
+                          </select>
+                        )}
+                        {editingAssignment.questions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAssignment({
+                                ...editingAssignment,
+                                questions: editingAssignment.questions.filter((_, i) => i !== idx)
+                              });
+                            }}
+                            className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                            title="Remove question"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={q.prompt}
+                      onChange={(e) => {
+                        const updated = editingAssignment.questions.map((item, i) =>
+                          i === idx ? { ...item, prompt: e.target.value } : item
+                        );
+                        setEditingAssignment({ ...editingAssignment, questions: updated });
+                      }}
+                      placeholder={
+                        q.type === 'fill'
+                          ? 'e.g., Yo ___ (hablar) español todos los días.'
+                          : 'Enter question prompt...'
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-[#E0D5C7] bg-white text-xs focus:outline-hidden focus:border-[#E05615]"
+                    />
+
+                    {q.type === 'mcq' && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {(q.options || ['', '', '', '']).map((opt, oIdx) => (
+                            <input
+                              key={oIdx}
+                              type="text"
+                              value={opt}
+                              onChange={(e) => {
+                                const nextOpts = [...(q.options || ['', '', '', ''])];
+                                nextOpts[oIdx] = e.target.value;
+                                const updated = editingAssignment.questions.map((item, i) =>
+                                  i === idx ? { ...item, options: nextOpts } : item
+                                );
+                                setEditingAssignment({ ...editingAssignment, questions: updated });
+                              }}
+                              placeholder={`Option ${oIdx + 1}`}
+                              className="px-3 py-1.5 rounded-lg border border-[#E0D5C7] bg-white text-xs"
+                            />
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={q.correctAnswer || ''}
+                          onChange={(e) => {
+                            const updated = editingAssignment.questions.map((item, i) =>
+                              i === idx ? { ...item, correctAnswer: e.target.value } : item
+                            );
+                            setEditingAssignment({ ...editingAssignment, questions: updated });
+                          }}
+                          placeholder="Exact correct option text"
+                          className="w-full px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50/40 text-xs"
+                        />
+                      </div>
+                    )}
+
+                    {q.type === 'fill' && (
+                      <input
+                        type="text"
+                        value={q.correctAnswer || ''}
+                        onChange={(e) => {
+                          const updated = editingAssignment.questions.map((item, i) =>
+                            i === idx ? { ...item, correctAnswer: e.target.value } : item
+                          );
+                          setEditingAssignment({ ...editingAssignment, questions: updated });
+                        }}
+                        placeholder="Expected correct answer (auto-graded)"
+                        className="w-full px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50/40 text-xs"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EFE5D8]">
+              <button
+                type="button"
+                onClick={() => setEditingAssignment(null)}
+                className="px-4 py-2 rounded-xl border border-[#E0D5C7] text-xs font-bold text-[#6B584D] hover:bg-[#FAF7F2] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAssignment}
+                className="px-5 py-2 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold shadow-sm cursor-pointer"
+              >
+                Save & Publish Live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =====================================================================
          MODAL: EDITAR / AÑADIR PREGUNTA

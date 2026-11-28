@@ -372,7 +372,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
               onClick={onOpenFestival}
               className="px-3 py-1.5 rounded-full hover:bg-[#EFE6D9] text-[#E05615] font-extrabold transition-colors flex items-center space-x-1"
             >
-              <span>🎉 La Gran Fiesta</span>
+              <span>📝 Assignments (Tareas)</span>
             </button>
             <button
               onClick={onOpenNotebook}

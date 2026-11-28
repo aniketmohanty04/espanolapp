@@ -11,7 +11,7 @@ import {
   Calendar, 
   Award, 
   Trophy, 
-  PartyPopper, 
+  ClipboardList, 
   Settings, 
   User,
   Menu,
@@ -145,10 +145,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onOpenFestival}
                 className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#E05615] to-[#EA580C] text-white text-xs font-black shadow-xs hover:scale-105 transition-transform"
-                title="Grand Cultural Festival & Assessment (La Fiesta)"
+                title="Assignments, Worksheets & Surprise Tests (Tareas)"
               >
-                <PartyPopper className="w-3.5 h-3.5 text-amber-200" />
-                <span>Festival <span className="text-[10px] text-amber-200 font-normal">(Fiesta)</span></span>
+                <ClipboardList className="w-3.5 h-3.5 text-amber-200" />
+                <span>Assignments <span className="text-[10px] text-amber-200 font-normal">(Tareas)</span></span>
               </button>
             </div>
           </div>
@@ -355,20 +355,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-amber-500 transition-colors" />
               </button>
 
-              {/* La Gran Fiesta */}
+              {/* Assignments & Worksheets */}
               <button
                 onClick={() => handleNavClick(onOpenFestival)}
                 className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-[#FFF8EE] to-[#FFF1EB] hover:from-[#FFF3E2] hover:to-[#FFE9DE] border-2 border-amber-300 transition-all group text-left shadow-xs"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
-                    <PartyPopper className="w-4 h-4" />
+                    <ClipboardList className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
-                      The Grand Festival (La Fiesta)
+                      Assignments (Tareas)
                     </span>
-                    <span className="text-[11px] text-[#B45309] font-medium">Plaza, characters & A1 Exam</span>
+                    <span className="text-[11px] text-[#B45309] font-medium">Worksheets & Surprise Tests</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#E05615]" />
