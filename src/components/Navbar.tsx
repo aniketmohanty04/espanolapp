@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { supabaseService } from '../services/supabaseClient';
 import { formatLifeTimer } from './OutOfLivesModal';
+import { ALL_CITIES, getCityById } from '../data/citiesData';
 
 interface NavbarProps {
   onOpenHub?: () => void;
@@ -64,7 +65,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     : currentUserEmail
     ? currentUserEmail.split('@')[0]
     : progress.profile?.displayName || 'Aventurero';
-  const xpInCurrentLevel = progress.stats.xp % 300;
+  const unlockedIds = progress.unlockedCityIds || ['madrid'];
+  const activeCity = getCityById(unlockedIds[unlockedIds.length - 1] || 'madrid') || ALL_CITIES[0];
+  const completedInCity = activeCity.levels.filter(l => Boolean(progress.completedLevels[l.id])).length;
+  const unfinishedLevel = activeCity.levels.find(l => !progress.completedLevels[l.id]);
+  const currentLevelNum = unfinishedLevel ? unfinishedLevel.levelNumber : activeCity.levels.length;
+  const cityProgressPercent = activeCity.levels.length > 0
+    ? Math.min(100, Math.round((completedInCity / activeCity.levels.length) * 100))
+    : 0;
 
   const handleNavClick = (callback: () => void) => {
     callback();
@@ -255,15 +263,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <p className="text-[10px] text-[#7A6B60] truncate font-mono mt-0.5">{currentUserEmail}</p>
                   )}
                   <div className="flex items-center space-x-2 text-[11px] text-[#B45309] font-bold mt-0.5">
-                    <span>Level {progress.stats.level}</span>
+                    <span>{activeCity.name} • Level {currentLevelNum}/{activeCity.levels.length}</span>
                     <span>•</span>
-                    <span className="text-[#8C7A6B]">{progress.stats.xp} XP total</span>
+                    <span className="text-[#8C7A6B]">{progress.stats.xp} XP</span>
                   </div>
-                  {/* Small XP bar */}
+                  {/* City level progress bar */}
                   <div className="w-full bg-[#EADFCF] rounded-full h-1.5 mt-1.5 overflow-hidden">
                     <div 
                       className="bg-gradient-to-r from-[#E05615] to-[#F3B33D] h-full rounded-full transition-all"
-                      style={{ width: `${Math.min(100, (xpInCurrentLevel / 300) * 100)}%` }}
+                      style={{ width: `${cityProgressPercent}%` }}
                     />
                   </div>
                 </div>
