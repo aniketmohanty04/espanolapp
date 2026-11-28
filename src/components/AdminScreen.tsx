@@ -670,7 +670,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-white p-4 rounded-2xl border border-[#E0D5C7] shadow-xs">
               <div className="sm:col-span-4">
                 <label className="block text-[11px] font-bold text-[#6B584D] mb-1">
-                  1. Seleccionar Ciudad (Módulo 1 a 5)
+                  1. Select City (Module 1 to 5)
                 </label>
                 <select
                   value={selectedCityId}
@@ -693,7 +693,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
 
               <div className="sm:col-span-5">
                 <label className="block text-[11px] font-bold text-[#6B584D] mb-1">
-                  2. Seleccionar Nivel del Sílabo
+                  2. Select Syllabus Level
                 </label>
                 <select
                   value={selectedLevelId}
@@ -1661,10 +1661,10 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
             <div className="text-center space-y-1">
               <h3 className="font-serif font-black text-lg text-[#24140E]">
-                ¿Restablecer a Valores de Fábrica?
+                Reset to Factory Defaults?
               </h3>
               <p className="text-xs text-[#7A6B60] leading-relaxed">
-                Esta acción eliminará todas las modificaciones personalizadas y restaurará inmediatamente el conjunto de preguntas y niveles original de ¡Aventura Española!.
+                This action will remove all custom edits and immediately restore the original ¡Aventura Española! questions and levels.
               </p>
             </div>
 

@@ -107,16 +107,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={onOpenHub}
                     className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] transition-all shadow-xs"
-                    title="Página Principal / Journey Hub"
+                    title="Home / Journey Hub (Inicio)"
                   >
                     <Home className="w-3.5 h-3.5 text-[#E05615]" />
-                    <span>Inicio</span>
+                    <span>Home <span className="text-[10px] text-[#A89A8E] font-normal">(Inicio)</span></span>
                   </button>
 
                   <button
                     onClick={onOpenHub}
                     className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all shadow-xs"
-                    title="Preguntar a Camino AI (Tu Profesor de Español)"
+                    title="Ask Camino AI (Your Spanish Teacher / Profesor de Español)"
                   >
                     <span className="text-xs">🤖</span>
                     <span>Camino AI</span>
@@ -128,19 +128,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onOpenMap}
                 className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold border border-[#E0D5C7] transition-all shadow-xs"
-                title="Mapa de España"
+                title="Spain Map (Mapa de España)"
               >
                 <MapIcon className="w-3.5 h-3.5 text-[#E05615]" />
-                <span>Mapa</span>
+                <span>Map <span className="text-[10px] text-[#A89A8E] font-normal">(Mapa)</span></span>
               </button>
 
               <button
                 onClick={onOpenFestival}
                 className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#E05615] to-[#EA580C] text-white text-xs font-black shadow-xs hover:scale-105 transition-transform"
-                title="La Gran Fiesta y Examen Oficial"
+                title="Grand Cultural Festival & Assessment (La Fiesta)"
               >
                 <PartyPopper className="w-3.5 h-3.5 text-amber-200" />
-                <span>La Fiesta</span>
+                <span>Festival <span className="text-[10px] text-amber-200 font-normal">(Fiesta)</span></span>
               </button>
             </div>
           </div>
@@ -149,13 +149,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm font-black">
             
             {/* Coins Badge */}
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#24140E]" title="Monedas de oro">
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#24140E]" title="Coins (Monedas de oro)">
               <span className="text-base">🪙</span>
               <span>{progress.stats.coins.toLocaleString()}</span>
+              <span className="text-[10px] text-[#8C7A6B] hidden sm:inline font-bold">Coins <span className="font-normal">(Monedas)</span></span>
             </div>
 
             {/* XP Badge */}
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#2563EB]" title="Puntos de experiencia">
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#2563EB]" title="Experience Points (Puntos de experiencia)">
               <Sparkles className="w-4 h-4 text-[#38BDF8] fill-[#38BDF8]" />
               <span>{progress.stats.xp.toLocaleString()} XP</span>
             </div>
@@ -168,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'border-rose-400 bg-rose-50 text-rose-700 animate-pulse' 
                   : 'bg-white hover:bg-rose-50/50 border-[#E8DFD5] text-rose-600'
               }`} 
-              title={(progress.stats.lives ?? 3) < 3 && secondsUntilNextLife ? `Vidas: ${progress.stats.lives}/3 (Próxima vida gratis en ${formatLifeTimer(secondsUntilNextLife)}). Haz clic para recargar.` : `Vidas: ${progress.stats.lives}/3. Haz clic para recargar.`}
+              title={(progress.stats.lives ?? 3) < 3 && secondsUntilNextLife ? `Lives: ${progress.stats.lives}/3 (Next free life in ${formatLifeTimer(secondsUntilNextLife)}). Click to refill.` : `Lives: ${progress.stats.lives}/3 (Vidas). Click to refill.`}
             >
               <Heart className={`w-4 h-4 fill-rose-500 text-rose-500 ${(progress.stats.lives ?? 3) > 0 ? 'animate-pulse' : 'opacity-40'}`} />
               <span>{progress.stats.lives ?? 3}/3</span>
@@ -182,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Traveler Avatar Badge */}
             <div
               className="flex items-center space-x-1.5 focus:outline-none"
-              title={`Aventurero: ${playerName}`}
+              title={`Adventurer: ${playerName}`}
             >
               <PlayerAvatar character={progress.profile?.character} size={28} />
               <span className="font-bold text-[#24140E] text-xs hidden lg:inline max-w-[90px] truncate">
@@ -193,11 +194,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Menu / Drawer Toggle */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className="relative flex items-center space-x-1.5 px-3 py-2 rounded-full bg-[#24140E] hover:bg-[#3D251A] text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95"
-              title="Abrir menú de herramientas y opciones"
+              className="relative flex items-center space-x-1.5 px-3 py-2 rounded-full bg-[#24140E] hover:bg-[#3D251A] text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+              title="Open tools & menu (Menú)"
             >
               <Menu className="w-4 h-4" />
-              <span className="hidden sm:inline">Menú</span>
+              <span className="hidden sm:inline">Menu <span className="text-[10px] text-amber-200/80 font-normal">(Menú)</span></span>
               {mistakeCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-[#E05615] text-white text-[10px] font-black rounded-full animate-bounce shadow">
                   {mistakeCount}
@@ -318,10 +319,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           Camino AI Guide
                         </span>
                         <span className="px-1.5 py-0.5 rounded-full bg-[#E05615] text-white text-[9px] font-black uppercase tracking-wider">
-                          Profesor IA
+                          AI Tutor
                         </span>
                       </div>
-                      <span className="text-[11px] text-emerald-800 font-medium">Pregunta dudas de español en vivo</span>
+                      <span className="text-[11px] text-emerald-800 font-medium">Ask Spanish questions live</span>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-emerald-600" />
@@ -339,9 +340,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
-                      Mapa de España
+                      Spain Map (Mapa)
                     </span>
-                    <span className="text-[11px] text-[#7A6B60]">15 ciudades y 150 niveles</span>
+                    <span className="text-[11px] text-[#7A6B60]">15 cities & 150 levels</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-amber-500 transition-colors" />
@@ -358,9 +359,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
-                      La Gran Fiesta
+                      The Grand Festival (La Fiesta)
                     </span>
-                    <span className="text-[11px] text-[#B45309] font-medium">Plaza, personajes y Examen A1</span>
+                    <span className="text-[11px] text-[#B45309] font-medium">Plaza, characters & A1 Exam</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#E05615]" />
@@ -378,7 +379,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-black text-[#24140E] group-hover:text-rose-700 transition-colors font-serif">
-                        Cuaderno de Repaso
+                        Review Notebook
                       </span>
                       {mistakeCount > 0 && (
                         <span className="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-black rounded-full">
@@ -386,7 +387,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-[#7A6B60]">Repaso espaciado de errores</span>
+                    <span className="text-[11px] text-[#7A6B60]">Spaced mistake review</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-rose-500 transition-colors" />
@@ -403,9 +404,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-emerald-700 transition-colors block font-serif">
-                      Plan de Estudio 35 Días
+                      35-Day Study Plan
                     </span>
-                    <span className="text-[11px] text-[#7A6B60]">Ruta guiada por el sílabo</span>
+                    <span className="text-[11px] text-[#7A6B60]">Guided syllabus path</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-emerald-500 transition-colors" />
@@ -422,9 +423,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
-                      Matriz del Sílabo
+                      Syllabus Matrix
                     </span>
-                    <span className="text-[11px] text-[#7A6B60]">Cobertura de 5 módulos A1</span>
+                    <span className="text-[11px] text-[#7A6B60]">5 A1 modules coverage</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-amber-500 transition-colors" />
@@ -441,9 +442,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-yellow-800 transition-colors block font-serif">
-                      Logros y Trofeos
+                      Achievements & Trophies
                     </span>
-                    <span className="text-[11px] text-[#7A6B60]">Desafíos y medallas de España</span>
+                    <span className="text-[11px] text-[#7A6B60]">Challenges & Spain medals</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-yellow-600 transition-colors" />
@@ -461,9 +462,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-[#24140E] group-hover:text-[#E05615] transition-colors block font-serif">
-                      Ajustes y Datos
+                      Settings & Data
                     </span>
-                    <span className="text-[11px] text-[#7A6B60]">Guardado y tutorial</span>
+                    <span className="text-[11px] text-[#7A6B60]">Save data & tutorial</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-[#24140E] transition-colors" />
@@ -483,10 +484,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-black text-rose-900 group-hover:text-rose-950 transition-colors block font-serif">
-                      {currentUserEmail ? 'Cerrar Sesión' : 'Salir al Menú Principal'}
+                      {currentUserEmail ? 'Sign Out' : 'Exit to Main Menu'}
                     </span>
                     <span className="text-[11px] text-rose-700 font-medium">
-                      {currentUserEmail ? 'Guarda tu progreso y cambia de cuenta' : 'Volver a la pantalla de bienvenida'}
+                      {currentUserEmail ? 'Save progress & switch account' : 'Return to welcome screen'}
                     </span>
                   </div>
                 </div>
