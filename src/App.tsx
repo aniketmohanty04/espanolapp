@@ -102,31 +102,27 @@ const GameMain: React.FC = () => {
      ======================================================== */
   /* ========================================================
      SCREEN: SECRET SUPER-ADMIN DASHBOARD
-     Access ONLY via /superadmin?access=<VITE_SUPER_ADMIN_KEY>
-     Wrong/missing key → hard 404, indistinguishable from any other missing page
+     Access ONLY via the secret path below — no link anywhere in the app.
+     Any other URL (including /superadmin alone) → hard 404.
      ======================================================== */
-  const isSuperAdminPath = typeof window !== 'undefined' && window.location.pathname === '/superadmin';
+  const SECRET_SUPERADMIN_PATH = '/xT9mK2pQ7rA4vN8w';  // change this to rotate access
 
-  if (isSuperAdminPath) {
-    const accessKey = new URLSearchParams(window.location.search).get('access') || '';
-    const expectedKey = (import.meta.env.VITE_SUPER_ADMIN_KEY || '').trim();
-    // If env var not set OR key doesn't match → hard 404 (no hint a secret page exists)
-    const keyValid = expectedKey.length >= 12 && accessKey === expectedKey;
-
-    if (!keyValid) {
-      return (
-        <NotFoundScreen
-          onBackToHome={() => {
-            if (typeof window !== 'undefined') window.history.pushState(null, '', '/');
-            setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
-          }}
-        />
-      );
-    }
-
+  if (typeof window !== 'undefined' && window.location.pathname === SECRET_SUPERADMIN_PATH) {
     return (
       <SuperAdminScreen
         onExit={() => {
+          if (typeof window !== 'undefined') window.history.pushState(null, '', '/');
+          setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
+        }}
+      />
+    );
+  }
+
+  // /superadmin and any other probing path → hard 404 (no hint a secret page exists)
+  if (typeof window !== 'undefined' && window.location.pathname === '/superadmin') {
+    return (
+      <NotFoundScreen
+        onBackToHome={() => {
           if (typeof window !== 'undefined') window.history.pushState(null, '', '/');
           setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
         }}
