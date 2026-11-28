@@ -213,7 +213,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
 }) => {
   const { progress, visitFestivalStall } = useGame();
   const [selectedLevelForPreview, setSelectedLevelForPreview] = useState<Level | null>(null);
-  const [viewMode, setViewMode] = useState<'3d' | 'path' | 'grid'>('path');
+  const [viewMode, setViewMode] = useState<'3d' | 'path' | 'grid'>('grid');
   const [showTapasModal, setShowTapasModal] = useState<boolean>(false);
   const [chestAlert, setChestAlert] = useState<{ title: string; message: string; coins: number } | null>(null);
 
@@ -372,7 +372,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               }`}
             >
               <Gamepad2 className="w-3.5 h-3.5" />
-              <span>Aventura 3D</span>
+              <span>3D Adventure</span>
             </button>
             <button
               onClick={() => setViewMode('path')}
@@ -383,7 +383,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               }`}
             >
               <Route className="w-3.5 h-3.5" />
-              <span>Ruta</span>
+              <span>Path</span>
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -394,7 +394,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Sílabo</span>
+              <span>Levels</span>
             </button>
           </div>
         </div>
@@ -412,7 +412,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
           <div className="max-w-2xl text-left">
             {/* City Tag Ribbon */}
             <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-300 text-[#B45309] text-xs font-black mb-3">
-              <span>Ciudad {city.number} de 15</span>
+              <span>City {city.number} of 15</span>
               <span>•</span>
               <span>{city.landmark}</span>
             </div>
@@ -421,7 +421,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               {city.name}
             </h1>
             <p className="text-[#B45309] font-bold text-sm mt-1">
-              {city.number === 1 ? 'Ciudad de los Comienzos (City of Beginnings)' : `Región: ${city.region}`}
+              {city.number === 1 ? 'City of Beginnings (Ciudad de los Comienzos)' : `Region: ${city.region}`}
             </p>
             <p className="text-[#6B584D] text-sm sm:text-base leading-relaxed mt-2 font-medium">
               {city.description}
@@ -431,12 +431,12 @@ export const CityScreen: React.FC<CityScreenProps> = ({
           {/* Quick city progress summary badge */}
           <div className="bg-white/95 border-2 border-[#EADFCF] rounded-2xl p-4 flex flex-col items-center justify-center min-w-[210px] text-center shrink-0 shadow-sm text-[#24140E]">
             <span className="text-xs text-[#7A6B60] uppercase tracking-wider font-bold mb-1">
-              Progreso en {city.name}
+              Progress in {city.name}
             </span>
             <div className="text-3xl font-black text-[#B45309]">
               {completedLevels.length} / 10
             </div>
-            <span className="text-xs text-[#7A6B60]">Niveles Superados</span>
+            <span className="text-xs text-[#7A6B60]">Levels Completed</span>
 
             <div className="w-full bg-[#EADFCF] h-2.5 rounded-full mt-3 overflow-hidden border border-[#E0D5C7]">
               <div 
@@ -1268,44 +1268,42 @@ export const CityScreen: React.FC<CityScreenProps> = ({
         </div>
       )}
 
-      {/* Boss Mission Encounter Banner Gate */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2B1B1E] via-[#2A1E30] to-[#1B1F38] border-2 border-fiesta-red/60 p-6 sm:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-        
+      {/* Boss Mission Encounter Banner Gate (Warm Editorial Theme) */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FFF8EE] via-[#FFF4E6] to-[#FFF1EB] border-2 border-amber-300 p-6 sm:p-8 shadow-sm text-[#24140E]">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold mb-3">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#E05615]/10 border border-[#E05615]/30 text-[#C2410C] text-xs font-black mb-3">
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Misión de Jefe de la Ciudad • Umbral de Maestría: 80%</span>
+              <span>City Boss Mission • 80% Mastery Required</span>
             </div>
             <div className="flex items-center space-x-3 mb-2">
               <span className="text-3xl">{city.bossMission.badgeIcon}</span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-serif">
+              <h3 className="text-2xl sm:text-3xl font-black text-[#24140E] font-serif">
                 {city.bossMission.title}
               </h3>
             </div>
-            <p className="text-sm font-semibold text-amber-300 mb-2">
-              Personaje: {city.bossMission.characterName} ({city.bossMission.characterRole})
+            <p className="text-sm font-bold text-[#B45309] mb-2">
+              Character: {city.bossMission.characterName} ({city.bossMission.characterRole})
             </p>
-            <p className="text-slate-300 text-sm leading-relaxed mb-4">
+            <p className="text-[#6B584D] text-sm leading-relaxed mb-4 font-medium">
               {city.bossMission.scenario}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs text-amber-200">
-              <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 font-bold">
-                +{city.bossMission.coinReward} monedas de bonificación
+            <div className="flex flex-wrap items-center gap-2.5 text-xs">
+              <span className="px-2.5 py-1 rounded-full bg-white border border-amber-300 text-[#B45309] font-bold">
+                🪙 +{city.bossMission.coinReward} bonus coins
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-sky-500/20 border border-sky-500/30 font-bold">
-                +{city.bossMission.xpReward} XP
+              <span className="px-2.5 py-1 rounded-full bg-white border border-sky-300 text-sky-700 font-bold">
+                ✨ +{city.bossMission.xpReward} XP
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 font-bold">
-                Trofeo: {city.bossMission.badgeName}
+              <span className="px-2.5 py-1 rounded-full bg-white border border-amber-300 text-[#24140E] font-bold">
+                🏆 Trophy: {city.bossMission.badgeName}
               </span>
             </div>
           </div>
 
           {/* Action button */}
-          <div className="flex flex-col items-center justify-center shrink-0 min-w-[200px]">
+          <div className="flex flex-col items-center justify-center shrink-0 min-w-[220px]">
             <button
               onClick={() => {
                 if (allLevelsDone || isBossPassed) {
@@ -1313,23 +1311,23 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                 }
               }}
               disabled={!allLevelsDone && !isBossPassed}
-              className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm sm:text-base shadow-xl transition-all flex items-center justify-center space-x-2 border-2 ${
+              className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm sm:text-base shadow-md transition-all flex items-center justify-center space-x-2 border-2 ${
                 !allLevelsDone && !isBossPassed
-                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-60'
+                  ? 'bg-[#EFE6D9] text-[#8C7A6B] border-[#E0D5C7] cursor-not-allowed'
                   : isBossPassed
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/50 shadow-emerald-600/30 cursor-pointer'
-                  : 'bg-gradient-to-r from-fiesta-red to-amber-600 hover:from-red-600 hover:to-amber-500 text-white border-amber-400/50 shadow-rose-600/30 glow-gold cursor-pointer'
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 cursor-pointer'
+                  : 'bg-[#E05615] hover:bg-[#C2410C] text-white border-[#C2410C] cursor-pointer'
               }`}
             >
               <Play className="w-5 h-5 fill-current" />
               <span>{isBossPassed ? 'Retry Boss Challenge' : 'Start Boss Challenge'}</span>
             </button>
-            <p className="text-[11px] text-slate-400 mt-2 text-center">
+            <p className="text-[11px] text-[#7A6B60] mt-2 text-center font-medium">
               {isBossPassed 
-                ? `Superado con éxito (${bossRecord?.scorePercent}%). Próxima ciudad desbloqueada.` 
+                ? `Passed (${bossRecord?.scorePercent}%). Next city unlocked.` 
                 : !allLevelsDone
-                ? `Completa los 10 niveles de la ciudad para desbloquear este Desafío.`
-                : 'Se requiere un mínimo de 80% para desbloquear la siguiente ciudad.'}
+                ? `Complete all 10 levels in ${city.name} to unlock.`
+                : 'Minimum 80% score required to unlock the next city.'}
             </p>
           </div>
         </div>
