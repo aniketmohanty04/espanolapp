@@ -331,6 +331,18 @@ export async function loadCloudCurriculum(force = false): Promise<boolean> {
       }
       notifyCurriculumUpdated();
       return true;
+    } else if (data?.success && data.cities === null && isCustomCurriculumActive()) {
+      // Cloud curriculum was reset to factory defaults by admin
+      lastLoadedCloudUpdatedAt = null;
+      activeCustomCities = null;
+      syncWithGameCities(getFactoryDefaultCities());
+      try {
+        window.localStorage.removeItem(STORAGE_CURRICULUM_KEY);
+      } catch {
+        // ignore
+      }
+      notifyCurriculumUpdated();
+      return true;
     }
   } catch {
     // offline or backend unavailable; keep local/factory curriculum
