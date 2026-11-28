@@ -889,7 +889,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <span className="px-2.5 py-1 rounded-full bg-[#E05615] text-white text-[10px] font-black tracking-wider uppercase">
-                    MÓDULO {selectedCity.moduleIndex} ({((selectedCity.number - 1) % 3) + 1}/3)
+                    MODULE {selectedCity.moduleIndex} ({((selectedCity.number - 1) % 3) + 1}/3)
                   </span>
                   <span className="text-xs font-black tracking-[0.2em] uppercase text-[#E08A5B]">
                     {isBossSelected ? 'DESAFÍO DEL JEFE' : `MISSION ${String(activeLevel.levelNumber).padStart(2, '0')}`}

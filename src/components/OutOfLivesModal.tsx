@@ -56,21 +56,21 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
               ? 'text-amber-700 bg-amber-50 border-amber-200'
               : 'text-emerald-700 bg-emerald-50 border-emerald-200'
           }`}>
-            {currentLives} / 3 Vidas Disponibles
+            {currentLives} / 3 Lives Available (Vidas)
           </span>
           <h2 className="text-2xl font-black font-serif text-[#24140E] mt-2 tracking-tight">
             {currentLives === 0 
-              ? '¡Te has quedado sin vidas!' 
+              ? 'Out of Lives! (¡Sin vidas!)' 
               : currentLives < 3 
-              ? 'Estado de Vidas y Corazones' 
-              : '¡Tus vidas están al máximo!'}
+              ? 'Lives & Hearts (Vidas y Corazones)' 
+              : 'Your lives are full! (¡Vidas al máximo!)'}
           </h2>
           <p className="text-xs text-[#7D6B5E] mt-1 leading-relaxed">
             {currentLives === 0
-              ? 'Has agotado tus vidas en los desafíos. Puedes comprar 1 vida de inmediato por 500 monedas o esperar a que se regeneren gratis:'
+              ? 'You ran out of lives in the challenges. Buy 1 life immediately for 500 coins or wait for free regeneration:'
               : currentLives < 3
-              ? `Tienes ${currentLives} de 3 vidas. Puedes comprar 1 vida (+1 ❤️) de inmediato por 500 monedas o esperar a que se regeneren gratis cada 15 minutos.`
-              : 'Tienes tus 3 vidas completas listas para cualquier desafío en el camino.'}
+              ? `You have ${currentLives} of 3 lives (vidas). Buy 1 life (+1 ❤️) immediately for 500 coins or wait for free regeneration every 15 minutes.`
+              : 'You have all 3 lives (vidas) ready for any challenge along the way.'}
           </p>
         </div>
 
@@ -84,15 +84,15 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
             <div className="flex items-center space-x-2">
               <span className="text-xl">🪙</span>
               <div>
-                <h4 className="font-black text-sm text-[#24140E]">Comprar 1 Vida Ahora</h4>
-                <p className="text-[11px] text-[#6B584D]">Obtén +1 corazón de inmediato</p>
+                <h4 className="font-black text-sm text-[#24140E]">Buy 1 Life Now (Comprar 1 Vida)</h4>
+                <p className="text-[11px] text-[#6B584D]">Get +1 heart (corazón) immediately</p>
               </div>
             </div>
             <span className="font-black text-sm text-[#B45309]">500 🪙</span>
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-2 border-t border-amber-300/30 mb-3">
-            <span className="text-[#6B584D]">Tus monedas actuales:</span>
+            <span className="text-[#6B584D]">Your current coins:</span>
             <span className="font-extrabold text-[#24140E]">{currentCoins.toLocaleString()} 🪙</span>
           </div>
 
@@ -110,10 +110,10 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
             <Sparkles className="w-4 h-4" />
             <span>
               {currentLives >= 3
-                ? 'Vidas ya completas (3/3 ❤️)'
+                ? 'Lives already full (3/3 ❤️)'
                 : canAffordRefill 
-                ? 'Pagar 500 Monedas y Obtener 1 Vida (+1 ❤️)' 
-                : `Monedas insuficientes (Faltan ${500 - currentCoins} 🪙)`}
+                ? 'Pay 500 Coins & Get 1 Life (+1 ❤️)' 
+                : `Not enough coins (Need ${500 - currentCoins} more 🪙)`}
             </span>
           </button>
         </div>
@@ -123,9 +123,9 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
           <div className="flex items-start space-x-3 mb-2">
             <Clock className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-black text-sm text-sky-950">Regeneración Gratuita de Vida</h4>
+              <h4 className="font-black text-sm text-sky-950">Free Life Regeneration (Regeneración)</h4>
               <p className="text-[11px] text-sky-800 leading-relaxed mt-0.5">
-                Si no tienes 500 monedas, descansa un momento: <strong>recibes 1 vida gratis cada 15 minutos</strong> hasta completar 3.
+                If you don't have 500 coins, take a short break: <strong>you receive 1 free life (vida) every 15 minutes</strong> up to 3.
               </p>
             </div>
           </div>
@@ -133,10 +133,10 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
           {/* Countdown timer pill */}
           <div className="mt-3 p-3 rounded-xl bg-white border border-sky-300 flex items-center justify-between shadow-xs">
             <span className="text-xs font-bold text-sky-900">
-              {currentLives >= 3 ? 'Estado actual:' : 'Próxima vida gratis en:'}
+              {currentLives >= 3 ? 'Current status:' : 'Next free life in:'}
             </span>
             <span className="font-mono font-black text-base text-rose-600 tracking-wider">
-              {currentLives >= 3 ? '✅ 3/3 Vidas Llenas' : `⏱️ ${formatLifeTimer(secondsUntilNextLife)}`}
+              {currentLives >= 3 ? '✅ 3/3 Full (Llenas)' : `⏱️ ${formatLifeTimer(secondsUntilNextLife)}`}
             </span>
           </div>
         </div>
@@ -146,7 +146,7 @@ export const OutOfLivesModal: React.FC<OutOfLivesModalProps> = ({ isOpen, onClos
           onClick={onClose}
           className="w-full py-2.5 rounded-xl bg-white hover:bg-[#F2ECE1] text-[#524136] font-bold text-xs border border-[#E0D5C7] transition-colors cursor-pointer"
         >
-          Volver a Explorar la Ciudad
+          Back to Exploring the City
         </button>
 
       </div>
