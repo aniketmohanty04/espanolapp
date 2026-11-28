@@ -923,10 +923,10 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 <span className="text-2xl">{selectedCity.landmark}</span>
                 <div>
                   <h3 className="font-serif font-black text-lg text-[#24140E]">
-                    Niveles de {selectedCity.name}
+                    Levels in {selectedCity.name}
                   </h3>
                   <p className="text-xs text-[#7A6B60]">
-                    Región: {selectedCity.region} • Módulo {selectedCity.moduleIndex} ({selectedCity.moduleName})
+                    Region: {selectedCity.region} • Module {selectedCity.moduleIndex} ({selectedCity.moduleName})
                   </p>
                 </div>
               </div>
@@ -968,7 +968,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                     <div className="flex items-start justify-between">
                       <div>
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#C2410C] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                          Nivel {lvl.levelNumber} • {lvl.tier}
+                          Level {lvl.levelNumber} • {lvl.tier}
                         </span>
                         <h4 className="font-serif font-black text-base text-[#24140E] mt-1">
                           {lvl.title}
@@ -1008,10 +1008,10 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
 
                   <div className="pt-3 border-t border-[#EFE5D8] flex items-center justify-between text-xs">
                     <span className="font-bold text-[#E05615]">
-                      Sílabo: {lvl.syllabusTopic}
+                      Syllabus: {lvl.syllabusTopic}
                     </span>
                     <div className="flex items-center space-x-2 text-[#7A6B60]">
-                      <span>{lvl.questions.length} preguntas</span>
+                      <span>{lvl.questions.length} questions</span>
                       <span>•</span>
                       <span>{lvl.xpReward} XP</span>
                     </div>
@@ -1031,17 +1031,17 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               <div className="flex items-center space-x-2 text-purple-700">
                 <Sparkles className="w-5 h-5" />
                 <h3 className="font-serif font-black text-lg text-[#24140E]">
-                  Probador de Preguntas en Tiempo Real
+                  Real-Time Question Tester
                 </h3>
               </div>
               <p className="text-xs text-[#7A6B60]">
-                Verifica la experiencia del estudiante: reproducción de audio, opciones interactivas y retroalimentación pedagógica inmediata.
+                Verify the student experience: audio playback, interactive options, and immediate pedagogical feedback.
               </p>
 
               {/* Selector */}
               <div>
                 <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                  Pregunta a Probar:
+                  Question to Test:
                 </label>
                 <select
                   value={testingQuestionId || ''}
@@ -1052,7 +1052,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                   }}
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-[#FAF7F2] text-xs font-bold text-[#24140E]"
                 >
-                  <option value="">-- Elige una pregunta del nivel actual --</option>
+                  <option value="">-- Choose a question from the current level --</option>
                   {selectedLevel?.questions.map((q, idx) => (
                     <option key={q.id} value={q.id}>
                       #{idx + 1}: {q.prompt.slice(0, 50)}... [{q.type}]
@@ -1175,11 +1175,11 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               <div className="flex items-center space-x-2 text-emerald-700">
                 <Shield className="w-6 h-6" />
                 <h3 className="font-serif font-black text-lg text-[#24140E]">
-                  Auditoría de Seguridad y Checklist de Políticas RLS
+                  Security Audit &amp; RLS Policy Checklist
                 </h3>
               </div>
               <p className="text-xs text-[#7A6B60] leading-relaxed">
-                Este panel implementa las 5 directrices esenciales de seguridad para aplicaciones educativas con backend Supabase en la nube.
+                This panel implements the essential security guidelines for educational apps with a Supabase cloud backend.
               </p>
 
               {/* 5 Security Checkpoints Cards */}
@@ -1190,37 +1190,37 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                     <span>1. Row-Level Security (RLS)</span>
                   </div>
                   <p className="text-[11px] text-emerald-950 leading-tight">
-                    Tablas protegidas. Las claves anónimas públicas no pueden alterar registros ajenos ni modificar el currículo.
+                    Protected tables. Public anon keys cannot alter other users' records or modify the published curriculum.
                   </p>
                 </div>
 
                 <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-1">
                   <div className="flex items-center space-x-1.5 text-xs font-black text-emerald-900">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>2. Control de Permisos y URL Tampering</span>
+                    <span>2. Access Control &amp; URL Tampering Protection</span>
                   </div>
                   <p className="text-[11px] text-emerald-950 leading-tight">
-                    Acceso al portal restringido por token de sesión en memoria/sessionStorage. Modificar IDs en la URL es rechazado.
+                    Portal access restricted by server-signed HttpOnly JWT cookies. Tampering with URL IDs or routes is rejected.
                   </p>
                 </div>
 
                 <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-1">
                   <div className="flex items-center space-x-1.5 text-xs font-black text-emerald-900">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>3. Prevención de Secretos Hardcodeados</span>
+                    <span>3. No Hardcoded Secrets</span>
                   </div>
                   <p className="text-[11px] text-emerald-950 leading-tight">
-                    Verificación con SHA-256 + Salt y soporte nativo de variables de entorno (<code className="font-mono">VITE_ADMIN_SECRET_KEY</code>).
+                    Server-side PBKDF2-SHA256 verification and fail-closed environment variables (<code className="font-mono">ADMIN_SECRET_KEY</code>, <code className="font-mono">ADMIN_JWT_SECRET</code>).
                   </p>
                 </div>
 
                 <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-1">
                   <div className="flex items-center space-x-1.5 text-xs font-black text-emerald-900">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>4. Validación Estricta Anti-XSS</span>
+                    <span>4. Strict Anti-XSS Validation</span>
                   </div>
                   <p className="text-[11px] text-emerald-950 leading-tight">
-                    Sanitización de cadenas HTML, verificación de longitud y renderizado seguro en texto plano.
+                    HTML string sanitization, length checks, prototype-pollution filtering, and safe text rendering.
                   </p>
                 </div>
               </div>
@@ -1232,7 +1232,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 <div className="flex items-center space-x-2">
                   <FileCode className="w-5 h-5 text-orange-400" />
                   <h4 className="font-mono text-sm font-bold text-orange-400">
-                    supabase/admin_rls.sql — Políticas Recomendadas
+                    supabase/admin_rls.sql — Recommended Policies
                   </h4>
                 </div>
                 <button
