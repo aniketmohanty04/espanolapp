@@ -463,9 +463,9 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
           <div className="lg:col-span-7 flex flex-col items-start">
             
             {/* Day / Journey Begins Badge */}
-            <div className="flex items-center space-x-3 text-xs sm:text-sm font-extrabold text-[#8C7A6B] tracking-[0.15em] uppercase mb-4 sm:mb-6">
+            <div className="hidden" aria-hidden="true">
               <span className="w-8 h-[2px] bg-[#8C7A6B] inline-block" />
-              <span>DAY {String(streakDay).padStart(2, '0')} / 36 • YOUR JOURNEY BEGINS</span>
+              {null}
             </div>
 
             {/* Giant Display Headline */}
