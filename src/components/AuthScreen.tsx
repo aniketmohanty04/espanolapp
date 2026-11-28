@@ -118,17 +118,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <p className="text-xs font-black uppercase tracking-widest text-[#E05615] mb-1">¡Aventura Española!</p>
             <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#24140E] tracking-tight">
               {mode === 'login' 
-                ? 'Iniciar Sesión' 
+                ? 'Sign In' 
                 : mode === 'register' 
-                ? 'Crear Cuenta' 
-                : 'Restablecer Contraseña'}
+                ? 'Create Account' 
+                : 'Reset Password'}
             </h1>
             <p className="text-xs sm:text-sm text-[#7D6B5E] mt-1.5 font-medium leading-relaxed">
               {mode === 'login' 
-                ? 'Introduce tu correo y contraseña para retomar tu aventura exactamente donde la dejaste.' 
+                ? 'Enter your email and password to resume your Spanish adventure right where you left off.' 
                 : mode === 'register'
-                ? 'Crea tu cuenta para comenzar tu viaje por las ciudades de España.'
-                : 'Si olvidaste tu contraseña, escribe tu correo y una nueva contraseña. Los valores del juego se reiniciarán a cero para comenzar tu aventura de nuevo.'}
+                ? 'Create your account to start your journey across the cities of Spain.'
+                : 'Forgot your password? Enter your email and a new password. Your game progress will reset to zero to start fresh.'}
             </p>
           </div>
 
@@ -270,14 +270,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-xs text-[#78350F] flex items-start space-x-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div className="font-semibold leading-relaxed">
-                  <strong>Reinicio a cero:</strong> Al restablecer tu contraseña, las monedas, niveles y racha volverán a cero para reiniciar la aventura.
+                  <strong>Reset to zero:</strong> Resetting your password will reset coins, levels, and streak back to zero to restart your adventure.
                 </div>
               </div>
             ) : (
               <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/40 text-[11px] text-[#78350F] flex items-center space-x-2">
                 <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <p>
-                  Tu progreso (niveles superados, estrellas, monedas y racha) se sincroniza directamente en la nube.
+                  Your progress (completed levels, stars, coins, and streak) syncs directly to the cloud.
                 </p>
               </div>
             )}

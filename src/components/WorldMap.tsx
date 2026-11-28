@@ -82,28 +82,28 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCity, onOpenFestival
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider mb-3.5 shadow-md border border-amber-300">
             <Compass className="w-3.5 h-3.5 text-[#E05615]" />
-            <span>Itinerario Pedagógico BAESP101 • 15 Ciudades + La Gran Fiesta</span>
+            <span>BAESP101 Learning Path • 15 Cities + The Grand Festival (La Fiesta)</span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white font-serif tracking-tight leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            Mapa del Viajero por España
+            Spain Traveler's Map (Mapa de España)
           </h1>
           <p className="mt-3 text-slate-100 text-sm sm:text-base leading-relaxed font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            Explora la geografía real de la Península Ibérica en estilo anime. Inicia tu ruta en <strong className="text-amber-300 font-black">Madrid</strong>, supera los 10 niveles y la misión de jefe de cada región, y desbloquea el viaje hasta <strong className="text-amber-300 font-black">La Gran Fiesta</strong> en el Mediterráneo.
+            Explore the real geography of Spain in anime style. Start your route in <strong className="text-amber-300 font-black">Madrid</strong>, complete the 10 levels and boss mission of each region, and unlock the journey to <strong className="text-amber-300 font-black">La Gran Fiesta</strong> on the Mediterranean.
           </p>
 
           {/* Quick Stats Highlights */}
           <div className="flex flex-wrap items-center gap-2 mt-4 pt-1">
             <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-amber-200 border border-white/20 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
               <span>📍</span>
-              <span>15 Ciudades Reales</span>
+              <span>15 Real Cities</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-emerald-200 border border-white/20 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
               <span>⚔️</span>
-              <span>15 Misiones de Jefe</span>
+              <span>15 Boss Missions</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-sky-200 border border-white/20 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
               <span>🎓</span>
-              <span>5 Módulos Sílabo A1</span>
+              <span>5 A1 Syllabus Modules</span>
             </span>
           </div>
         </div>

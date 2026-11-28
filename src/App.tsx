@@ -458,7 +458,7 @@ const GameMain: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-[#EADFCF] bg-[#FAF7F2] py-4 px-6 text-center text-xs text-[#7A6B60]">
         <p>
-          ¡Aventura Española! • Basado en el sílabo oficial <strong>BAESP101 Spanish Level I</strong> y <strong>Nuevo Español sin Fronteras ESF 1</strong>.
+          ¡Aventura Española! • Based on the official <strong>BAESP101 Spanish Level I</strong> syllabus &amp; <strong>Nuevo Español sin Fronteras ESF 1</strong>.
         </p>
       </footer>
     </div>

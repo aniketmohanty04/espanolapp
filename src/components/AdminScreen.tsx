@@ -65,7 +65,7 @@ interface AdminScreenProps {
 export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialScreen }) => {
   // Auth state — always verify with server before unlocking dashboard UI
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [emailInput, setEmailInput] = useState<string>('admin@aventura.es');
+  const [emailInput, setEmailInput] = useState<string>('');
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState<boolean>(false);
@@ -406,17 +406,17 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               <Shield className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-black font-serif text-[#24140E]">
-              Portal de Administración
+              Admin Portal
             </h1>
             <p className="text-xs text-[#7A6B60] leading-relaxed">
-              Gestión segura del currículo A1, preguntas, respuestas y niveles de ¡Aventura Española!.
+              Secure management of the ¡Aventura Española! A1 curriculum, questions, answers, and levels.
             </p>
           </div>
 
           <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start space-x-2">
             <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
             <div className="leading-tight">
-              <strong>Protección Criptográfica Activa:</strong> Acceso restringido a administradores verificados. Las sesiones expiran automáticamente al cerrar la pestaña.
+              <strong>Cryptographic Protection Active:</strong> Restricted to verified administrators. Sessions expire automatically when you close the tab.
             </div>
           </div>
 
@@ -430,7 +430,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                Correo Electrónico de Administrador
+                Admin Email
               </label>
               <input
                 type="email"
@@ -438,14 +438,14 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 disabled={lockoutSeconds > 0 || isSubmittingAuth}
-                placeholder="admin@aventura.es"
+                placeholder="Enter your admin email"
                 className="w-full px-4 py-2.5 rounded-xl border border-[#D5C7B5] bg-[#FAF7F2] text-sm focus:outline-none focus:ring-2 focus:ring-[#E05615]"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                Contraseña Secreta de Administrador
+                Admin Secret Password
               </label>
               <input
                 type="password"
@@ -466,7 +466,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               <Key className="w-4 h-4" />
               <span>
                 {lockoutSeconds > 0 
-                  ? `Bloqueado (${lockoutSeconds}s)` 
+                  ? `Locked (${lockoutSeconds}s)` 
                   : isSubmittingAuth 
                   ? 'Verifying...' 
                   : 'Sign In to Admin Panel'}
@@ -528,22 +528,22 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="font-serif font-black text-base sm:text-lg text-[#24140E] leading-tight">
-                  Panel de Administración
+                  Admin Dashboard
                 </h1>
                 {hasCustomEdits ? (
                   <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 flex items-center space-x-1">
                     <span>⚠️</span>
-                    <span>Modificaciones Activas</span>
+                    <span>Custom Edits Active</span>
                   </span>
                 ) : (
                   <span className="bg-emerald-100 text-emerald-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-300 flex items-center space-x-1">
                     <span>✓</span>
-                    <span>Currículo Oficial Fábrica</span>
+                    <span>Official Factory Curriculum</span>
                   </span>
                 )}
               </div>
               <p className="text-[11px] text-[#7A6B60]">
-                Sesión: <span className="font-semibold text-[#24140E]">{getAdminEmail()}</span> • Acceso Protegido
+                Protected Admin Session
               </p>
             </div>
           </div>

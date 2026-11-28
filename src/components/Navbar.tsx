@@ -225,7 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black tracking-wider uppercase text-[#E05615] flex items-center space-x-1.5 font-serif">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Cuaderno de Viaje</span>
+                  <span>Travel Notebook</span>
                 </span>
                 <button
                   onClick={() => setDrawerOpen(false)}
@@ -243,11 +243,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <h3 className="text-sm font-black text-[#24140E] truncate font-serif">{playerName}</h3>
                     {currentUserEmail ? (
                       <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black border border-emerald-300 shrink-0">
-                        Cuenta Activa
+                        Active Account
                       </span>
                     ) : (
                       <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300 shrink-0">
-                        Invitado
+                        Guest
                       </span>
                     )}
                   </div>
@@ -255,7 +255,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <p className="text-[10px] text-[#7A6B60] truncate font-mono mt-0.5">{currentUserEmail}</p>
                   )}
                   <div className="flex items-center space-x-2 text-[11px] text-[#B45309] font-bold mt-0.5">
-                    <span>Nivel {progress.stats.level}</span>
+                    <span>Level {progress.stats.level}</span>
                     <span>•</span>
                     <span className="text-[#8C7A6B]">{progress.stats.xp} XP total</span>
                   </div>
@@ -497,7 +497,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Drawer Footer */}
             <div className="p-4 border-t border-[#EADFCF] bg-white space-y-2 text-center">
               <p className="text-[10px] text-[#7A6B60] leading-tight font-medium">
-                ¡Aventura Española! • Basado en el sílabo oficial <strong>BAESP101 Spanish Level I</strong> y <strong>Nuevo Español sin Fronteras</strong>.
+                ¡Aventura Española! • Based on the official <strong>BAESP101 Spanish Level I</strong> syllabus &amp; <strong>Nuevo Español sin Fronteras</strong>.
               </p>
             </div>
 
