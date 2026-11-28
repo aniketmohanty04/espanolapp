@@ -181,6 +181,40 @@ export default async function handler(req: any, res: any) {
         }
       }
 
+      // Admin-only: fetch registered students (indexed prefix search or compact directory)
+      if (mode === 'registered_students') {
+        const admin = await requireAdmin(req, res);
+        if (!admin) return;
+        if (!url || !serviceKey) {
+          return res.status(200).json({ success: true, students: [] });
+        }
+        try {
+          const qRaw = String(req.query?.q || '').trim().toLowerCase().replace(/[^a-z0-9@._\- ]/g, '');
+          const endpoint = qRaw
+            ? `${url}/rest/v1/player_progress?select=email,display_name&or=(email.ilike.${encodeURIComponent(qRaw)}*,display_name.ilike.${encodeURIComponent(qRaw)}*)&order=email.asc&limit=20`
+            : `${url}/rest/v1/player_progress?select=email,display_name&order=email.asc&limit=500`;
+          const response = await fetch(endpoint, {
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`
+            }
+          });
+          if (!response.ok) return res.status(200).json({ success: true, students: [] });
+          const rows = await response.json();
+          const students = Array.isArray(rows)
+            ? rows
+                .filter((r: any) => r?.email)
+                .map((r: any) => ({
+                  email: String(r.email).trim().toLowerCase(),
+                  displayName: String(r.display_name || r.email.split('@')[0] || 'Student').trim()
+                }))
+            : [];
+          return res.status(200).json({ success: true, students });
+        } catch {
+          return res.status(200).json({ success: true, students: [] });
+        }
+      }
+
       // Admin-only: fetch this admin's own teachership student roster
       if (mode === 'roster') {
         const admin = await requireAdmin(req, res);

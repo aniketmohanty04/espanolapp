@@ -48,8 +48,9 @@ function formatDateTime(iso: string): string {
 
 export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }) => {
   const { currentUserEmail, progress } = useGame();
-  const userKey = currentUserEmail || 'guest';
-  const studentDisplayName = progress?.profile?.displayName || currentUserEmail || 'Guest Student';
+  const effectiveEmail = (currentUserEmail || progress?.profile?.email || '').trim().toLowerCase();
+  const userKey = effectiveEmail || 'guest';
+  const studentDisplayName = progress?.profile?.displayName || effectiveEmail || 'Guest Student';
 
   const [assignments, setAssignments] = useState<AssignmentItem[]>(() => getLocalAssignments());
   const [submissions, setSubmissions] = useState<Record<string, AssignmentSubmission>>(() =>
@@ -60,25 +61,37 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
+    setSubmissions(getStudentSubmissions(userKey));
+  }, [userKey]);
+
+  useEffect(() => {
+    const syncAll = () => {
+      setNowMs(Date.now());
+      void loadCloudAssignments(effectiveEmail || undefined).then(setAssignments);
+    };
+
+    syncAll();
 
     const onUpdated = () => setAssignments(getLocalAssignments());
-    const onFocus = () => void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
+    const onVisibleOrFocus = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      syncAll();
+    };
     const timer = window.setInterval(() => {
-      setNowMs(Date.now());
-      if (document.visibilityState !== 'hidden') {
-        void loadCloudAssignments(currentUserEmail || undefined).then(setAssignments);
-      }
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      syncAll();
     }, 30_000);
 
     window.addEventListener('aventura-assignments-updated', onUpdated);
-    window.addEventListener('focus', onFocus);
+    window.addEventListener('focus', onVisibleOrFocus);
+    document.addEventListener('visibilitychange', onVisibleOrFocus);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('aventura-assignments-updated', onUpdated);
-      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('focus', onVisibleOrFocus);
+      document.removeEventListener('visibilitychange', onVisibleOrFocus);
     };
-  }, [currentUserEmail]);
+  }, [effectiveEmail]);
 
   const activeAssignment = assignments.find(a => a.id === activeAssignmentId) || null;
 
@@ -129,7 +142,7 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
 
     const sub: AssignmentSubmission = {
       assignmentId: activeAssignment.id,
-      studentEmail: currentUserEmail || 'guest',
+      studentEmail: effectiveEmail || 'guest',
       studentName: studentDisplayName,
       submittedAt: new Date().toISOString(),
       answers: { ...draftAnswers },

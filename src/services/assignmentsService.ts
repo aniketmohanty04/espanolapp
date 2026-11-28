@@ -277,6 +277,106 @@ export async function loadAdminRoster(adminEmail: string): Promise<string[]> {
   return getLocal();
 }
 
+export interface RegisteredStudent {
+  email: string;
+  displayName: string;
+}
+
+export interface StudentPrefixIndex {
+  buckets: Map<string, RegisteredStudent[]>;
+  all: RegisteredStudent[];
+}
+
+/**
+ * Builds an O(1) prefix-bucket index for instant autocomplete lookup
+ * across both email and displayName tokens without scanning the full list per keystroke.
+ */
+export function buildStudentPrefixIndex(students: RegisteredStudent[]): StudentPrefixIndex {
+  const buckets = new Map<string, RegisteredStudent[]>();
+  const seenEmails = new Set<string>();
+  const deduped: RegisteredStudent[] = [];
+
+  for (const s of students) {
+    const email = (s.email || '').trim().toLowerCase();
+    if (!email || seenEmails.has(email)) continue;
+    seenEmails.add(email);
+    const entry: RegisteredStudent = {
+      email,
+      displayName: (s.displayName || email.split('@')[0] || 'Student').trim()
+    };
+    deduped.push(entry);
+
+    const tokens = [
+      email,
+      email.split('@')[0] || '',
+      ...entry.displayName.toLowerCase().split(/\s+/)
+    ].filter(Boolean);
+
+    const addedKeys = new Set<string>();
+    for (const tok of tokens) {
+      for (const len of [1, 2, 3]) {
+        if (tok.length >= len) {
+          const key = tok.slice(0, len);
+          if (!addedKeys.has(key)) {
+            addedKeys.add(key);
+            const list = buckets.get(key);
+            if (list) list.push(entry);
+            else buckets.set(key, [entry]);
+          }
+        }
+      }
+    }
+  }
+
+  return { buckets, all: deduped };
+}
+
+/**
+ * O(1) bucket retrieval + prefix-priority matching.
+ */
+export function queryStudentPrefixIndex(
+  index: StudentPrefixIndex,
+  rawQuery: string,
+  limit = 8
+): RegisteredStudent[] {
+  const q = rawQuery.trim().toLowerCase();
+  if (!q) return index.all.slice(0, limit);
+
+  const key = q.length >= 3 ? q.slice(0, 3) : q.length === 2 ? q.slice(0, 2) : q.slice(0, 1);
+  const candidates = index.buckets.get(key) || [];
+  const prefixMatches: RegisteredStudent[] = [];
+  const containsMatches: RegisteredStudent[] = [];
+
+  for (const item of candidates) {
+    const nameLower = item.displayName.toLowerCase();
+    if (item.email.startsWith(q) || nameLower.startsWith(q)) {
+      prefixMatches.push(item);
+    } else if (item.email.includes(q) || nameLower.includes(q)) {
+      containsMatches.push(item);
+    }
+    if (prefixMatches.length >= limit) break;
+  }
+
+  return [...prefixMatches, ...containsMatches].slice(0, limit);
+}
+
+export async function loadRegisteredStudents(query?: string): Promise<RegisteredStudent[]> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') return [];
+  try {
+    const qs = query ? `&q=${encodeURIComponent(query)}` : '';
+    const res = await fetch(`/api/admin/assignments?mode=registered_students${qs}`, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => ({}));
+    return data?.success && Array.isArray(data.students) ? data.students : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function saveAdminRoster(
   adminEmail: string,
   students: string[]

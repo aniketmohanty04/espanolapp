@@ -43,7 +43,11 @@ import {
   loadAdminOwnAssignments,
   loadAdminSubmissions,
   loadAdminRoster,
-  saveAdminRoster
+  saveAdminRoster,
+  RegisteredStudent,
+  buildStudentPrefixIndex,
+  queryStudentPrefixIndex,
+  loadRegisteredStudents
 } from '../services/assignmentsService';
 import { 
   Shield, 
@@ -137,6 +141,20 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
   const [rosterEmailInput, setRosterEmailInput] = useState<string>('');
   const [isSavingRoster, setIsSavingRoster] = useState<boolean>(false);
   const [viewingAssignmentSubmissions, setViewingAssignmentSubmissions] = useState<AssignmentItem | null>(null);
+  const [registeredStudents, setRegisteredStudents] = useState<RegisteredStudent[]>([]);
+  const [showRosterDropdown, setShowRosterDropdown] = useState<boolean>(false);
+
+  const studentPrefixIndex = useMemo(
+    () => buildStudentPrefixIndex(registeredStudents),
+    [registeredStudents]
+  );
+
+  const rosterSuggestions = useMemo(() => {
+    if (!rosterEmailInput.trim()) return registeredStudents.slice(0, 8);
+    // Support comma-separated typing by matching the last token
+    const lastToken = rosterEmailInput.split(/[,;\s]+/).pop() || '';
+    return queryStudentPrefixIndex(studentPrefixIndex, lastToken, 8);
+  }, [rosterEmailInput, studentPrefixIndex, registeredStudents]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -151,7 +169,42 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
     });
     loadAdminSubmissions().then(setAdminSubmissions);
     loadAdminRoster(getAdminEmail() || 'admin').then(setAdminRoster);
+    loadRegisteredStudents().then(setRegisteredStudents);
+
+    const timer = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      loadAdminSubmissions().then(setAdminSubmissions);
+      loadRegisteredStudents().then(setRegisteredStudents);
+    }, 30_000);
+
+    return () => window.clearInterval(timer);
   }, [isAuthenticated]);
+
+  const handleSelectSuggestedStudent = async (student: RegisteredStudent) => {
+    setShowRosterDropdown(false);
+    if (adminRoster.includes(student.email)) {
+      setRosterEmailInput('');
+      setNotification({ message: `${student.displayName} (${student.email}) is already in your roster.`, type: 'info' });
+      return;
+    }
+    const nextRoster = [...adminRoster, student.email];
+    setIsSavingRoster(true);
+    const res = await saveAdminRoster(getAdminEmail() || 'admin', nextRoster);
+    setIsSavingRoster(false);
+    if (res.success) {
+      setAdminRoster(res.students);
+      setRosterEmailInput('');
+      setNotification({
+        message: `Added ${student.displayName} (${student.email}) to your teachership roster.`,
+        type: 'success'
+      });
+    } else {
+      setNotification({
+        message: res.error || 'Failed to add student to roster.',
+        type: 'error'
+      });
+    }
+  };
 
   const handleAddRosterEmails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1553,14 +1606,50 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   </p>
                 </div>
               </div>
-              <form onSubmit={handleAddRosterEmails} className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={rosterEmailInput}
-                  onChange={(e) => setRosterEmailInput(e.target.value)}
-                  placeholder="Enter student email(s), e.g. student1@gmail.com, student2@gmail.com"
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs focus:outline-hidden focus:border-[#E05615]"
-                />
+              <form onSubmit={handleAddRosterEmails} className="relative flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={rosterEmailInput}
+                    onFocus={() => setShowRosterDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowRosterDropdown(false), 180)}
+                    onChange={(e) => {
+                      setRosterEmailInput(e.target.value);
+                      setShowRosterDropdown(true);
+                    }}
+                    placeholder="Type student name or email (e.g. aniket)..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs focus:outline-hidden focus:border-[#E05615]"
+                  />
+                  {showRosterDropdown && rosterSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-[#E0D5C7] rounded-xl shadow-lg max-h-56 overflow-y-auto divide-y divide-[#EFE5D8]">
+                      {rosterSuggestions.map((s) => {
+                        const alreadyAdded = adminRoster.includes(s.email);
+                        return (
+                          <button
+                            key={s.email}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              void handleSelectSuggestedStudent(s);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs hover:bg-[#FAF7F2] flex items-center justify-between gap-2 cursor-pointer"
+                          >
+                            <span className="truncate">
+                              <strong className="text-[#24140E]">{s.displayName}</strong>
+                              <span className="text-[#8C7A6B]"> — </span>
+                              <span className="text-[#6B584D]">{s.email}</span>
+                            </span>
+                            {alreadyAdded ? (
+                              <span className="text-[10px] font-bold text-emerald-700 shrink-0">✓ Added</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-[#E05615] shrink-0">+ Add</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="submit"
                   disabled={isSavingRoster}
