@@ -54,12 +54,12 @@ interface DashboardData {
 
 const BASE = '/api/admin/superadmin';
 
-async function saLogin(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+async function saLogin(username: string, password: string): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(`${BASE}/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ username, password })
   });
   const data = await res.json();
   if (res.ok && data.success) return { success: true };
@@ -97,7 +97,7 @@ interface SuperAdminScreenProps {
 
 export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) => {
   const [phase, setPhase] = useState<'checking' | 'login' | 'dashboard'>('checking');
-  const [loginEmail, setLoginEmail] = useState('admin@aventura.es');
+  const [loginUsername, setLoginUsername] = useState('TEAMAVENTURAESPANOLA');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -134,7 +134,7 @@ export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) =>
     e.preventDefault();
     setLoginError('');
     setLoginLoading(true);
-    const result = await saLogin(loginEmail.trim(), loginPassword);
+    const result = await saLogin(loginUsername.trim(), loginPassword);
     setLoginLoading(false);
     if (result.success) {
       setPhase('dashboard');
@@ -183,14 +183,17 @@ export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) =>
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <label style={styles.label}>
-              Correo electrónico (Email)
+              Nombre de usuario (Username)
               <input
-                type="email"
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
+                type="text"
+                value={loginUsername}
+                onChange={e => setLoginUsername(e.target.value)}
                 style={styles.input}
                 autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
+                placeholder="TEAMAVENTURAESPANOLA"
               />
             </label>
             <label style={styles.label}>
@@ -224,7 +227,7 @@ export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) =>
           <span style={{ fontSize: 22 }}>🛡️</span>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>Panel Maestro — Master Dashboard</div>
-            <div style={{ fontSize: 11, color: '#a0b4c8' }}>admin@aventura.es · Super-Admin</div>
+            <div style={{ fontSize: 11, color: '#a0b4c8' }}>TEAMAVENTURAESPANOLA · Super-Admin</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

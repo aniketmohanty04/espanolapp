@@ -149,12 +149,12 @@ export default async function handler(req: any, res: any) {
 
       let body = req.body;
       if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON' }); } }
-      if (!body || typeof body !== 'object' || typeof body.email !== 'string' || typeof body.password !== 'string')
+      if (!body || typeof body !== 'object' || typeof body.username !== 'string' || typeof body.password !== 'string')
         return res.status(400).json({ error: 'Invalid credentials format' });
 
-      const email = body.email.trim().toLowerCase();
+      const username = body.username.trim();
       const password = body.password;
-      if (!email || !password || email.length > 254 || password.length > 256)
+      if (!username || !password || username.length > 128 || password.length > 256)
         return res.status(400).json({ error: 'Invalid credentials format' });
 
       const rawIp =
@@ -171,23 +171,26 @@ export default async function handler(req: any, res: any) {
       }
 
       // Credential check — env vars ONLY, never Supabase
-      const expectedEmail = (process.env.SUPER_ADMIN_EMAIL || 'admin@aventura.es').trim().toLowerCase();
+      const expectedUsername = (process.env.SUPER_ADMIN_USERNAME || 'TEAMAVENTURAESPANOLA').trim();
       const expectedPassword = process.env.SUPER_ADMIN_PASSWORD;
 
       if (!expectedPassword) {
         return res.status(503).json({ error: 'Service Unavailable', message: 'Super-admin is not configured on this server (SUPER_ADMIN_PASSWORD missing).' });
       }
 
-      // Constant-time compare via SHA-256 digests (passwords are short so no timing leak from hashing)
+      // Constant-time compare via SHA-256 digests
       const digestProvided = crypto.createHash('sha256').update(password).digest('hex');
       const digestExpected = crypto.createHash('sha256').update(expectedPassword).digest('hex');
 
       const bufA = Buffer.from(digestProvided);
       const bufB = Buffer.from(digestExpected);
-      const emailMatch = email === expectedEmail;
+      // Case-sensitive username comparison via constant-time hash
+      const unBufA = Buffer.from(crypto.createHash('sha256').update(username).digest('hex'));
+      const unBufB = Buffer.from(crypto.createHash('sha256').update(expectedUsername).digest('hex'));
+      const userMatch = unBufA.length === unBufB.length && crypto.timingSafeEqual(unBufA, unBufB);
       const passMatch = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 
-      if (!emailMatch || !passMatch) {
+      if (!userMatch || !passMatch) {
         return res.status(401).json({ error: 'Unauthorized', message: 'Invalid super-admin credentials.' });
       }
 
@@ -196,7 +199,7 @@ export default async function handler(req: any, res: any) {
       const now = Date.now();
       const payload: SuperAdminPayload = {
         sessionId: crypto.randomUUID(),
-        email,
+        email: expectedUsername, // store username in email field for token identity
         role: 'superadmin',
         issuedAt: now,
         expiresAt: now + SA_SESSION_MS
@@ -217,7 +220,7 @@ export default async function handler(req: any, res: any) {
       if (isSecure) cookieParts.push('Secure');
       res.setHeader('Set-Cookie', cookieParts.join('; '));
 
-      return res.status(200).json({ success: true, role: 'superadmin', email });
+      return res.status(200).json({ success: true, role: 'superadmin', username });
     }
 
     // ── POST /api/admin/superadmin/logout ────────────────────────────────────
