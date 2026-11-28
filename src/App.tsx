@@ -102,17 +102,32 @@ const GameMain: React.FC = () => {
      ======================================================== */
   /* ========================================================
      SCREEN: SECRET SUPER-ADMIN DASHBOARD
-     Access ONLY via direct URL /superadmin — no link in normal UI
+     Access ONLY via /superadmin?access=<VITE_SUPER_ADMIN_KEY>
+     Wrong/missing key → hard 404, indistinguishable from any other missing page
      ======================================================== */
-  const isSuperAdminUrl = typeof window !== 'undefined' && window.location.pathname === '/superadmin';
+  const isSuperAdminPath = typeof window !== 'undefined' && window.location.pathname === '/superadmin';
 
-  if (isSuperAdminUrl) {
+  if (isSuperAdminPath) {
+    const accessKey = new URLSearchParams(window.location.search).get('access') || '';
+    const expectedKey = (import.meta.env.VITE_SUPER_ADMIN_KEY || '').trim();
+    // If env var not set OR key doesn't match → hard 404 (no hint a secret page exists)
+    const keyValid = expectedKey.length >= 12 && accessKey === expectedKey;
+
+    if (!keyValid) {
+      return (
+        <NotFoundScreen
+          onBackToHome={() => {
+            if (typeof window !== 'undefined') window.history.pushState(null, '', '/');
+            setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
+          }}
+        />
+      );
+    }
+
     return (
       <SuperAdminScreen
         onExit={() => {
-          if (typeof window !== 'undefined') {
-            window.history.pushState(null, '', '/');
-          }
+          if (typeof window !== 'undefined') window.history.pushState(null, '', '/');
           setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
         }}
       />
