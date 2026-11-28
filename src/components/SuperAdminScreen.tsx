@@ -97,7 +97,7 @@ interface SuperAdminScreenProps {
 
 export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) => {
   const [phase, setPhase] = useState<'checking' | 'login' | 'dashboard'>('checking');
-  const [loginUsername, setLoginUsername] = useState('TEAMAVENTURAESPANOLA');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);

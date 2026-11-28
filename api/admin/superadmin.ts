@@ -170,12 +170,12 @@ export default async function handler(req: any, res: any) {
         return res.status(429).json({ error: 'Too Many Requests', message: 'Too many super-admin login attempts. Wait 15 minutes.' });
       }
 
-      // Credential check — env vars ONLY, never Supabase
-      const expectedUsername = (process.env.SUPER_ADMIN_USERNAME || 'TEAMAVENTURAESPANOLA').trim();
-      const expectedPassword = process.env.SUPER_ADMIN_PASSWORD;
+      // Credential check — env vars ONLY, never Supabase, no hardcoded fallbacks
+      const expectedUsername = process.env.SUPER_ADMIN_USERNAME?.trim();
+      const expectedPassword = process.env.SUPER_ADMIN_PASSWORD?.trim();
 
-      if (!expectedPassword) {
-        return res.status(503).json({ error: 'Service Unavailable', message: 'Super-admin is not configured on this server (SUPER_ADMIN_PASSWORD missing).' });
+      if (!expectedUsername || !expectedPassword) {
+        return res.status(503).json({ error: 'Service Unavailable', message: 'Super-admin is not configured on this server. Set SUPER_ADMIN_USERNAME and SUPER_ADMIN_PASSWORD in environment variables.' });
       }
 
       // Constant-time compare via SHA-256 digests
