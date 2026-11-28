@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFestival,
   onOpenLivesModal
 }) => {
-  const { progress, logoutUser, currentUserEmail, setCurrentScreen } = useGame();
+  const { progress, logoutUser, currentUserEmail, setCurrentScreen, setIsChatbotOpen } = useGame();
   const secondsUntilNextLife = useLifeCountdown();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -114,8 +114,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
 
                   <button
-                    onClick={onOpenHub}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all shadow-xs"
+                    onClick={() => setIsChatbotOpen(true)}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold transition-all shadow-xs cursor-pointer"
                     title="Ask Camino AI (Your Spanish Teacher / Profesor de Español)"
                   >
                     <span className="text-xs">🤖</span>

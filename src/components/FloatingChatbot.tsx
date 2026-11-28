@@ -597,7 +597,7 @@ export const FloatingChatbot: React.FC<FloatingChatbotProps> = ({ quizContextOve
           }}
           className={`fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-[80] w-[92vw] max-w-[390px] sm:max-w-[420px] bg-[#FAF7F2] border-2 ${
             isLocked ? 'border-amber-400/80' : isQuizActive && isQuizAnswered ? 'border-emerald-500' : 'border-[#E0D5C7]'
-          } rounded-3xl shadow-2xl overflow-hidden flex flex-col font-sans transition-all duration-200 ${
+          } rounded-3xl shadow-2xl overflow-hidden flex flex-col font-sans transition-all duration-200 animate-caminoSlideDown ${
             isMinimized ? 'h-14 overflow-hidden' : 'h-[520px] max-h-[78vh]'
           }`}
         >
