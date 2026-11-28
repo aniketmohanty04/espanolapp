@@ -530,17 +530,6 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 <h1 className="font-serif font-black text-base sm:text-lg text-[#24140E] leading-tight">
                   Admin Dashboard
                 </h1>
-                {hasCustomEdits ? (
-                  <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 flex items-center space-x-1">
-                    <span>⚠️</span>
-                    <span>Custom Edits Active</span>
-                  </span>
-                ) : (
-                  <span className="bg-emerald-100 text-emerald-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-300 flex items-center space-x-1">
-                    <span>✓</span>
-                    <span>Official Factory Curriculum</span>
-                  </span>
-                )}
               </div>
               <p className="text-[11px] text-[#7A6B60]">
                 Protected Admin Session
