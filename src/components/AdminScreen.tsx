@@ -1292,7 +1292,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
           <div className="bg-white rounded-3xl border border-[#E0D5C7] shadow-2xl max-w-2xl w-full p-6 space-y-4 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#EFE5D8]">
               <h3 className="font-serif font-black text-lg text-[#24140E]">
-                {isNewQuestion ? '➕ Añadir Nueva Pregunta' : '✏️ Editar Pregunta'}
+                {isNewQuestion ? '➕ Add New Question' : '✏️ Edit Question'}
               </h3>
               <button 
                 onClick={() => setEditingQuestion(null)}
@@ -1304,7 +1304,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
             {questionFormErrors.length > 0 && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
-                <strong className="block font-bold">Errores de validación:</strong>
+                <strong className="block font-bold">Validation errors:</strong>
                 <ul className="list-disc pl-4 space-y-0.5">
                   {questionFormErrors.map((err, i) => <li key={i}>{err}</li>)}
                 </ul>
@@ -1314,7 +1314,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
             <form onSubmit={handleSaveQuestionSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">ID Único</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Unique ID</label>
                   <input
                     type="text"
                     required
@@ -1325,26 +1325,26 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Tipo de Pregunta</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Question Type</label>
                   <select
                     value={editingQuestion.type}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, type: e.target.value as QuestionType })}
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-[#FAF7F2] text-xs font-bold"
                   >
-                    <option value="multiple-choice">Opción Múltiple (multiple-choice)</option>
-                    <option value="fill-blank">Rellenar Espacio (fill-blank)</option>
-                    <option value="word-order">Ordenar Palabras (word-order)</option>
-                    <option value="dialogue">Diálogo (dialogue)</option>
-                    <option value="listening">Escucha y Comprensión (listening)</option>
-                    <option value="speaking">Pronunciación y Habla (speaking)</option>
-                    <option value="true-false">Verdadero / Falso (true-false)</option>
+                    <option value="multiple-choice">Multiple Choice (multiple-choice)</option>
+                    <option value="fill-blank">Fill in the Blank (fill-blank)</option>
+                    <option value="word-order">Word Order (word-order)</option>
+                    <option value="dialogue">Dialogue (dialogue)</option>
+                    <option value="listening">Listening Comprehension (listening)</option>
+                    <option value="speaking">Speaking &amp; Pronunciation (speaking)</option>
+                    <option value="true-false">True / False (true-false)</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                  Enunciado en Español (Prompt) *
+                  Spanish Prompt *
                 </label>
                 <textarea
                   rows={2}
@@ -1358,7 +1358,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
               <div>
                 <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                  Traducción o Pista en Inglés (English Prompt)
+                  English Translation or Hint (English Prompt)
                 </label>
                 <input
                   type="text"
@@ -1374,7 +1374,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 <div className="space-y-2 bg-[#FAF7F2] p-3.5 rounded-2xl border border-[#E0D5C7]">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-[#4A3B32]">
-                      Opciones de Respuesta y Selección de la Correcta
+                      Answer Options &amp; Correct Selection
                     </label>
                     <button
                       type="button"
@@ -1444,14 +1444,14 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
               {editingQuestion.type !== 'multiple-choice' && (
                 <div>
                   <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                    Respuesta Correcta *
+                    Correct Answer *
                   </label>
                   <input
                     type="text"
                     required
                     value={Array.isArray(editingQuestion.correctAnswer) ? editingQuestion.correctAnswer.join(', ') : editingQuestion.correctAnswer}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, correctAnswer: e.target.value })}
-                    placeholder="Respuesta exacta esperada"
+                    placeholder="Exact expected answer"
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-emerald-950"
                   />
                 </div>
@@ -1459,7 +1459,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
               <div>
                 <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                  Explicación Pedagógica en Español *
+                  Pedagogical Explanation (Spanish) *
                 </label>
                 <textarea
                   rows={2}
@@ -1473,7 +1473,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
               <div>
                 <label className="block text-xs font-bold text-[#4A3B32] mb-1">
-                  Regla de Gramática o Nota en Inglés (English Explanation)
+                  Grammar Rule or English Note (English Explanation)
                 </label>
                 <input
                   type="text"
@@ -1512,7 +1512,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
           <div className="bg-white rounded-3xl border border-[#E0D5C7] shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#EFE5D8]">
               <h3 className="font-serif font-black text-lg text-[#24140E]">
-                {isNewLevel ? '➕ Crear Nuevo Nivel' : '✏️ Editar Nivel'}
+                {isNewLevel ? '➕ Create New Level' : '✏️ Edit Level'}
               </h3>
               <button 
                 onClick={() => setEditingLevel(null)}
@@ -1524,7 +1524,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
             {levelFormErrors.length > 0 && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
-                <strong className="block font-bold">Errores de validación:</strong>
+                <strong className="block font-bold">Validation errors:</strong>
                 <ul className="list-disc pl-4 space-y-0.5">
                   {levelFormErrors.map((err, i) => <li key={i}>{err}</li>)}
                 </ul>
@@ -1534,7 +1534,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
             <form onSubmit={handleSaveLevelSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">ID del Nivel</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Level ID</label>
                   <input
                     type="text"
                     required
@@ -1545,7 +1545,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Número de Nivel (1..N)</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Level Number (1..N)</label>
                   <input
                     type="number"
                     required
@@ -1558,7 +1558,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Título del Nivel *</label>
+                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Level Title *</label>
                 <input
                   type="text"
                   required
@@ -1569,7 +1569,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Subtítulo Descriptivo</label>
+                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Descriptive Subtitle</label>
                 <input
                   type="text"
                   value={editingLevel.subtitle}
@@ -1580,22 +1580,22 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Dificultad (Tier)</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Difficulty (Tier)</label>
                   <select
                     value={editingLevel.tier}
                     onChange={(e) => setEditingLevel({ ...editingLevel, tier: e.target.value as DifficultyTier })}
                     className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold"
                   >
-                    <option value="easy">Principiante (easy)</option>
-                    <option value="medium">Explorador (medium)</option>
-                    <option value="tough">Aventurero (tough)</option>
-                    <option value="hard">Maestro (hard)</option>
-                    <option value="hot">Leyenda (hot)</option>
+                    <option value="easy">Beginner (easy)</option>
+                    <option value="medium">Explorer (medium)</option>
+                    <option value="tough">Adventurer (tough)</option>
+                    <option value="hard">Master (hard)</option>
+                    <option value="hot">Legend (hot)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">Recompensa XP</label>
+                  <label className="block text-xs font-bold text-[#4A3B32] mb-1">XP Reward</label>
                   <input
                     type="number"
                     min={10}
@@ -1608,19 +1608,19 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Tema del Sílabo A1 *</label>
+                <label className="block text-xs font-bold text-[#4A3B32] mb-1">A1 Syllabus Topic *</label>
                 <input
                   type="text"
                   required
                   value={editingLevel.syllabusTopic}
                   onChange={(e) => setEditingLevel({ ...editingLevel, syllabusTopic: e.target.value })}
-                  placeholder="e.g. Saludos y Presentaciones"
+                  placeholder="e.g. Greetings & Introductions"
                   className="w-full px-3 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-[#E05615]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Descripción del Desafío</label>
+                <label className="block text-xs font-bold text-[#4A3B32] mb-1">Challenge Description</label>
                 <textarea
                   rows={2}
                   value={editingLevel.description}
