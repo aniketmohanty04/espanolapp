@@ -289,13 +289,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#E05615] to-[#EA580C] hover:from-[#C2410C] hover:to-[#C85A3B] text-white font-black text-sm sm:text-base shadow-lg shadow-orange-500/25 transition-transform hover:scale-102 active:scale-98 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
-                <span>Comprobando datos...</span>
+                <span>Checking credentials...</span>
               ) : mode === 'login' ? (
-                <span>Iniciar Sesión y Cargar Progreso</span>
+                <span>Sign In & Load Progress</span>
               ) : mode === 'register' ? (
-                <span>Crear Cuenta y Empezar</span>
+                <span>Create Account & Start</span>
               ) : (
-                <span>Restablecer Contraseña y Reiniciar a Cero</span>
+                <span>Reset Password & Restart</span>
               )}
             </button>
           </form>
@@ -314,7 +314,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   }}
                   className="text-[#E05615] hover:text-[#C2410C] font-black underline transition-colors cursor-pointer ml-1"
                 >
-                  Volver a Iniciar Sesión
+                  Back to Sign In
                 </button>
               </div>
             ) : (

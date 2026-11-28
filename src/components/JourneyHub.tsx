@@ -1108,7 +1108,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                               : 'bg-gradient-to-r from-amber-500 via-orange-500 to-[#E05615] hover:from-amber-400 hover:to-orange-500 text-white hover:scale-105 active:scale-95 cursor-pointer border border-amber-300'
                           }`}
                         >
-                          <span>{isCityBossDone ? '👑 Reintentar Jefe' : '👑 Enfrentar al Jefe (80% req.)'}</span>
+                          <span>{isCityBossDone ? '👑 Retry Boss' : '👑 Challenge Boss (80% req.)'}</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </>
@@ -1135,7 +1135,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                           title="Completa la ciudad anterior para desbloquear esta misión"
                         >
                           <Lock className="w-4 h-4 text-amber-400" />
-                          <span>Misión Bloqueada</span>
+                          <span>Mission Locked</span>
                         </button>
                       </>
                     );
@@ -1395,7 +1395,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E05615] hover:bg-[#C2410C] text-white font-bold text-xs shadow-xs transition cursor-pointer"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Reintentar</span>
+                            <span>Retry</span>
                           </button>
                         </div>
                       )}

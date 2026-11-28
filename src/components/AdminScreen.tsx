@@ -468,8 +468,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 {lockoutSeconds > 0 
                   ? `Bloqueado (${lockoutSeconds}s)` 
                   : isSubmittingAuth 
-                  ? 'Verificando...' 
-                  : 'Iniciar Sesión en Panel'}
+                  ? 'Verifying...' 
+                  : 'Sign In to Admin Panel'}
               </span>
             </button>
           </form>
@@ -480,7 +480,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               className="text-xs text-[#7A6B60] hover:text-[#24140E] font-bold flex items-center space-x-1 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Volver al Juego</span>
+              <span>Back to Game</span>
             </button>
 
             <span className="text-[10px] text-[#A89A8E]">
@@ -563,28 +563,28 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             <button
               onClick={() => setConfirmResetOpen(true)}
               className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-800 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
-              title="Restablecer todo el currículo a los valores originales de fábrica"
+              title="Reset all curriculum to factory defaults"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
-              <span className="hidden sm:inline">Restablecer Fábrica</span>
+              <span className="hidden sm:inline">Reset to Defaults</span>
             </button>
 
             <button
               onClick={handleExportJson}
               className="px-3 py-1.5 rounded-xl border border-[#D5C7B5] bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
-              title="Descargar copia de seguridad en JSON"
+              title="Download JSON backup"
             >
               <Download className="w-3.5 h-3.5 text-[#E05615]" />
-              <span className="hidden sm:inline">Exportar JSON</span>
+              <span className="hidden sm:inline">Export JSON</span>
             </button>
 
             <button
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1.5 rounded-xl border border-[#D5C7B5] bg-white hover:bg-[#F2ECE1] text-[#24140E] text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
-              title="Cargar copia de seguridad en JSON"
+              title="Upload JSON backup"
             >
               <Upload className="w-3.5 h-3.5 text-blue-600" />
-              <span className="hidden sm:inline">Importar JSON</span>
+              <span className="hidden sm:inline">Import JSON</span>
             </button>
 
             <div className="h-6 w-px bg-[#E0D5C7] mx-1" />
@@ -594,13 +594,13 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
               className="px-3.5 py-1.5 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold flex items-center space-x-1.5 shadow-xs transition cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Probar en Juego</span>
+              <span>Test in Game</span>
             </button>
 
             <button
               onClick={handleLogout}
               className="p-1.5 rounded-xl border border-[#D5C7B5] bg-white hover:bg-rose-50 text-rose-600 transition cursor-pointer"
-              title="Cerrar Sesión de Administrador"
+              title="Sign Out of Admin Panel"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -618,7 +618,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             }`}
           >
             <Edit3 className="w-4 h-4" />
-            <span>Gestión de Preguntas ({selectedLevel?.questions.length || 0})</span>
+            <span>Question Manager ({selectedLevel?.questions.length || 0})</span>
           </button>
 
           <button
@@ -630,7 +630,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Niveles de Ciudad ({selectedCity?.levels.length || 0})</span>
+            <span>City Levels ({selectedCity?.levels.length || 0})</span>
           </button>
 
           <button
@@ -642,7 +642,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>Probador Interactivo</span>
+            <span>Interactive Tester</span>
           </button>
 
           <button
@@ -654,7 +654,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
             }`}
           >
             <Database className="w-4 h-4 text-emerald-600" />
-            <span>Seguridad & Políticas RLS</span>
+            <span>Security & RLS Policies</span>
           </button>
         </div>
       </header>
@@ -736,7 +736,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                   className="w-full py-2 bg-[#E05615] hover:bg-[#C2410C] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow-xs transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Añadir Pregunta</span>
+                  <span>Add Question</span>
                 </button>
               </div>
             </div>
@@ -953,7 +953,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
                 className="px-4 py-2 bg-[#E05615] hover:bg-[#C2410C] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Añadir Nuevo Nivel</span>
+                <span>Add New Level</span>
               </button>
             </div>
 
@@ -1248,7 +1248,7 @@ create policy "Users own progress" on public.player_progress
                   }}
                   className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-mono font-bold transition cursor-pointer"
                 >
-                  Copiar SQL
+                  Copy SQL
                 </button>
               </div>
 
@@ -1386,7 +1386,7 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                       }}
                       className="text-[11px] text-[#E05615] font-bold hover:underline"
                     >
-                      + Añadir Opción
+                      + Add Option
                     </button>
                   </div>
 
@@ -1490,13 +1490,13 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   onClick={() => setEditingQuestion(null)}
                   className="px-4 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-[#6B584D] cursor-pointer"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold shadow-xs transition cursor-pointer"
                 >
-                  Guardar Cambios
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -1635,13 +1635,13 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   onClick={() => setEditingLevel(null)}
                   className="px-4 py-2 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-[#6B584D] cursor-pointer"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#E05615] hover:bg-[#C2410C] text-white text-xs font-bold shadow-xs transition cursor-pointer"
                 >
-                  Guardar Nivel
+                  Save Level
                 </button>
               </div>
             </form>
@@ -1673,13 +1673,13 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                 onClick={() => setConfirmResetOpen(false)}
                 className="flex-1 py-2.5 rounded-xl border border-[#D5C7B5] bg-white text-xs font-bold text-[#6B584D] cursor-pointer"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={handleResetToDefaults}
                 className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
               >
-                Sí, Restablecer Todo
+                Yes, Reset All
               </button>
             </div>
           </div>

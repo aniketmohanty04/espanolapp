@@ -366,7 +366,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCity, onOpenFestival
             onClick={onOpenFestival}
             className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center space-x-1.5"
           >
-            <span>Entrar a La Fiesta</span>
+            <span>Enter The Festival</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

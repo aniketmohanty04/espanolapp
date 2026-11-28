@@ -517,7 +517,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
               }}
               className="w-full sm:w-auto py-4 px-8 rounded-full bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 hover:from-emerald-500 hover:to-green-500 text-white font-black text-base sm:text-lg shadow-xl hover:scale-105 active:scale-95 transition-all border-2 border-emerald-400 glow-gold flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <span>Continuar</span>
+              <span>Continue</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -1050,7 +1050,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                       onClick={handleNextQuestion}
                       className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
                     >
-                      <span>Siguiente</span>
+                      <span>Next</span>
                       <ArrowRight className="w-5 h-5" />
                     </button>
                   </div>
@@ -1084,7 +1084,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                       className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#F3B33D] hover:bg-[#F5BA31] text-[#24140E] font-black text-base shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
                     >
                       <RotateCcw className="w-5 h-5" />
-                      <span>Reintentar</span>
+                      <span>Retry</span>
                     </button>
                   </div>
                 ) : (
@@ -1133,7 +1133,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                       onClick={onClose}
                       className="px-4 py-2.5 rounded-full bg-white hover:bg-[#F2ECE1] border border-[#E0D5C7] text-[#524136] font-bold text-xs transition-colors cursor-pointer"
                     >
-                      Salir al Mapa
+                      Exit to Map
                     </button>
                   </div>
                 )}
@@ -1255,7 +1255,7 @@ export const LevelModal: React.FC<LevelModalProps> = ({
                 }}
                 className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
               >
-                Cerrar y volver a la pregunta
+                Close & Back to Question
               </button>
             </div>
 

@@ -243,7 +243,7 @@ const GameMain: React.FC = () => {
                 onClick={() => setHomeViewMode('journey-hub')}
                 className="px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE1] border border-[#E0D5C7] text-[#24140E] font-bold text-xs sm:text-sm shadow-xs flex items-center space-x-1.5 transition-all hover:scale-105 cursor-pointer"
               >
-                <span>← Volver a Inicio (Journey Hub)</span>
+                <span>← Back to Journey Hub</span>
               </button>
             </div>
             <WorldMap

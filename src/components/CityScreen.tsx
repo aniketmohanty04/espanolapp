@@ -238,7 +238,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
           onClick={onBackToMap}
           className="px-6 py-3 rounded-full bg-[#E05615] hover:bg-[#C9470C] text-white font-black text-sm shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer"
         >
-          ← Volver a Inicio
+          ← Back to Home
         </button>
       </div>
     );
@@ -351,7 +351,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
           className="flex items-center space-x-2 px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE1] text-[#24140E] text-sm font-bold border border-[#E0D5C7] shadow-xs transition-colors"
         >
           <ArrowLeft className="w-4 h-4 text-[#E05615]" />
-          <span>Volver al Mapa de España</span>
+          <span>Back to Spain Map</span>
         </button>
 
         <div className="flex items-center space-x-3 text-xs">
@@ -1254,7 +1254,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                               ? 'text-stone-400' 
                               : 'text-[#E05615] group-hover:translate-x-1 transition-transform'
                           }`}>
-                            <span>{isCompleted ? 'Repasar' : isUnlocked ? 'Comenzar' : 'Bloqueado'}</span>
+                            <span>{isCompleted ? 'Review' : isUnlocked ? 'Start' : 'Locked'}</span>
                             {isUnlocked ? <ChevronRight className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
                           </div>
                         </div>
@@ -1322,7 +1322,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               }`}
             >
               <Play className="w-5 h-5 fill-current" />
-              <span>{isBossPassed ? 'Reintentar Desafío' : 'Afrontar Desafío del Jefe'}</span>
+              <span>{isBossPassed ? 'Retry Boss Challenge' : 'Start Boss Challenge'}</span>
             </button>
             <p className="text-[11px] text-slate-400 mt-2 text-center">
               {isBossPassed 
@@ -1406,7 +1406,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                 onClick={() => setShowTapasModal(false)}
                 className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#E05615] via-[#EA580C] to-[#F3B33D] hover:from-[#C2410C] hover:to-[#E05615] text-white font-black text-sm shadow-md transition-all hover:scale-102"
               >
-                ¡Muchas Gracias! Continuar Aventura
+                Thank You! Continue Adventure
               </button>
             </div>
           </div>
