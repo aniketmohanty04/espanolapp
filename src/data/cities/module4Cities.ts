@@ -405,19 +405,19 @@ export const MODULE4_CITIES: City[] = [
     bossMission: {
       id: 'boss-valencia',
       cityId: 'valencia',
-      title: 'El Maratón Matutino de Valencia',
+      title: 'The Morning Marathon of Valencia (El Maratón)',
       characterName: 'Entrenador Pau de Ruzafa',
-      characterRole: 'Coordinador Deportivo y Embajador Urbano del Turia',
-      scenario: 'Pau coordina la apertura del circuito atlético del antiguo cauce del río Turia. Para registrar tu ficha oficial de atleta y desbloquear el viaje a Barcelona, debes demostrar dominio impecable de los verbos reflexivos, la secuencia de hábitos y el transporte.',
+      characterRole: 'Sports Coordinator & Turia Ambassador (Coordinador)',
+      scenario: 'Pau coordinates the opening of the Turia athletic circuit. Register your athlete profile and unlock the trip to Barcelona by mastering reflexive verbs (verbos reflexivos), daily habits (rutinas), and transport.',
       objectives: [
-        { id: 'val-obj1', description: 'Conjugar verbos reflexivos con cambio vocálico sin fallos', syllabusTopic: 'M4.Rutinas' },
-        { id: 'val-obj2', description: 'Dominar la concordancia de pronombres reflexivos me/te/se/nos/os/se', syllabusTopic: 'M4.VerbosReflexivos' },
-        { id: 'val-obj3', description: 'Estructurar cronogramas diarios con conectores lógicos', syllabusTopic: 'M4.Transporte' }
+        { id: 'val-obj1', description: 'Conjugate stem-changing reflexive verbs (rutinas) accurately', syllabusTopic: 'M4.Rutinas' },
+        { id: 'val-obj2', description: 'Match reflexive pronouns me/te/se/nos/os/se', syllabusTopic: 'M4.VerbosReflexivos' },
+        { id: 'val-obj3', description: 'Structure daily schedules with logical connectors (transporte)', syllabusTopic: 'M4.Transporte' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'La Medalla del Murciélago de Valencia',
+      badgeName: 'Valencia Bat Medal (Medalla del Murciélago)',
       badgeIcon: '🦇',
       questions: [
         {
@@ -848,19 +848,19 @@ export const MODULE4_CITIES: City[] = [
     bossMission: {
       id: 'boss-barcelona',
       cityId: 'barcelona',
-      title: 'La Jornada del Estudiante de la UB',
+      title: 'A Day as a UB Student (La Jornada en Barcelona)',
       characterName: 'Coordinador Académico Marc de Gaudí',
-      characterRole: 'Tutor de Relaciones Internacionales de la UB',
-      scenario: 'Para convalidar tu expediente del cuatrimestre y obtener el salvoconducto hacia Zaragoza, Marc te somete a una simulación completa de gestión académica: horarios, transporte metropolitano y descripción de proyectos universitarios.',
+      characterRole: 'International Relations Tutor at UB (Tutor)',
+      scenario: 'To validate your semester transcript and earn your pass to Zaragoza, Marc tests you on academic schedules (horarios), city metro transport (transporte), and university projects (universidad).',
       objectives: [
-        { id: 'bar-obj1', description: 'Formular horarios complejos con de/a y desde/hasta sin confusión', syllabusTopic: 'M4.Horarios' },
-        { id: 'bar-obj2', description: 'Expresar medios de transporte y rutas urbanas en metro', syllabusTopic: 'M4.Ciudad' },
-        { id: 'bar-obj3', description: 'Describir la vida universitaria con vocabulario técnico A1', syllabusTopic: 'M4.Universidad' }
+        { id: 'bar-obj1', description: 'Express schedules (horarios) with de/a and desde/hasta', syllabusTopic: 'M4.Horarios' },
+        { id: 'bar-obj2', description: 'Describe transport and urban metro routes (ciudad)', syllabusTopic: 'M4.Ciudad' },
+        { id: 'bar-obj3', description: 'Talk about university life with A1 vocabulary (universidad)', syllabusTopic: 'M4.Universidad' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'La Baldosa de Gaudí de Barcelona',
+      badgeName: 'Gaudí Tile of Barcelona (Baldosa de Gaudí)',
       badgeIcon: '🏛️',
       questions: [
         {
@@ -1291,19 +1291,19 @@ export const MODULE4_CITIES: City[] = [
     bossMission: {
       id: 'boss-zaragoza',
       cityId: 'zaragoza',
-      title: 'El Encuentro en la Plaza del Pilar',
+      title: 'The Meeting at Plaza del Pilar (El Encuentro)',
       characterName: 'Doña Pilar del Ebro',
-      characterRole: 'Custodia del Patrimonio del Reino de Aragón',
-      scenario: 'Bajo las cúpulas pintadas por Goya en la Basílica del Pilar, Doña Pilar evalúa tu informe completo sobre rutinas urbanas, perfiles de personajes y talentos del Módulo 4. Si demuestras maestría superior al 80%, desbloquearás el Módulo 5 y la ruta hacia Bilbao.',
+      characterRole: 'Heritage Keeper of Aragón (Custodia del Patrimonio)',
+      scenario: 'Beneath Goya’s domes in the Basilica del Pilar, Doña Pilar evaluates your Module 4 report on daily routines (rutinas), character descriptions, and skills (habilidades). Score 80%+ to unlock Module 5 to Bilbao.',
       objectives: [
-        { id: 'zar-obj1', description: 'Elaborar descripciones físicas y morales sin errores de concordancia', syllabusTopic: 'M4.Amigos' },
-        { id: 'zar-obj2', description: 'Dominar la distinción absoluta entre SABER y CONOCER', syllabusTopic: 'M4.Habilidades' },
-        { id: 'zar-obj3', description: 'Integrar rutinas cotidianas reflexivas con solvencia comunicativa', syllabusTopic: 'M4.Rutinas' }
+        { id: 'zar-obj1', description: 'Write physical and personality descriptions (amigos)', syllabusTopic: 'M4.Amigos' },
+        { id: 'zar-obj2', description: 'Master the difference between SABER and CONOCER', syllabusTopic: 'M4.Habilidades' },
+        { id: 'zar-obj3', description: 'Use reflexive daily routines (rutinas) fluently', syllabusTopic: 'M4.Rutinas' }
       ],
       requiredScorePercent: 80,
       xpReward: 400,
       coinReward: 500,
-      badgeName: 'La Cinta de la Virgen del Pilar',
+      badgeName: 'Ribbon of El Pilar (Cinta de la Virgen)',
       badgeIcon: '🕊️',
       questions: [
         {

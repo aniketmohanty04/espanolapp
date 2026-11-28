@@ -411,19 +411,19 @@ export const MODULE2_CITIES: City[] = [
     bossMission: {
       id: 'boss-segovia',
       cityId: 'segovia',
-      title: 'La Inspección del Alcázar de Segovia',
+      title: 'Alcázar of Segovia Inspection (La Inspección)',
       characterName: 'Conservadora Clara de la Cerda',
-      characterRole: 'Jefa de Patrimonio Histórico de Segovia',
-      scenario: 'Clara necesita verificar el inventario de la Sala de Reyes y las torres del Alcázar. Debes demostrar maestría absoluta distinguiendo entre SER y ESTAR, colores y mobiliario para conseguir el salvoconducto a Sevilla.',
+      characterRole: 'Head of Historic Heritage (Jefa de Patrimonio)',
+      scenario: 'Clara needs to verify the inventory of the Hall of Kings and Alcázar towers. Prove your mastery of SER vs. ESTAR, colors (colores), and furniture to earn your pass to Seville.',
       objectives: [
-        { id: 'seg-obj1', description: 'Distinguir sin fallos los usos de SER y ESTAR', syllabusTopic: 'M2.SerVsEstar' },
-        { id: 'seg-obj2', description: 'Describir con precisión colores y concordancia de mobiliario', syllabusTopic: 'M2.Colores' },
-        { id: 'seg-obj3', description: 'Localizar salas y elementos espaciales', syllabusTopic: 'M2.VerboESTAR' }
+        { id: 'seg-obj1', description: 'Distinguish between SER and ESTAR accurately', syllabusTopic: 'M2.SerVsEstar' },
+        { id: 'seg-obj2', description: 'Describe colors (colores) and furniture agreement', syllabusTopic: 'M2.Colores' },
+        { id: 'seg-obj3', description: 'Locate rooms and spatial items using ESTAR', syllabusTopic: 'M2.VerboESTAR' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'La Piedra Bicolor del Alcázar',
+      badgeName: 'Two-Tone Stone of the Alcázar (Piedra del Alcázar)',
       badgeIcon: '🏰',
       questions: [
         {
@@ -875,19 +875,19 @@ export const MODULE2_CITIES: City[] = [
     bossMission: {
       id: 'boss-sevilla',
       cityId: 'sevilla',
-      title: 'La Gran Reunión Familiar Sevillana',
+      title: 'The Grand Seville Family Gathering (La Reunión)',
       characterName: 'Doña Carmen de Triana',
-      characterRole: 'Anfitriona del Tablao y Familia Flamenca',
-      scenario: 'Doña Carmen reúne a cuatro generaciones en su casa solariega. Para ser nombrado huésped honorífico y abrir la ruta hacia Granada, debes superar las preguntas sobre el árbol genealógico, edades y verbos regulares.',
+      characterRole: 'Flamenco Hostess (Anfitriona del Tablao)',
+      scenario: 'Doña Carmen gathers four generations at her family home. To become an honorary guest and open the route to Granada, answer questions on family (familia), age (edad), and regular verbs.',
       objectives: [
-        { id: 'sev-obj1', description: 'Reconocer todas las relaciones de parentesco familiar', syllabusTopic: 'M2.Familia' },
-        { id: 'sev-obj2', description: 'Conjugación infalible de TENER y expresión de la edad', syllabusTopic: 'M2.VerboTENER' },
-        { id: 'sev-obj3', description: 'Conjugación correcta de verbos regulares en -AR y -ER', syllabusTopic: 'M2.VerbosRegulares' }
+        { id: 'sev-obj1', description: 'Recognize all family relationships (familia)', syllabusTopic: 'M2.Familia' },
+        { id: 'sev-obj2', description: 'Conjugate TENER and express age (edad)', syllabusTopic: 'M2.VerboTENER' },
+        { id: 'sev-obj3', description: 'Conjugate regular -AR and -ER verbs correctly', syllabusTopic: 'M2.VerbosRegulares' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'El Clavel de Oro de Sevilla',
+      badgeName: 'Golden Carnation of Seville (Clavel de Oro)',
       badgeIcon: '💃',
       questions: [
         {
@@ -1316,19 +1316,19 @@ export const MODULE2_CITIES: City[] = [
     bossMission: {
       id: 'boss-granada',
       cityId: 'granada',
-      title: 'El Laberinto de la Alhambra',
+      title: 'The Alhambra Labyrinth (El Laberinto)',
       characterName: 'Arquitecto Historiador Tariq',
-      characterRole: 'Conservador Mayor de la Fortaleza Roja',
-      scenario: 'Para desvelar la llave del Patio de los Leones y desbloquear el Módulo 3 hacia Córdoba, debes guiar con exactitud matemática a una delegación internacional usando preposiciones de lugar, verbos regulares y direcciones precisas.',
+      characterRole: 'Chief Curator of the Red Fortress (Conservador Mayor)',
+      scenario: 'To unlock the Courtyard of the Lions and Module 3 toward Córdoba, guide an international delegation using prepositions of place (preposiciones), regular verbs, and clear directions (direcciones).',
       objectives: [
-        { id: 'gra-obj1', description: 'Orientar itinerarios con direcciones sin error alguno', syllabusTopic: 'M2.Direcciones' },
-        { id: 'gra-obj2', description: 'Emplear preposiciones compuestas de lugar exactas', syllabusTopic: 'M2.Preposiciones' },
-        { id: 'gra-obj3', description: 'Dominar la conjugación combinada de verbos -AR, -ER, -IR', syllabusTopic: 'M2.VerbosRegulares' }
+        { id: 'gra-obj1', description: 'Guide routes with accurate directions (direcciones)', syllabusTopic: 'M2.Direcciones' },
+        { id: 'gra-obj2', description: 'Use exact compound prepositions of place (preposiciones)', syllabusTopic: 'M2.Preposiciones' },
+        { id: 'gra-obj3', description: 'Master combined -AR, -ER, and -IR regular verb conjugation', syllabusTopic: 'M2.VerbosRegulares' }
       ],
       requiredScorePercent: 80,
       xpReward: 400,
       coinReward: 500,
-      badgeName: 'La Llave Nazarí de Granada',
+      badgeName: 'Nasrid Key of Granada (La Llave Nazarí)',
       badgeIcon: '🗝️',
       questions: [
         {

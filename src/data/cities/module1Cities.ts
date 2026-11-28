@@ -474,19 +474,19 @@ export const MODULE1_CITIES: City[] = [
     bossMission: {
       id: 'boss-madrid',
       cityId: 'madrid',
-      title: 'El Desafío del Conserje Mayor de Barajas',
+      title: 'The Barajas Chief Concierge Challenge (El Desafío)',
       characterName: 'Don Rodrigo',
-      characterRole: 'Conserje Mayor y Guía Oficial de Madrid',
-      scenario: 'Para conseguir tu salvoconducto de viajero e iniciar tu travesía hacia Toledo, Don Rodrigo te somete a una entrevista oral y documental completa sobre datos personales, números y gramática del Módulo 1.',
+      characterRole: 'Chief Concierge & Official Guide (Conserje Mayor)',
+      scenario: 'To earn your travel pass (salvoconducto) and start your journey to Toledo, Don Rodrigo tests you on personal details (datos personales), numbers (números), and Module 1 grammar.',
       objectives: [
-        { id: 'obj1', description: 'Completar el registro oficial de identidad con SER y nacionalidad', syllabusTopic: 'M1.DatosPersonales' },
-        { id: 'obj2', description: 'Reconocer números y deletreo fonético exacto', syllabusTopic: 'M1.Abecedario' },
-        { id: 'obj3', description: 'Demostrar dominio de los pronombres personales y el verbo SER', syllabusTopic: 'M1.VerboSER' }
+        { id: 'obj1', description: 'Complete official ID registration using SER and nationality (nacionalidad)', syllabusTopic: 'M1.DatosPersonales' },
+        { id: 'obj2', description: 'Recognize numbers (números) and exact phonetic spelling', syllabusTopic: 'M1.Abecedario' },
+        { id: 'obj3', description: 'Show mastery of personal pronouns and the verb SER', syllabusTopic: 'M1.VerboSER' }
       ],
       requiredScorePercent: 80,
       xpReward: 300,
       coinReward: 500,
-      badgeName: 'Insignia de la Villa y Corte de Madrid',
+      badgeName: 'Madrid Villa & Court Badge (Insignia de Madrid)',
       badgeIcon: '👑',
       questions: [
         {
@@ -969,19 +969,19 @@ export const MODULE1_CITIES: City[] = [
     bossMission: {
       id: 'boss-toledo',
       cityId: 'toledo',
-      title: 'El Enigma del Maestro Artesano de Toledo',
+      title: 'The Master Craftsman Riddle of Toledo (El Enigma)',
       characterName: 'Maestro Don Alonso',
-      characterRole: 'Guardián del Gremio de Espaderos',
-      scenario: 'Para entregarte la legendaria "Daga de Gramática Toledana" y el pase hacia Salamanca, Don Alonso pone a prueba tu dominio de los números compuestos, las profesiones y la concordancia de adjetivos.',
+      characterRole: 'Guardian of the Swordsmiths Guild (Gremio de Espaderos)',
+      scenario: 'To earn the legendary Toledo Grammar Dagger and your pass to Salamanca, Don Alonso tests your command of compound numbers (números), professions (profesiones), and adjective agreement.',
       objectives: [
-        { id: 'tol-obj1', description: 'Calcular y escribir cifras exactas hasta 100', syllabusTopic: 'M1.Numeros' },
-        { id: 'tol-obj2', description: 'Aplicar la concordancia de género en adjetivos y oficios', syllabusTopic: 'M1.Profesiones' },
-        { id: 'tol-obj3', description: 'Usar correctamente los días de la semana y artículos', syllabusTopic: 'M1.DiasSemana' }
+        { id: 'tol-obj1', description: 'Calculate and write exact numbers (cifras) up to 100', syllabusTopic: 'M1.Numeros' },
+        { id: 'tol-obj2', description: 'Apply gender agreement in adjectives and jobs (oficios)', syllabusTopic: 'M1.Profesiones' },
+        { id: 'tol-obj3', description: 'Use days of the week (días de la semana) and articles correctly', syllabusTopic: 'M1.DiasSemana' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'Medalla del Gremio Toledano',
+      badgeName: 'Toledo Guild Medal (Medalla de Toledo)',
       badgeIcon: '🗡️',
       questions: [
         {
@@ -1426,20 +1426,20 @@ export const MODULE1_CITIES: City[] = [
     bossMission: {
       id: 'boss-salamanca',
       cityId: 'salamanca',
-      title: 'El Examen de Ingreso de la Universidad de Salamanca',
+      title: 'University of Salamanca Entrance Exam (El Examen)',
       characterName: 'Catedrática Lucía de Nebrija',
-      characterRole: 'Decana de Filología y Lengua Española',
-      scenario: 'En el Paraninfo de la histórica Universidad, la Catedrática Lucía somete tu conocimiento a un examen riguroso de todo el Módulo 1. Si superas el 80% de aciertos, desbloquearás el Módulo 2 y tu viaje hacia Segovia.',
+      characterRole: 'Dean of Philology & Spanish (Decana de Lengua Española)',
+      scenario: 'In the historic University Paraninfo hall, Professor Lucía tests your Module 1 knowledge. Score 80% or higher to unlock Module 2 and your journey to Segovia.',
       objectives: [
-        { id: 'sal-obj1', description: 'Demostrar perfección en el uso y conjugación de SER', syllabusTopic: 'M1.VerboSER' },
-        { id: 'sal-obj2', description: 'Manejar artículos y sustantivos con excepciones de género', syllabusTopic: 'M1.Articulos' },
-        { id: 'sal-obj3', description: 'Expresar cifras numéricas complejas hasta 100.000', syllabusTopic: 'M1.Numeros' },
-        { id: 'sal-obj4', description: 'Mantener un diálogo académico comunicativo fluido', syllabusTopic: 'M1.Comunicacion' }
+        { id: 'sal-obj1', description: 'Demonstrate accuracy in using and conjugating SER', syllabusTopic: 'M1.VerboSER' },
+        { id: 'sal-obj2', description: 'Handle articles (artículos) and nouns with gender exceptions', syllabusTopic: 'M1.Articulos' },
+        { id: 'sal-obj3', description: 'Express complex numbers (números) up to 100,000', syllabusTopic: 'M1.Numeros' },
+        { id: 'sal-obj4', description: 'Hold a fluent academic dialogue (diálogo)', syllabusTopic: 'M1.Comunicacion' }
       ],
       requiredScorePercent: 80,
       xpReward: 400,
       coinReward: 500,
-      badgeName: 'La Rana de Oro de Salamanca',
+      badgeName: 'Golden Frog of Salamanca (La Rana de Oro)',
       badgeIcon: '🐸',
       questions: [
         {

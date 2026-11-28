@@ -395,19 +395,19 @@ export const MODULE5_CITIES: City[] = [
     bossMission: {
       id: 'boss-bilbao',
       cityId: 'bilbao',
-      title: 'La Ruta de Pintxos de las Siete Calles',
+      title: 'The Seven Streets Pintxos Route (Ruta de Pintxos)',
       characterName: 'Chef Iñaki de Bilbao',
-      characterRole: 'Maestro de la Cofradía del Bacalao de Vizcaya',
-      scenario: 'Iñaki te confía el encargo de liderar a un grupo de catadores internacionales por las tabernas centenarias de Bilbao. Debes demostrar dominio total de los alimentos, bebidas, el verbo IR y la interacción en la barra para conseguir el pase a San Sebastián.',
+      characterRole: 'Master of the Biscay Cod Guild (Maestro Cocinero)',
+      scenario: 'Iñaki trusts you to lead an international tasting group through Bilbao’s historic taverns. Prove your command of food (comida), drinks (bebidas), the verb IR, and bar orders to earn your pass to San Sebastián.',
       objectives: [
-        { id: 'bil-obj1', description: 'Reconocer ingredientes, tapas y bebidas sin confusión', syllabusTopic: 'M5.Comida' },
-        { id: 'bil-obj2', description: 'Conjugar el verbo irregular IR y aplicar la contracción AL', syllabusTopic: 'M5.VerboIR' },
-        { id: 'bil-obj3', description: 'Realizar comandas en la barra con fórmulas comunicativas auténticas', syllabusTopic: 'M5.Restaurante' }
+        { id: 'bil-obj1', description: 'Identify ingredients, tapas, and drinks (comida)', syllabusTopic: 'M5.Comida' },
+        { id: 'bil-obj2', description: 'Conjugate irregular verb IR and use the contraction AL', syllabusTopic: 'M5.VerboIR' },
+        { id: 'bil-obj3', description: 'Place orders at the bar politely (restaurante)', syllabusTopic: 'M5.Restaurante' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'La Baldosa de Bilbao de Oro',
+      badgeName: 'Golden Bilbao Tile (Baldosa de Bilbao)',
       badgeIcon: '🍢',
       questions: [
         {
@@ -864,19 +864,19 @@ export const MODULE5_CITIES: City[] = [
     bossMission: {
       id: 'boss-san-sebastian',
       cityId: 'san-sebastian',
-      title: 'La Cena con la Chef de la Parte Vieja',
+      title: 'Dinner with the Old Town Chef (La Cena)',
       characterName: 'Chef Estrella Maite',
-      characterRole: 'Maestra de Honor de la Cocina Donostiarra',
-      scenario: 'La Chef Maite te sienta en la mesa presidencial del restaurante más célebre de San Sebastián. Para conseguir tu diploma gastronómico y el pasaporte final hacia Santiago de Compostela, debes dirigir el servicio de un banquete completo, ordenando platos, opinando con precisión y pidiendo la cuenta en español impecable.',
+      characterRole: 'Master Chef of Donostia Cuisine (Maestra de Cocina)',
+      scenario: 'Chef Maite seats you at the head table in San Sebastián’s famous restaurant. To earn your culinary diploma and final passport to Santiago, order courses (menú), share opinions, and ask for the bill (la cuenta).',
       objectives: [
-        { id: 'ss-obj1', description: 'Dominar la conjugación de QUERER con cambio vocálico', syllabusTopic: 'M5.VerboQUERER' },
-        { id: 'ss-obj2', description: 'Manejar la estructura del menú del día y sus tres tiempos', syllabusTopic: 'M5.Restaurante' },
-        { id: 'ss-obj3', description: 'Expresar opiniones de sabor con ESTAR y solicitar la cuenta formalmente', syllabusTopic: 'M5.Opiniones' }
+        { id: 'ss-obj1', description: 'Master stem-changing conjugation of QUERER', syllabusTopic: 'M5.VerboQUERER' },
+        { id: 'ss-obj2', description: 'Order the three-course menu del día (restaurante)', syllabusTopic: 'M5.Restaurante' },
+        { id: 'ss-obj3', description: 'Express taste opinions with ESTAR and ask for the bill (la cuenta)', syllabusTopic: 'M5.Opiniones' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'El Gorro de Oro de Donostia',
+      badgeName: 'Golden Chef Hat of Donostia (Gorro de Oro)',
       badgeIcon: '👨‍🍳',
       questions: [
         {
@@ -1302,19 +1302,19 @@ export const MODULE5_CITIES: City[] = [
     bossMission: {
       id: 'boss-santiago',
       cityId: 'santiago',
-      title: 'La Llegada a la Catedral del Peregrino',
+      title: 'Arrival at the Pilgrim’s Cathedral (La Catedral)',
       characterName: 'Maestro Hospitalero Xoán de Compostela',
-      characterRole: 'Guardián del Pórtico de la Gloria',
-      scenario: 'Ante el majestuoso Pórtico de la Gloria tallado en piedra de granito, Xoán te somete a la prueba cumbre de las quince ciudades de España. Debes demostrar dominio total de servicios urbanos, permisos, peticiones con PODER y la síntesis gastronómica para abrir las puertas doradas de "La Gran Fiesta" final.',
+      characterRole: 'Guardian of the Portico of Glory (Guardián del Pórtico)',
+      scenario: 'Before the grand Portico of Glory, Xoán gives you the final challenge of all 15 cities in Spain. Demonstrate mastery of city services (sitios), requests with PODER, and everything you learned on your journey!',
       objectives: [
-        { id: 'san-obj1', description: 'Ubicar servicios públicos y puntos de interés urbano', syllabusTopic: 'M5.Sitios' },
-        { id: 'san-obj2', description: 'Dominar la conjugación de cambio vocálico del verbo PODER', syllabusTopic: 'M5.VerboPODER' },
-        { id: 'san-obj3', description: 'Sintetizar la competencia comunicativa de todo el viaje por España', syllabusTopic: 'M5.Comunicacion' }
+        { id: 'san-obj1', description: 'Locate public services and city landmarks (sitios)', syllabusTopic: 'M5.Sitios' },
+        { id: 'san-obj2', description: 'Master stem-changing conjugation of PODER', syllabusTopic: 'M5.VerboPODER' },
+        { id: 'san-obj3', description: 'Synthesize A1 communication across all 15 cities (comunicación)', syllabusTopic: 'M5.Comunicacion' }
       ],
       requiredScorePercent: 80,
       xpReward: 500,
       coinReward: 500,
-      badgeName: 'La Concha de Plata de Santiago',
+      badgeName: 'Silver Scallop Shell of Santiago (Concha de Plata)',
       badgeIcon: '🐚',
       questions: [
         {

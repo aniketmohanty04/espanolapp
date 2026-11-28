@@ -390,19 +390,19 @@ export const MODULE3_CITIES: City[] = [
     bossMission: {
       id: 'boss-cordoba',
       cityId: 'cordoba',
-      title: 'El Reloj Astrológico de la Mezquita',
+      title: 'The Mosque Astrological Clock (El Reloj)',
       characterName: 'Maestro Astrónomo Rafael de Córdoba',
-      characterRole: 'Guardián del Tiempo Califal y las Efemérides',
-      scenario: 'El antiguo reloj astrológico del minarete necesita ajuste. Para restablecer las campanas y recibir el mapa hacia la Costa del Sol en Málaga, debes sincronizar las horas, los meses y las fechas de fiesta sin margen de error.',
+      characterRole: 'Guardian of Time & Almanacs (Guardián del Tiempo)',
+      scenario: 'The ancient minaret clock needs calibration. To reset the bells and receive the map to Málaga, sync the hours (la hora), months (meses), and festival dates (fechas) accurately.',
       objectives: [
-        { id: 'cor-obj1', description: 'Expresar horas exactas en singular y plural con fracciones', syllabusTopic: 'M3.Hora' },
-        { id: 'cor-obj2', description: 'Formular fechas completas con preposiciones obligatorias', syllabusTopic: 'M3.Fechas' },
-        { id: 'cor-obj3', description: 'Distinguir el uso de HAY para servicios frente a ESTAR', syllabusTopic: 'M3.HAY' }
+        { id: 'cor-obj1', description: 'Express exact times (la hora) in singular and plural', syllabusTopic: 'M3.Hora' },
+        { id: 'cor-obj2', description: 'Form complete dates (fechas) with required prepositions', syllabusTopic: 'M3.Fechas' },
+        { id: 'cor-obj3', description: 'Distinguish HAY for existence vs. ESTAR for location', syllabusTopic: 'M3.HAY' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'El Reloj de Sol de Córdoba',
+      badgeName: 'Sundial of Córdoba (El Reloj de Sol)',
       badgeIcon: '⌛',
       questions: [
         {
@@ -831,19 +831,19 @@ export const MODULE3_CITIES: City[] = [
     bossMission: {
       id: 'boss-malaga',
       cityId: 'malaga',
-      title: 'El Capitán del Puerto de Málaga',
+      title: 'The Port Captain of Málaga (El Capitán)',
       characterName: 'Capitán Manuel del Mar',
-      characterRole: 'Jefe de Capitanía Marítima y Meteorología Costera',
-      scenario: 'Una regata de veleros históricos zarpará hacia la bahía de Cádiz. Para que el Capitán Manuel autorice tu salida por mar, debes descifrar sin equivocarte el mapa isobárico, la temperatura, el viento y las expresiones del clima.',
+      characterRole: 'Harbor Master & Coastal Weather Chief (Capitanía Marítima)',
+      scenario: 'A historic regatta sets sail for Cádiz. To get Captain Manuel’s clearance to depart, decode the weather map, temperature (temperatura), wind (viento), and climate expressions (el clima).',
       objectives: [
-        { id: 'mal-obj1', description: 'Dominar la distinción entre HACER (clima) y TENER (sensaciones corporales)', syllabusTopic: 'M3.Clima' },
-        { id: 'mal-obj2', description: 'Reconocer verbos de precipitación y estados del cielo con ESTAR', syllabusTopic: 'M3.VerboHACER' },
-        { id: 'mal-obj3', description: 'Formular boletines de navegación precisos', syllabusTopic: 'M3.Comunicacion' }
+        { id: 'mal-obj1', description: 'Distinguish HACER (weather) vs. TENER (physical feelings)', syllabusTopic: 'M3.Clima' },
+        { id: 'mal-obj2', description: 'Recognize precipitation verbs and sky states with ESTAR', syllabusTopic: 'M3.VerboHACER' },
+        { id: 'mal-obj3', description: 'Formulate clear sailing weather reports (clima)', syllabusTopic: 'M3.Comunicacion' }
       ],
       requiredScorePercent: 80,
       xpReward: 350,
       coinReward: 500,
-      badgeName: 'La Rosa de los Vientos de Málaga',
+      badgeName: 'Wind Rose of Málaga (Rosa de los Vientos)',
       badgeIcon: '🧭',
       questions: [
         {
@@ -1269,19 +1269,19 @@ export const MODULE3_CITIES: City[] = [
     bossMission: {
       id: 'boss-cadiz',
       cityId: 'cadiz',
-      title: 'El Concurso de Coplas de Cádiz',
+      title: 'The Cádiz Song Contest (Concurso de Coplas)',
       characterName: 'Lola la del Falla',
-      characterRole: 'Presidenta del Jurado del Gran Teatro Falla',
-      scenario: 'Sobre las tablas del Gran Teatro Falla, debes componer e interpretar las estrofas oficiales del concurso demostrando maestría en gustos, posesivos, horas y la distinción perfecta entre MUY y MUCHO para desbloquear el Módulo 4 hacia Valencia.',
+      characterRole: 'Jury President at Gran Teatro Falla (Presidenta del Jurado)',
+      scenario: 'On stage at the Gran Teatro Falla, compose official verses showing mastery of likes (gustos), possessives (posesivos), time, and MUY vs. MUCHO to unlock Module 4 to Valencia.',
       objectives: [
-        { id: 'cad-obj1', description: 'Dominar la concordancia de GUSTAR singular/plural y pronombres', syllabusTopic: 'M3.Gustos' },
-        { id: 'cad-obj2', description: 'Aplicar la regla de oro entre MUY (adjetivos) y MUCHO (sustantivos)', syllabusTopic: 'M3.MuyVsMucho' },
-        { id: 'cad-obj3', description: 'Utilizar adjetivos posesivos y expresiones temporales sin fallo', syllabusTopic: 'M3.Posesivos' }
+        { id: 'cad-obj1', description: 'Master GUSTAR singular/plural agreement and pronouns', syllabusTopic: 'M3.Gustos' },
+        { id: 'cad-obj2', description: 'Apply the rule for MUY (adjectives) vs. MUCHO (nouns)', syllabusTopic: 'M3.MuyVsMucho' },
+        { id: 'cad-obj3', description: 'Use possessive adjectives (posesivos) and time expressions', syllabusTopic: 'M3.Posesivos' }
       ],
       requiredScorePercent: 80,
       xpReward: 400,
       coinReward: 500,
-      badgeName: 'El Pito de Caña de Oro de Cádiz',
+      badgeName: 'Golden Whistle of Cádiz (Pito de Caña de Oro)',
       badgeIcon: '🎭',
       questions: [
         {
