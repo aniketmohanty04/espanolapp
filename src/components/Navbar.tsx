@@ -82,13 +82,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenHub || onOpenMap}
               className="flex items-center space-x-2.5 text-left group focus:outline-none"
-              title="Ir a Inicio"
+              title="Go to Home"
             >
               {/* Compass Icon Badge */}
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-[#E05615] to-[#EA580C] flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
                 <Compass className="w-5 h-5" />
               </div>
-              <div className="hidden xs:block">
+              <div className="block">
                 <div className="flex items-center space-x-1.5">
                   <span className="font-black text-base sm:text-lg tracking-tight text-[#24140E] group-hover:text-[#E05615] transition-colors font-serif leading-none">
                     ¡Aventura Española!
