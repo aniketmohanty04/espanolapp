@@ -19,6 +19,7 @@ import { JourneyHub } from './components/JourneyHub';
 import { OutOfLivesModal } from './components/OutOfLivesModal';
 import { FloatingChatbot } from './components/FloatingChatbot';
 import { AdminScreen } from './components/AdminScreen';
+import { SuperAdminScreen } from './components/SuperAdminScreen';
 import { NotFoundScreen } from './components/NotFoundScreen';
 import { hasAdminPortalAccess, isAdminAuthenticated } from './services/adminAuthService';
 import { loadCloudCurriculum } from './services/adminCurriculumService';
@@ -99,6 +100,25 @@ const GameMain: React.FC = () => {
      Protected by cryptographic authentication, RLS, and Route Cloaking
      Dedicated Routes: /admin/login and /admin/dashboard
      ======================================================== */
+  /* ========================================================
+     SCREEN: SECRET SUPER-ADMIN DASHBOARD
+     Access ONLY via direct URL /superadmin — no link in normal UI
+     ======================================================== */
+  const isSuperAdminUrl = typeof window !== 'undefined' && window.location.pathname === '/superadmin';
+
+  if (isSuperAdminUrl) {
+    return (
+      <SuperAdminScreen
+        onExit={() => {
+          if (typeof window !== 'undefined') {
+            window.history.pushState(null, '', '/');
+          }
+          setCurrentScreen(currentUserEmail ? 'world-map' : 'auth');
+        }}
+      />
+    );
+  }
+
   const isDirectAdminUrl = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
   if (currentScreen === 'admin' || currentScreen === 'admin-login' || currentScreen === 'admin-dashboard' || isDirectAdminUrl) {
