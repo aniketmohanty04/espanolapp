@@ -4,6 +4,7 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
+  XCircle,
   FileText,
   Sparkles,
   Lock,
@@ -13,10 +14,12 @@ import { useGame } from '../context/GameContext';
 import {
   AssignmentItem,
   AssignmentSubmission,
+  QuestionResult,
   getLocalAssignments,
   loadCloudAssignments,
   getStudentSubmissions,
-  saveStudentSubmission
+  saveStudentSubmission,
+  submitAssignmentToCloud
 } from '../services/assignmentsService';
 
 interface AssignmentsPageProps {
@@ -44,8 +47,9 @@ function formatDateTime(iso: string): string {
 }
 
 export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }) => {
-  const { currentUserEmail } = useGame();
+  const { currentUserEmail, progress } = useGame();
   const userKey = currentUserEmail || 'guest';
+  const studentDisplayName = progress?.profile?.displayName || currentUserEmail || 'Guest Student';
 
   const [assignments, setAssignments] = useState<AssignmentItem[]>(() => getLocalAssignments());
   const [submissions, setSubmissions] = useState<Record<string, AssignmentSubmission>>(() =>
@@ -98,28 +102,45 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
 
     let autoScore = 0;
     let autoTotal = 0;
+    const questionResults: Record<string, QuestionResult> = {};
 
     for (const q of activeAssignment.questions) {
+      const rawAnswer = draftAnswers[q.id] || '';
       if ((q.type === 'mcq' || q.type === 'fill') && q.correctAnswer) {
         autoTotal += 1;
-        const given = (draftAnswers[q.id] || '').trim().toLowerCase();
+        const given = rawAnswer.trim().toLowerCase();
         const expected = q.correctAnswer.trim().toLowerCase();
-        if (given && given === expected) {
+        const isCorrect = Boolean(given && given === expected);
+        if (isCorrect) {
           autoScore += 1;
         }
+        questionResults[q.id] = {
+          answer: rawAnswer,
+          isCorrect,
+          expectedAnswer: q.correctAnswer
+        };
+      } else {
+        questionResults[q.id] = {
+          answer: rawAnswer,
+          isCorrect: null
+        };
       }
     }
 
     const sub: AssignmentSubmission = {
       assignmentId: activeAssignment.id,
+      studentEmail: currentUserEmail || 'guest',
+      studentName: studentDisplayName,
       submittedAt: new Date().toISOString(),
       answers: { ...draftAnswers },
+      questionResults,
       autoScore: autoTotal > 0 ? autoScore : undefined,
       autoTotal: autoTotal > 0 ? autoTotal : undefined
     };
 
     saveStudentSubmission(userKey, sub);
     setSubmissions(prev => ({ ...prev, [activeAssignment.id]: sub }));
+    void submitAssignmentToCloud(sub);
   };
 
   return (
@@ -286,34 +307,89 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {activeAssignment.questions.map((q, idx) => {
-              const isLocked = getStatus(activeAssignment) === 'closed' || Boolean(submissions[activeAssignment.id]);
+              const currentSub = submissions[activeAssignment.id];
+              const isLocked = getStatus(activeAssignment) === 'closed' || Boolean(currentSub);
+              const qResult = currentSub?.questionResults?.[q.id];
+              const isAutoGraded = Boolean(currentSub && (q.type === 'mcq' || q.type === 'fill') && q.correctAnswer);
+              const givenVal = (currentSub?.answers?.[q.id] ?? draftAnswers[q.id] ?? '').trim();
+              const isCorrect = qResult
+                ? qResult.isCorrect
+                : isAutoGraded
+                  ? Boolean(givenVal && givenVal.toLowerCase() === (q.correctAnswer || '').trim().toLowerCase())
+                  : null;
+
               return (
-                <div key={q.id} className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E0D5C7] space-y-3">
-                  <p className="text-sm font-bold text-[#24140E]">
-                    {idx + 1}. {q.prompt}
-                  </p>
+                <div
+                  key={q.id}
+                  className={`p-4 rounded-2xl border space-y-3 ${
+                    isCorrect === true
+                      ? 'bg-emerald-50/40 border-emerald-300'
+                      : isCorrect === false
+                        ? 'bg-rose-50/40 border-rose-300'
+                        : 'bg-[#FAF7F2] border-[#E0D5C7]'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-bold text-[#24140E]">
+                      {idx + 1}. {q.prompt}
+                    </p>
+                    {currentSub && isCorrect === true && (
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-black">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Correct</span>
+                      </span>
+                    )}
+                    {currentSub && isCorrect === false && (
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[11px] font-black">
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Wrong</span>
+                      </span>
+                    )}
+                  </div>
 
                   {q.type === 'mcq' && Array.isArray(q.options) && q.options.length > 0 ? (
                     <div className="space-y-2">
-                      {q.options.map((opt, optIdx) => (
-                        <label
-                          key={optIdx}
-                          className={`flex items-center space-x-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer ${
-                            draftAnswers[q.id] === opt
-                              ? 'bg-white border-[#E05615] text-[#24140E]'
-                              : 'bg-white/70 border-[#E0D5C7] text-[#4A3B32]'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name={`asg_q_${q.id}`}
-                            disabled={isLocked}
-                            checked={draftAnswers[q.id] === opt}
-                            onChange={() => setDraftAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                          />
-                          <span>{opt}</span>
-                        </label>
-                      ))}
+                      {q.options.map((opt, optIdx) => {
+                        const isSelected = draftAnswers[q.id] === opt;
+                        const isExpectedOpt = Boolean(
+                          currentSub &&
+                          q.correctAnswer &&
+                          opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
+                        );
+                        return (
+                          <label
+                            key={optIdx}
+                            className={`flex items-center justify-between space-x-2.5 p-2.5 rounded-xl border text-xs font-semibold ${
+                              isLocked ? 'cursor-default' : 'cursor-pointer'
+                            } ${
+                              currentSub && isExpectedOpt
+                                ? 'bg-emerald-50 border-emerald-400 text-emerald-900'
+                                : currentSub && isSelected && isCorrect === false
+                                  ? 'bg-rose-50 border-rose-400 text-rose-900'
+                                  : isSelected
+                                    ? 'bg-white border-[#E05615] text-[#24140E]'
+                                    : 'bg-white/70 border-[#E0D5C7] text-[#4A3B32]'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5">
+                              <input
+                                type="radio"
+                                name={`asg_q_${q.id}`}
+                                disabled={isLocked}
+                                checked={isSelected}
+                                onChange={() => setDraftAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                              />
+                              <span>{opt}</span>
+                            </div>
+                            {currentSub && isExpectedOpt && (
+                              <span className="text-[10px] font-black text-emerald-700">✓ Right Answer</span>
+                            )}
+                            {currentSub && isSelected && isCorrect === false && (
+                              <span className="text-[10px] font-black text-rose-700">✗ Your Choice</span>
+                            )}
+                          </label>
+                        );
+                      })}
                     </div>
                   ) : q.type === 'fill' ? (
                     <input
@@ -333,6 +409,12 @@ export const AssignmentsPage: React.FC<AssignmentsPageProps> = ({ onBackToHome }
                       placeholder="Write your response..."
                       className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5C7B5] bg-white text-sm"
                     />
+                  )}
+
+                  {currentSub && isCorrect === false && q.correctAnswer && (
+                    <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                      Correct Answer: <span className="underline">{q.correctAnswer}</span>
+                    </p>
                   )}
                 </div>
               );

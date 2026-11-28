@@ -33,12 +33,16 @@ import {
 import {
   AssignmentItem,
   AssignmentQuestion,
+  AssignmentSubmission,
   AssignmentType,
   getLocalAssignments,
   saveLocalAssignments,
   sanitizeAssignment,
   syncAssignmentsToCloud,
-  loadCloudAssignments
+  loadCloudAssignments,
+  loadAdminSubmissions,
+  loadAdminRoster,
+  saveAdminRoster
 } from '../services/assignmentsService';
 import { 
   Shield, 
@@ -67,7 +71,9 @@ import {
   Check,
   ClipboardList,
   Calendar,
-  Clock
+  Clock,
+  Users,
+  XCircle
 } from 'lucide-react';
 
 interface AdminScreenProps {
@@ -125,13 +131,56 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onBackToGame, initialS
   const [isNewAssignment, setIsNewAssignment] = useState<boolean>(false);
   const [assignmentErrors, setAssignmentErrors] = useState<string[]>([]);
   const [isSyncingAssignments, setIsSyncingAssignments] = useState<boolean>(false);
+  const [adminSubmissions, setAdminSubmissions] = useState<Record<string, Record<string, AssignmentSubmission>>>({});
+  const [adminRoster, setAdminRoster] = useState<string[]>([]);
+  const [rosterEmailInput, setRosterEmailInput] = useState<string>('');
+  const [isSavingRoster, setIsSavingRoster] = useState<boolean>(false);
+  const [viewingAssignmentSubmissions, setViewingAssignmentSubmissions] = useState<AssignmentItem | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
     loadCloudAssignments().then((cloud) => {
       if (cloud.length > 0) setAssignmentsList(cloud);
     });
+    loadAdminSubmissions().then(setAdminSubmissions);
+    loadAdminRoster(getAdminEmail() || 'admin').then(setAdminRoster);
   }, [isAuthenticated]);
+
+  const handleAddRosterEmails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parts = rosterEmailInput
+      .split(/[\s,;]+/)
+      .map(s => s.trim().toLowerCase())
+      .filter(s => s.includes('@'));
+    if (parts.length === 0) {
+      setNotification({ message: 'Enter at least one valid student email address.', type: 'error' });
+      return;
+    }
+    const nextRoster = Array.from(new Set([...adminRoster, ...parts]));
+    setIsSavingRoster(true);
+    const res = await saveAdminRoster(getAdminEmail() || 'admin', nextRoster);
+    setIsSavingRoster(false);
+    setAdminRoster(res.students);
+    setRosterEmailInput('');
+    setNotification({
+      message: res.success ? `Saved ${res.students.length} student(s) in your teachership roster.` : `Saved locally (${res.error || 'offline'}).`,
+      type: res.success ? 'success' : 'info'
+    });
+  };
+
+  const handleRemoveRosterEmail = async (emailToRemove: string) => {
+    const nextRoster = adminRoster.filter(e => e !== emailToRemove);
+    setIsSavingRoster(true);
+    const res = await saveAdminRoster(getAdminEmail() || 'admin', nextRoster);
+    setIsSavingRoster(false);
+    setAdminRoster(res.students);
+  };
+
+  const handleRefreshSubmissions = async () => {
+    const subs = await loadAdminSubmissions();
+    setAdminSubmissions(subs);
+    setNotification({ message: 'Student submissions refreshed.', type: 'info' });
+  };
 
   const toLocalDateTimeInput = (iso: string): string => {
     if (!iso) return '';
@@ -1453,6 +1502,13 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
+                  onClick={handleRefreshSubmissions}
+                  className="px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs font-bold text-[#4A3528] hover:bg-[#FAF7F2] flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-[#E05615]" />
+                  <span>Refresh Responses</span>
+                </button>
+                <button
                   onClick={handleSyncAssignmentsToCloud}
                   disabled={isSyncingAssignments}
                   className="px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs font-bold text-[#4A3528] hover:bg-[#FAF7F2] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
@@ -1468,6 +1524,57 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                   <span>New Assignment / Test</span>
                 </button>
               </div>
+            </div>
+
+            {/* Teachership Roster (Per-Admin Student Emails) */}
+            <div className="bg-white p-5 rounded-2xl border border-[#E0D5C7] shadow-xs space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-serif font-bold text-sm text-[#24140E] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#E05615]" />
+                    <span>My Teachership Roster ({adminRoster.length} students)</span>
+                  </h3>
+                  <p className="text-[11px] text-[#6B584D]">
+                    Add your students&apos; email IDs ({getAdminEmail() || 'your account'}) to track who submitted and who did not.
+                  </p>
+                </div>
+              </div>
+              <form onSubmit={handleAddRosterEmails} className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={rosterEmailInput}
+                  onChange={(e) => setRosterEmailInput(e.target.value)}
+                  placeholder="Enter student email(s), e.g. student1@gmail.com, student2@gmail.com"
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-[#E0D5C7] text-xs focus:outline-hidden focus:border-[#E05615]"
+                />
+                <button
+                  type="submit"
+                  disabled={isSavingRoster}
+                  className="px-4 py-2 rounded-xl bg-[#24140E] hover:bg-[#3A2219] text-white text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingRoster ? 'Saving...' : '+ Add to My Roster'}
+                </button>
+              </form>
+              {adminRoster.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {adminRoster.map((email) => (
+                    <span
+                      key={email}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E0D5C7] text-[11px] font-semibold text-[#24140E]"
+                    >
+                      <span>{email}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRosterEmail(email)}
+                        className="text-[#8C7A6B] hover:text-rose-600 cursor-pointer"
+                        title="Remove from roster"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {assignmentsList.length === 0 ? (
@@ -1535,6 +1642,34 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
                         </span>
                         <span className="font-bold text-[#24140E]">{item.questions.length} Qs</span>
                       </div>
+
+                      <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+                        {(() => {
+                          const subsMap = adminSubmissions[item.id] || {};
+                          const submittedCount = Object.keys(subsMap).length;
+                          const missingCount = adminRoster.filter(email => !subsMap[email]).length;
+                          return (
+                            <>
+                              <div className="flex items-center gap-2 text-[11px] font-bold">
+                                <span className="text-emerald-700">{submittedCount} submitted</span>
+                                {adminRoster.length > 0 && (
+                                  <span className="text-rose-700">· {missingCount} not submitted</span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  void handleRefreshSubmissions();
+                                  setViewingAssignmentSubmissions(item);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-[#FFF4E8] hover:bg-[#FFE8D1] text-[#C2410C] border border-[#FAD6B8] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Responses &amp; Roster</span>
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
                   );
                 })}
@@ -1543,6 +1678,158 @@ create policy "Escritura exclusiva admin" on public.curriculum_overrides
           </div>
         )}
       </main>
+
+      {/* =====================================================================
+         MODAL: STUDENT SUBMISSIONS & TEACHERSHIP ROSTER
+         ===================================================================== */}
+      {viewingAssignmentSubmissions && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[#E0D5C7] shadow-2xl max-w-4xl w-full p-6 space-y-5 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EFE5D8]">
+              <div>
+                <h3 className="font-serif font-black text-lg text-[#24140E]">
+                  📊 Student Responses &amp; Roster
+                </h3>
+                <p className="text-xs text-[#6B584D]">{viewingAssignmentSubmissions.title}</p>
+              </div>
+              <button
+                onClick={() => setViewingAssignmentSubmissions(null)}
+                className="p-1 rounded-full text-[#7A6B60] hover:bg-[#FAF7F2] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(() => {
+              const subsMap = adminSubmissions[viewingAssignmentSubmissions.id] || {};
+              const submittedList = Object.values(subsMap);
+              const missingList = adminRoster.filter(email => !subsMap[email]);
+
+              return (
+                <div className="space-y-6">
+                  {/* Not Submitted Yet (from this Admin's Teachership Roster) */}
+                  <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200 space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-900 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Did Not Submit Yet ({missingList.length} from your roster)</span>
+                    </h4>
+                    {adminRoster.length === 0 ? (
+                      <p className="text-xs text-[#6B584D]">
+                        Add student emails to &ldquo;My Teachership Roster&rdquo; to track who hasn&apos;t submitted yet.
+                      </p>
+                    ) : missingList.length === 0 ? (
+                      <p className="text-xs font-bold text-emerald-700">
+                        ✓ All students in your roster have submitted!
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {missingList.map(email => (
+                          <span
+                            key={email}
+                            className="px-2.5 py-1 rounded-full bg-white border border-rose-200 text-xs font-bold text-rose-800"
+                          >
+                            {email}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Submitted Students & Per-Question Right/Wrong Breakdown */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-[#24140E]">
+                      Submitted Responses ({submittedList.length})
+                    </h4>
+
+                    {submittedList.length === 0 ? (
+                      <p className="text-xs text-[#6B584D] italic">No student submissions recorded yet.</p>
+                    ) : (
+                      submittedList.map((sub) => (
+                        <div
+                          key={sub.studentEmail || sub.submittedAt}
+                          className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E0D5C7] space-y-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#EFE5D8]">
+                            <div>
+                              <span className="font-bold text-sm text-[#24140E]">
+                                {sub.studentName || sub.studentEmail}
+                              </span>
+                              {sub.studentEmail && (
+                                <span className="ml-2 text-xs text-[#6B584D]">({sub.studentEmail})</span>
+                              )}
+                              <p className="text-[11px] text-[#7A6B60]">
+                                Submitted: {new Date(sub.submittedAt).toLocaleString()}
+                              </p>
+                            </div>
+                            {sub.autoTotal !== undefined && (
+                              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black">
+                                Auto-Score: {sub.autoScore} / {sub.autoTotal}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            {viewingAssignmentSubmissions.questions.map((q, qIdx) => {
+                              const given = sub.answers?.[q.id] || '';
+                              const qRes = sub.questionResults?.[q.id];
+                              const isAuto = (q.type === 'mcq' || q.type === 'fill') && q.correctAnswer;
+                              const isCorrect = qRes
+                                ? qRes.isCorrect
+                                : isAuto
+                                  ? Boolean(given.trim() && given.trim().toLowerCase() === (q.correctAnswer || '').trim().toLowerCase())
+                                  : null;
+
+                              return (
+                                <div
+                                  key={q.id}
+                                  className={`p-3 rounded-xl border text-xs space-y-1 ${
+                                    isCorrect === true
+                                      ? 'bg-emerald-50/70 border-emerald-300'
+                                      : isCorrect === false
+                                        ? 'bg-rose-50/70 border-rose-300'
+                                        : 'bg-white border-[#E0D5C7]'
+                                  }`}
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-bold text-[#24140E]">
+                                      Q{qIdx + 1}: {q.prompt}
+                                    </span>
+                                    {isCorrect === true && (
+                                      <span className="inline-flex items-center gap-1 text-emerald-700 font-black">
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> Correct
+                                      </span>
+                                    )}
+                                    {isCorrect === false && (
+                                      <span className="inline-flex items-center gap-1 text-rose-700 font-black">
+                                        <XCircle className="w-3.5 h-3.5" /> Wrong
+                                      </span>
+                                    )}
+                                    {isCorrect === null && (
+                                      <span className="text-[10px] font-bold text-[#6B584D]">Written</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[#4A3528]">
+                                    <strong>Response:</strong> {given || <em className="text-[#8C7A6B]">No answer</em>}
+                                  </p>
+                                  {isCorrect === false && q.correctAnswer && (
+                                    <p className="text-emerald-800 font-semibold">
+                                      <strong>Expected:</strong> {q.correctAnswer}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* =====================================================================
          MODAL: CREATE / EDIT ASSIGNMENT OR SURPRISE TEST

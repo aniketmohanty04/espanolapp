@@ -27,10 +27,19 @@ export interface AssignmentItem {
   createdAt: string;
 }
 
+export interface QuestionResult {
+  answer: string;
+  isCorrect: boolean | null;
+  expectedAnswer?: string;
+}
+
 export interface AssignmentSubmission {
   assignmentId: string;
+  studentEmail?: string;
+  studentName?: string;
   submittedAt: string;
   answers: Record<string, string>;
+  questionResults?: Record<string, QuestionResult>;
   autoScore?: number;
   autoTotal?: number;
 }
@@ -162,5 +171,117 @@ export function saveStudentSubmission(userKey: string, submission: AssignmentSub
     window.localStorage.setItem(`${STORAGE_SUBMISSIONS_KEY}_${userKey || 'guest'}`, JSON.stringify(current));
   } catch {
     // ignore quota errors
+  }
+}
+
+export async function submitAssignmentToCloud(
+  submission: AssignmentSubmission
+): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    return { success: false, error: 'Fetch unavailable' };
+  }
+  try {
+    const res = await fetch('/api/admin/assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', submission })
+    });
+    if (res.ok) return { success: true };
+    const data = await res.json().catch(() => ({}));
+    return { success: false, error: data.error || `HTTP ${res.status}` };
+  } catch {
+    return { success: false, error: 'Network error submitting assignment' };
+  }
+}
+
+export async function loadAdminSubmissions(): Promise<Record<string, Record<string, AssignmentSubmission>>> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') return {};
+  try {
+    const res = await fetch('/api/admin/assignments?mode=admin_submissions', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return {};
+    const data = await res.json().catch(() => ({}));
+    if (data?.success && data.submissions && typeof data.submissions === 'object') {
+      return data.submissions;
+    }
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+const STORAGE_ROSTER_PREFIX = 'aventura_admin_roster_v1_';
+
+export async function loadAdminRoster(adminEmail: string): Promise<string[]> {
+  const key = `${STORAGE_ROSTER_PREFIX}${(adminEmail || 'admin').toLowerCase()}`;
+  const getLocal = (): string[] => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+  if (typeof window === 'undefined' || typeof fetch !== 'function') return [];
+  try {
+    const res = await fetch('/api/admin/assignments?mode=roster', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    if (!res.ok) return getLocal();
+    const data = await res.json().catch(() => ({}));
+    if (data?.success && Array.isArray(data.students)) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(data.students));
+      } catch {
+        // ignore
+      }
+      return data.students;
+    }
+  } catch {
+    // ignore
+  }
+  return getLocal();
+}
+
+export async function saveAdminRoster(
+  adminEmail: string,
+  students: string[]
+): Promise<{ success: boolean; students: string[]; error?: string }> {
+  const cleaned = Array.from(
+    new Set(
+      students
+        .map(s => String(s || '').trim().toLowerCase())
+        .filter(s => s.includes('@'))
+    )
+  );
+  const key = `${STORAGE_ROSTER_PREFIX}${(adminEmail || 'admin').toLowerCase()}`;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(cleaned));
+    } catch {
+      // ignore
+    }
+  }
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    return { success: false, students: cleaned, error: 'Fetch unavailable' };
+  }
+  try {
+    const res = await fetch('/api/admin/assignments', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'save_roster', students: cleaned })
+    });
+    if (res.ok) return { success: true, students: cleaned };
+    const data = await res.json().catch(() => ({}));
+    return { success: false, students: cleaned, error: data.error || `HTTP ${res.status}` };
+  } catch {
+    return { success: false, students: cleaned, error: 'Network error saving roster' };
   }
 }
