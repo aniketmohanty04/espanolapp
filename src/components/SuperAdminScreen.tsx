@@ -193,7 +193,7 @@ export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) =>
                 autoCapitalize="none"
                 spellCheck={false}
                 required
-                placeholder="TEAMAVENTURAESPANOLA"
+                placeholder=""
               />
             </label>
             <label style={styles.label}>
@@ -205,7 +205,7 @@ export const SuperAdminScreen: React.FC<SuperAdminScreenProps> = ({ onExit }) =>
                 style={styles.input}
                 autoComplete="current-password"
                 required
-                placeholder="••••••••••••••••••"
+                placeholder=""
               />
             </label>
             {loginError && <div style={styles.errorBox}>{loginError}</div>}
