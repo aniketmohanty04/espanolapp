@@ -68,10 +68,26 @@ const GameMain: React.FC = () => {
   const [, setCurriculumRevision] = useState<number>(0);
 
   useEffect(() => {
-    void loadCloudCurriculum();
+    void loadCloudCurriculum(true);
     const onUpdated = () => setCurriculumRevision(prev => prev + 1);
+    const onFocusOrVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void loadCloudCurriculum();
+    };
+    const intervalId = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void loadCloudCurriculum();
+    }, 30_000);
+
     window.addEventListener('aventura-curriculum-updated', onUpdated);
-    return () => window.removeEventListener('aventura-curriculum-updated', onUpdated);
+    window.addEventListener('focus', onFocusOrVisible);
+    document.addEventListener('visibilitychange', onFocusOrVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('aventura-curriculum-updated', onUpdated);
+      window.removeEventListener('focus', onFocusOrVisible);
+      document.removeEventListener('visibilitychange', onFocusOrVisible);
+    };
   }, []);
 
   const activeCity = activeCityId ? getCityById(activeCityId) : null;

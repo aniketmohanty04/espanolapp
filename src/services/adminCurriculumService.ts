@@ -269,17 +269,51 @@ export async function syncCurriculumToCloud(cities: City[]): Promise<{ success: 
   }
 }
 
-export async function loadCloudCurriculum(): Promise<boolean> {
+let lastLoadedCloudUpdatedAt: string | null = null;
+let lastCloudFetchAt = 0;
+
+export async function loadCloudCurriculum(force = false): Promise<boolean> {
   if (typeof window === 'undefined' || typeof fetch !== 'function') {
     return false;
   }
+  // Never overwrite active admin edits while inside the Admin Portal
+  if (window.location?.pathname?.startsWith('/admin')) {
+    return false;
+  }
+  // Rate-limit client polling to at most once every 5 seconds unless forced
+  const now = Date.now();
+  if (!force && now - lastCloudFetchAt < 5000) {
+    return false;
+  }
+  lastCloudFetchAt = now;
+
   try {
-    const res = await fetch('/api/admin/curriculum', { method: 'GET' });
+    const res = await fetch('/api/admin/curriculum', {
+      method: 'GET',
+      cache: 'no-store'
+    });
     if (!res.ok) return false;
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('application/json')) return false;
-    const data = await res.json();
-    if (data?.success && Array.isArray(data.cities) && data.cities.length > 0) {
+
+    const rawText = await res.text();
+    const data = JSON.parse(rawText, (key, value) =>
+      key === '__proto__' || key === 'constructor' || key === 'prototype' ? undefined : value
+    );
+
+    if (
+      data?.success &&
+      Array.isArray(data.cities) &&
+      data.cities.length > 0 &&
+      data.cities.every(
+        (c: any) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string' && Array.isArray(c.levels)
+      )
+    ) {
+      // Skip redundant re-renders if cloud version hasn't changed
+      if (data.updatedAt && data.updatedAt === lastLoadedCloudUpdatedAt) {
+        return false;
+      }
+      lastLoadedCloudUpdatedAt = data.updatedAt || String(now);
       activeCustomCities = data.cities;
       syncWithGameCities(activeCustomCities!);
       try {
@@ -287,7 +321,7 @@ export async function loadCloudCurriculum(): Promise<boolean> {
           STORAGE_CURRICULUM_KEY,
           JSON.stringify({
             version: data.version || 1,
-            lastModified: Date.now(),
+            lastModified: now,
             modifiedBy: 'cloud',
             cities: activeCustomCities
           })

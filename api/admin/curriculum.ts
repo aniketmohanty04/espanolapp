@@ -49,6 +49,7 @@ export default async function handler(req: any, res: any) {
 
     // 1. PUBLIC READ: Fetch published curriculum overrides for all players
     if (req.method === 'GET') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       const readKey = serviceKey || anonKey;
       if (!url || !readKey) {
         return res.status(200).json({ success: true, cities: null });
