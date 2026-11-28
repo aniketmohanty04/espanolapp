@@ -343,6 +343,14 @@ export async function loginAdminServer(
           error: 'Invalid credentials or insufficient privileges.'
         };
       }
+
+      if (res.status >= 500) {
+        const data = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          error: data.message || 'Server error: verify ADMIN_SECRET_KEY and ADMIN_JWT_SECRET in Vercel Environment Variables.'
+        };
+      }
     } catch {
       // Fallback to local cryptographic check
     }

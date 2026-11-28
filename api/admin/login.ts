@@ -225,13 +225,19 @@ function verifyStoredPassword(password: string, storedHash: string): boolean {
   return safeConstantTimeEqual(hash, storedHash);
 }
 
-  if (userRecord) {
+  if (userRecord && userRecord.role === 'admin') {
     if (verifyStoredPassword(password, userRecord.password_hash)) {
       isAuthenticated = true;
       authenticatedUserId = userRecord.id;
-      authenticatedRole = userRecord.role || 'user';
+      authenticatedRole = 'admin';
     }
-  } else if (email === expectedAdminEmail && expectedAdminSecret) {
+  } else if (email === expectedAdminEmail) {
+    if (!expectedAdminSecret) {
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Server admin login is not configured: ADMIN_SECRET_KEY is missing in environment variables.'
+      });
+    }
     // Environment configured administrative check (constant-time via SHA-256 digest)
     const providedDigest = crypto.createHash('sha256').update(password).digest('hex');
     const expectedDigest = crypto.createHash('sha256').update(expectedAdminSecret).digest('hex');
@@ -274,7 +280,15 @@ function verifyStoredPassword(password: string, storedHash: string): boolean {
     expiresAt: now + SESSION_LIFETIME_MS
   };
 
-  const signedToken = signAdminToken(tokenPayload);
+  let signedToken: string;
+  try {
+    signedToken = signAdminToken(tokenPayload);
+  } catch {
+    return res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Server admin session signing is not configured: ADMIN_JWT_SECRET is missing or too short (min 16 chars).'
+    });
+  }
 
   // Set-Cookie: HttpOnly, Secure, SameSite=Strict, Path=/
   const isSecure =
