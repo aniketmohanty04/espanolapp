@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import { AuthScreen } from './components/AuthScreen';
 import { TutorialScreen } from './components/TutorialScreen';
@@ -21,6 +21,7 @@ import { FloatingChatbot } from './components/FloatingChatbot';
 import { AdminScreen } from './components/AdminScreen';
 import { NotFoundScreen } from './components/NotFoundScreen';
 import { hasAdminPortalAccess, isAdminAuthenticated } from './services/adminAuthService';
+import { loadCloudCurriculum } from './services/adminCurriculumService';
 import { getCityById, getLevelById, getNextCity, ALL_CITIES } from './data/citiesData';
 import { Level } from './types';
 
@@ -62,6 +63,16 @@ const GameMain: React.FC = () => {
 
   // Auth screen mode: login, register, or forgot-password
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
+
+  // Live cloud curriculum sync revision (re-renders active city/level views when updated)
+  const [, setCurriculumRevision] = useState<number>(0);
+
+  useEffect(() => {
+    void loadCloudCurriculum();
+    const onUpdated = () => setCurriculumRevision(prev => prev + 1);
+    window.addEventListener('aventura-curriculum-updated', onUpdated);
+    return () => window.removeEventListener('aventura-curriculum-updated', onUpdated);
+  }, []);
 
   const activeCity = activeCityId ? getCityById(activeCityId) : null;
   const activeLevel = (activeCityId && activeLevelId) ? getLevelById(activeCityId, activeLevelId) : null;

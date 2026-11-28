@@ -242,8 +242,70 @@ function syncWithGameCities(newCities: City[]): void {
   ALL_CITIES.splice(0, ALL_CITIES.length, ...newCities);
 }
 
+function notifyCurriculumUpdated(): void {
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('aventura-curriculum-updated'));
+  }
+}
+
+export async function syncCurriculumToCloud(cities: City[]): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    return { success: false, error: 'Browser fetch unavailable' };
+  }
+  try {
+    const res = await fetch('/api/admin/curriculum', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cities })
+    });
+    if (res.ok) {
+      return { success: true };
+    }
+    const data = await res.json().catch(() => ({}));
+    return { success: false, error: data.message || data.error || `HTTP ${res.status}` };
+  } catch {
+    return { success: false, error: 'Network error syncing curriculum to cloud' };
+  }
+}
+
+export async function loadCloudCurriculum(): Promise<boolean> {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    return false;
+  }
+  try {
+    const res = await fetch('/api/admin/curriculum', { method: 'GET' });
+    if (!res.ok) return false;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return false;
+    const data = await res.json();
+    if (data?.success && Array.isArray(data.cities) && data.cities.length > 0) {
+      activeCustomCities = data.cities;
+      syncWithGameCities(activeCustomCities!);
+      try {
+        window.localStorage.setItem(
+          STORAGE_CURRICULUM_KEY,
+          JSON.stringify({
+            version: data.version || 1,
+            lastModified: Date.now(),
+            modifiedBy: 'cloud',
+            cities: activeCustomCities
+          })
+        );
+      } catch {
+        // ignore storage quota errors
+      }
+      notifyCurriculumUpdated();
+      return true;
+    }
+  } catch {
+    // offline or backend unavailable; keep local/factory curriculum
+  }
+  return false;
+}
+
 /**
- * Persists the modified curriculum and immediately updates ALL_CITIES.
+ * Persists the modified curriculum and immediately updates ALL_CITIES + live cloud.
  */
 export function saveCustomCurriculum(cities: City[], modifiedBy = 'admin@aventura.es'): void {
   activeCustomCities = JSON.parse(JSON.stringify(cities));
@@ -263,10 +325,13 @@ export function saveCustomCurriculum(cities: City[], modifiedBy = 'admin@aventur
       // fallback
     }
   }
+
+  notifyCurriculumUpdated();
+  void syncCurriculumToCloud(activeCustomCities!);
 }
 
 /**
- * 100% REVERSIBILITY: Resets the entire curriculum back to factory defaults.
+ * 100% REVERSIBILITY: Resets the entire curriculum back to factory defaults (local + cloud).
  */
 export function resetCurriculumToDefault(): void {
   activeCustomCities = null;
@@ -279,6 +344,11 @@ export function resetCurriculumToDefault(): void {
     } catch {
       // fallback
     }
+  }
+
+  notifyCurriculumUpdated();
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    void fetch('/api/admin/curriculum', { method: 'DELETE', credentials: 'include' }).catch(() => {});
   }
 }
 
