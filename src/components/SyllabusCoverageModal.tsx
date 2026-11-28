@@ -43,14 +43,14 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-black text-[#24140E] font-serif">Matriz de Cobertura del Sílabo BAESP101</h2>
+                <h2 className="text-lg font-black text-[#24140E] font-serif">BAESP101 Syllabus Coverage Matrix</h2>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black border border-emerald-300 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>100% Cobertura ({coveredTopics}/{totalTopics} Temas)</span>
+                  <span>100% Covered ({coveredTopics}/{totalTopics} Topics)</span>
                 </span>
               </div>
               <p className="text-xs text-[#7A6B60] font-medium">
-                Curso: Spanish Level I • Total 15 horas de clase mapeadas exhaustivamente en las 15 ciudades.
+                Course: Spanish Level I • Total 15 lecture hours mapped across all 15 cities (15 ciudades).
               </p>
             </div>
           </div>
@@ -75,7 +75,7 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
                   : 'bg-white text-[#7A6B60] border border-[#E0D5C7] hover:border-amber-400 hover:text-[#24140E]'
               }`}
             >
-              <span>Módulo {mod.moduleNumber}</span>
+              <span>Module {mod.moduleNumber}</span>
               <span className="text-[10px] opacity-75">({mod.hours}h)</span>
             </button>
           ))}
@@ -87,11 +87,11 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
           <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-amber-300 shadow-xs space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-[#24140E] font-serif">
-                Módulo {activeModule.moduleNumber}: {activeModule.title}
+                Module {activeModule.moduleNumber}: {activeModule.title}
               </h3>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-[#B45309] font-mono border border-amber-200 flex items-center space-x-1 font-bold">
                 <Clock className="w-3 h-3 text-[#E05615]" />
-                <span>{activeModule.hours} horas lectivas</span>
+                <span>{activeModule.hours} lecture hours</span>
               </span>
             </div>
             <p className="text-xs text-[#6B584D] leading-relaxed font-medium">
@@ -102,7 +102,7 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
           {/* Topics Table / Cards */}
           <div className="space-y-2.5">
             <h4 className="text-xs font-black text-[#B45309] uppercase tracking-wider">
-              Objetivos y Temas Mapeados ({activeModule.topics.length} temas):
+              Mapped Objectives & Topics ({activeModule.topics.length} topics):
             </h4>
 
             {activeModule.topics.map(topic => (
@@ -119,7 +119,13 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
                       {topic.title}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF7F2] text-[#7A6B60] border border-[#E0D5C7] font-bold">
-                      {topic.category}
+                      {topic.category === 'Vocabulario'
+                        ? 'Vocabulary (Vocabulario)'
+                        : topic.category === 'Gramática'
+                        ? 'Grammar (Gramática)'
+                        : topic.category === 'Comunicación'
+                        ? 'Communication (Comunicación)'
+                        : 'Culture (Cultura)'}
                     </span>
                   </div>
                   <p className="text-xs text-[#6B584D] font-medium">
@@ -129,7 +135,7 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
 
                 {/* Cities where topic is covered */}
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-start sm:self-center">
-                  <span className="text-[11px] text-[#7A6B60] font-bold mr-1">Cubierto en:</span>
+                  <span className="text-[11px] text-[#7A6B60] font-bold mr-1">Covered in:</span>
                   {topic.coveredInCityIds.map(cityId => {
                     const c = getCityById(cityId);
                     return (
@@ -149,7 +155,7 @@ export const SyllabusCoverageModal: React.FC<SyllabusCoverageModalProps> = ({
 
           {/* Academic References Note */}
           <div className="mt-4 p-4 rounded-2xl bg-white border-2 border-[#EADFCF] text-xs text-[#7A6B60] space-y-1 shadow-xs font-medium">
-            <p className="font-black text-[#24140E]">Fuentes Académicas Oficiales Mapeadas:</p>
+            <p className="font-black text-[#24140E]">Official Mapped Academic Sources:</p>
             <p>1. <strong>BAESP101 Spanish Level I Syllabus</strong> (Board of Studies approved, 15 Lecture Hours).</p>
             <p>2. <strong>Nuevo Español sin Fronteras ESF 1</strong> (Sánchez Lobato, Moreno García et al., SGEL / Aula Internacional 1 Goyal Publishers).</p>
           </div>
