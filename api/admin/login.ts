@@ -1,18 +1,12 @@
 // Serverless Function: /api/admin/login
 // Dedicated server-side Admin Login endpoint with RBAC, rate-limiting, and HttpOnly session cookies.
 
+// @ts-ignore Node built-in module in Vercel serverless runtime
+import crypto from 'node:crypto';
+import { signAdminToken, applyAdminCors, type AdminTokenPayload } from './requireAdmin.ts';
+
 declare const process: any;
 declare const Buffer: any;
-declare const require: any;
-
-let cryptoModule: any;
-try {
-  cryptoModule = require('crypto');
-} catch {
-  // fallback
-}
-const crypto = cryptoModule || (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : null);
-import { signAdminToken, applyAdminCors, type AdminTokenPayload } from './requireAdmin.ts';
 
 // In-memory rate limiting map (IP and IP+Email based)
 interface RateLimitRecord {

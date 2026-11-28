@@ -9,18 +9,12 @@
  * 5. Frontend UI hiding is never relied upon for security.
  */
 
+// @ts-ignore Node built-in module in Vercel serverless runtime
+import crypto from 'node:crypto';
+
 // Server-Side Admin Authorization Guard
 declare const process: any;
 declare const Buffer: any;
-declare const require: any;
-
-let cryptoModule: any;
-try {
-  cryptoModule = require('crypto');
-} catch {
-  // fallback if global crypto available
-}
-const crypto = cryptoModule || (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : null);
 
 export interface AdminTokenPayload {
   sessionId: string;
