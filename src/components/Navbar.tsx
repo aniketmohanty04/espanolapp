@@ -152,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E8DFD5] shadow-xs text-[#24140E]" title="Coins (Monedas de oro)">
               <span className="text-base">🪙</span>
               <span>{progress.stats.coins.toLocaleString()}</span>
-              <span className="text-[10px] text-[#8C7A6B] hidden sm:inline font-bold">Coins <span className="font-normal">(Monedas)</span></span>
+              <span className="text-[10px] text-[#8C7A6B] hidden sm:inline font-bold">Coins</span>
             </div>
 
             {/* XP Badge */}
@@ -194,11 +194,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Menu / Drawer Toggle */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className="relative flex items-center space-x-1.5 px-3 py-2 rounded-full bg-[#24140E] hover:bg-[#3D251A] text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
-              title="Open tools & menu (Menú)"
+              className="relative flex items-center justify-center p-2.5 rounded-full bg-[#24140E] hover:bg-[#3D251A] text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+              title="Open tools & drawer"
             >
               <Menu className="w-4 h-4" />
-              <span className="hidden sm:inline">Menu <span className="text-[10px] text-amber-200/80 font-normal">(Menú)</span></span>
               {mistakeCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-[#E05615] text-white text-[10px] font-black rounded-full animate-bounce shadow">
                   {mistakeCount}

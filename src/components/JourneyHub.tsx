@@ -328,7 +328,7 @@ export const JourneyHub: React.FC<JourneyHubProps> = ({
       {/* ========================================================
           1. TOP NAVIGATION BAR (Exact match to Image 1)
           ======================================================== */}
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#EADFCF] px-4 sm:px-8 py-3.5 transition-all">
+      <header className="hidden" aria-hidden="true">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           {/* Left: Brand Logo & Title */}
