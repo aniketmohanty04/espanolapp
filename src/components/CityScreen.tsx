@@ -449,12 +449,12 @@ export const CityScreen: React.FC<CityScreenProps> = ({
               {isBossPassed ? (
                 <span className="text-emerald-700 flex items-center space-x-1 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Jefe Superado ({bossRecord?.scorePercent}%)</span>
+                  <span>Boss Passed ({bossRecord?.scorePercent}%)</span>
                 </span>
               ) : (
                 <span className="text-[#B45309] flex items-center space-x-1 font-bold">
                   <ShieldAlert className="w-4 h-4 text-[#C2410C]" />
-                  <span>Jefe Pendiente (80% req.)</span>
+                  <span>Boss Pending (80% req.)</span>
                 </span>
               )}
             </div>
@@ -479,694 +479,103 @@ export const CityScreen: React.FC<CityScreenProps> = ({
         />
       )}
 
-      {/* VIEW MODE 1: Illustrated Winding Casual Adventure Trail (Aesthetic Spanish RPG Trail) */}
+      {/* VIEW MODE 1: Warm Editorial Adventure Path */}
       {viewMode === 'path' && (
-        <div className="flex flex-col gap-4 select-none">
-          {/* Top Wooden Trail HUD Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-[#2e1d11]/95 border-2 border-[#b45309] shadow-2xl text-white backdrop-blur-md">
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl filter drop-shadow">🧭</span>
-              <div>
-                <h3 className="text-sm sm:text-base font-black text-amber-300 font-serif tracking-wide flex items-center space-x-2">
-                  <span>Sendero de Aventura: {city.name}</span>
-                </h3>
-                <p className="text-[11px] text-slate-300">
-                  {completedLevels.length} de 10 niveles superados • Sigue las aguas hasta la Fortaleza del Jefe
-                </p>
-              </div>
+        <div className="bg-white border-2 border-[#EADFCF] rounded-3xl p-5 sm:p-7 shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#F2ECE1]">
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-[#24140E] font-serif">
+                Adventure Path: {city.name}
+              </h2>
+              <p className="text-xs text-[#7A6B60] font-medium">
+                Complete each level in order to unlock the {city.name} Boss Mission.
+              </p>
             </div>
-
-            {/* In-game trail counters */}
-            <div className="flex items-center space-x-2 sm:space-x-4 text-xs font-black">
-              {/* Hearts / Lives */}
-              <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-red-950/80 border border-red-500/50 text-rose-300 shadow">
-                <Heart className="w-4 h-4 fill-rose-500 text-rose-500 animate-pulse" />
-                <span>{progress.stats.lives || 3}/{progress.stats.maxLives || 3}</span>
-              </div>
-
-              {/* Stars in city */}
-              <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-amber-950/80 border border-amber-500/50 text-amber-300 shadow">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span>{city.levels.reduce((acc, lvl) => acc + (progress.completedLevels[lvl.id]?.stars || 0), 0)}/30</span>
-              </div>
-
-              {/* Coins */}
-              <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-200 shadow">
-                <span className="text-sm">🪙</span>
-                <span>{progress.stats.coins}</span>
-              </div>
-            </div>
+            <span className="px-3 py-1 rounded-full bg-[#FAF7F2] border border-[#E0D5C7] text-xs font-black text-[#B45309]">
+              {completedLevels.length} / {city.levels.length} Completed
+            </span>
           </div>
 
-          {/* Dedicated Self-Contained Illustrated Trail Canvas (Zero coordinate drift between SVG and HTML!) */}
-          <div className="relative rounded-3xl overflow-hidden border-4 border-[#4a2e18] shadow-2xl bg-[#3f6212] w-full h-[2150px]">
-            {/* SVG Canvas for Background Scenery, River, and Connectors */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 800 2150" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="100%">
-                  <stop offset="0%" stopColor="#bae6fd" />
-                  <stop offset="50%" stopColor="#e0f2fe" />
-                  <stop offset="100%" stopColor="#fef3c7" />
-                </linearGradient>
-
-                <linearGradient id="meadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#65a30d" />
-                  <stop offset="25%" stopColor="#4d7c0f" />
-                  <stop offset="55%" stopColor="#3f6212" />
-                  <stop offset="85%" stopColor="#4d7c0f" />
-                  <stop offset="100%" stopColor="#65a30d" />
-                </linearGradient>
-
-                <linearGradient id="riverBank" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#d97706" />
-                  <stop offset="15%" stopColor="#fde68a" />
-                  <stop offset="50%" stopColor="#fef3c7" />
-                  <stop offset="85%" stopColor="#fde68a" />
-                  <stop offset="100%" stopColor="#d97706" />
-                </linearGradient>
-
-                <linearGradient id="riverWater" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#38bdf8" />
-                  <stop offset="35%" stopColor="#0ea5e9" />
-                  <stop offset="70%" stopColor="#0284c7" />
-                  <stop offset="100%" stopColor="#0369a1" />
-                </linearGradient>
-
-                <filter id="trailGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.6" />
-                </filter>
-              </defs>
-
-              {/* 1. Sky & Distant Mountain Horizon (y: 0 to 260) */}
-              <rect x="0" y="0" width="800" height="260" fill="url(#skyGrad)" />
-              {/* Spanish Sierra Mountain Silhouettes */}
-              <path d="M 0 200 L 90 120 L 210 180 L 350 100 L 480 165 L 620 95 L 750 160 L 800 130 L 800 270 L 0 270 Z" fill="#94a3b8" opacity="0.65" />
-              <path d="M 0 240 L 130 155 L 280 220 L 420 145 L 560 210 L 710 150 L 800 195 L 800 300 L 0 300 Z" fill="#64748b" opacity="0.80" />
-
-              {/* 2. Rolling Green Meadows Landscape (y: 260 to 2150) */}
-              <rect x="0" y="260" width="800" height="1890" fill="url(#meadowGrad)" />
-              {/* Soft Hills Contours */}
-              <path d="M 0 350 Q 200 300 400 340 T 800 320 L 800 2150 L 0 2150 Z" fill="#4d7c0f" opacity="0.35" />
-              <path d="M 0 700 Q 300 650 550 710 T 800 680 L 800 2150 L 0 2150 Z" fill="#3f6212" opacity="0.25" />
-              <path d="M 0 1200 Q 250 1150 500 1210 T 800 1180 L 800 2150 L 0 2150 Z" fill="#4d7c0f" opacity="0.25" />
-              <path d="M 0 1700 Q 350 1650 600 1720 T 800 1690 L 800 2150 L 0 2150 Z" fill="#365314" opacity="0.20" />
-
-              {/* 3. The Citadel Mountain Plateau (The Stone Hill where Boss Fortress rests) */}
-              <path d="M 150 380 Q 400 220 650 380 L 680 440 Q 400 370 120 440 Z" fill="#57534e" stroke="#292524" strokeWidth="4" />
-              <path d="M 180 365 Q 400 235 620 365 L 645 405 Q 400 345 155 405 Z" fill="#78716c" opacity="0.85" />
-
-              {/* 4. Sandy River Bed Embankment (Width 126px) */}
-              <path
-                d="M 330 2150
-                   L 330 2040
-                   C 330 1960, 330 1940, 330 1890
-                   C 330 1820, 460 1810, 460 1740
-                   C 460 1670, 520 1660, 520 1590
-                   C 520 1520, 340 1510, 340 1440
-                   C 340 1370, 210 1360, 210 1290
-                   C 210 1220, 320 1210, 320 1140
-                   C 320 1070, 460 1060, 460 990
-                   C 460 920, 590 910, 590 840
-                   C 590 770, 530 760, 530 690
-                   C 530 620, 400 600, 400 530
-                   L 400 370"
-                fill="none"
-                stroke="url(#riverBank)"
-                strokeWidth="126"
-                strokeLinecap="round"
-              />
-
-              {/* 5. Crystal Turquoise River Flow (Width 92px) */}
-              <path
-                d="M 330 2150
-                   L 330 2040
-                   C 330 1960, 330 1940, 330 1890
-                   C 330 1820, 460 1810, 460 1740
-                   C 460 1670, 520 1660, 520 1590
-                   C 520 1520, 340 1510, 340 1440
-                   C 340 1370, 210 1360, 210 1290
-                   C 210 1220, 320 1210, 320 1140
-                   C 320 1070, 460 1060, 460 990
-                   C 460 920, 590 910, 590 840
-                   C 590 770, 530 760, 530 690
-                   C 530 620, 400 600, 400 530
-                   L 400 370"
-                fill="none"
-                stroke="url(#riverWater)"
-                strokeWidth="92"
-                strokeLinecap="round"
-              />
-
-              {/* 6. Water Ripple Waves */}
-              <path
-                d="M 330 2150
-                   L 330 2040
-                   C 330 1960, 330 1940, 330 1890
-                   C 330 1820, 460 1810, 460 1740
-                   C 460 1670, 520 1660, 520 1590
-                   C 520 1520, 340 1510, 340 1440
-                   C 340 1370, 210 1360, 210 1290
-                   C 210 1220, 320 1210, 320 1140
-                   C 320 1070, 460 1060, 460 990
-                   C 460 920, 590 910, 590 840
-                   C 590 770, 530 760, 530 690
-                   C 530 620, 400 600, 400 530
-                   L 400 370"
-                fill="none"
-                stroke="#f0f9ff"
-                strokeWidth="14"
-                strokeLinecap="round"
-                strokeDasharray="24 38"
-                opacity="0.85"
-              />
-
-              {/* 7. Ancient Stone Bridge Leading from Citadel Gates to Level 10 */}
-              <rect x="340" y="380" width="120" height="110" rx="10" fill="#78716c" stroke="#44403c" strokeWidth="4" />
-              <line x1="340" y1="408" x2="460" y2="408" stroke="#57534e" strokeWidth="3" />
-              <line x1="340" y1="435" x2="460" y2="435" stroke="#57534e" strokeWidth="3" />
-              <line x1="340" y1="462" x2="460" y2="462" stroke="#57534e" strokeWidth="3" />
-              <circle cx="352" cy="395" r="5" fill="#f59e0b" filter="url(#trailGlow)" />
-              <circle cx="448" cy="395" r="5" fill="#f59e0b" filter="url(#trailGlow)" />
-              <circle cx="352" cy="450" r="5" fill="#f59e0b" filter="url(#trailGlow)" />
-              <circle cx="448" cy="450" r="5" fill="#f59e0b" filter="url(#trailGlow)" />
-
-              {/* 8. Golden Dashed Stepping Stone Guide (Exact curve alignment with nodes!) */}
-              <path
-                d="M 330 2040
-                   C 330 1960, 330 1940, 330 1890
-                   C 330 1820, 460 1810, 460 1740
-                   C 460 1670, 520 1660, 520 1590
-                   C 520 1520, 340 1510, 340 1440
-                   C 340 1370, 210 1360, 210 1290
-                   C 210 1220, 320 1210, 320 1140
-                   C 320 1070, 460 1060, 460 990
-                   C 460 920, 590 910, 590 840
-                   C 590 770, 530 760, 530 690
-                   C 530 620, 400 600, 400 530
-                   L 400 420"
-                fill="none"
-                stroke="#fef08a"
-                strokeWidth="6"
-                strokeDasharray="14 10"
-                strokeLinecap="round"
-                filter="url(#trailGlow)"
-              />
-
-              {/* 9. Decorative Spanish Pines and Scenery Clusters */}
-              <g opacity="0.9">
-                {/* Summit Pines */}
-                <polygon points="120,340 135,305 150,340" fill="#14532d" />
-                <polygon points="125,320 135,290 145,320" fill="#16a34a" />
-                <polygon points="650,350 665,315 680,350" fill="#14532d" />
-                <polygon points="655,330 665,300 675,330" fill="#16a34a" />
-
-                {/* Upper Valley Groves */}
-                <polygon points="90,750 105,715 120,750" fill="#14532d" />
-                <polygon points="95,730 105,700 115,730" fill="#16a34a" />
-                <polygon points="710,880 725,845 740,880" fill="#14532d" />
-                <polygon points="715,860 725,830 735,860" fill="#16a34a" />
-
-                {/* Mid Valley Groves */}
-                <polygon points="80,1400 95,1365 110,1400" fill="#14532d" />
-                <polygon points="85,1380 95,1350 105,1380" fill="#16a34a" />
-                <polygon points="720,1500 735,1465 750,1500" fill="#14532d" />
-                <polygon points="725,1480 735,1450 745,1480" fill="#16a34a" />
-
-                {/* Lower Valley Pines */}
-                <polygon points="90,1950 105,1915 120,1950" fill="#14532d" />
-                <polygon points="95,1930 105,1900 115,1930" fill="#16a34a" />
-                <polygon points="680,1980 695,1945 710,1980" fill="#14532d" />
-                <polygon points="685,1960 695,1930 705,1960" fill="#16a34a" />
-              </g>
-
-              {/* 10. Wildflower Patches (Spanish red poppies and golden daisies) */}
-              <g opacity="0.85">
-                <circle cx="150" cy="550" r="3" fill="#ef4444" />
-                <circle cx="156" cy="554" r="2.5" fill="#facc15" />
-                <circle cx="162" cy="548" r="3" fill="#ef4444" />
-                <circle cx="680" cy="620" r="3" fill="#ef4444" />
-                <circle cx="688" cy="625" r="2.5" fill="#facc15" />
-                <circle cx="180" cy="1100" r="3" fill="#facc15" />
-                <circle cx="188" cy="1105" r="3" fill="#ef4444" />
-                <circle cx="660" cy="1220" r="3" fill="#ef4444" />
-                <circle cx="667" cy="1224" r="2.5" fill="#facc15" />
-                <circle cx="160" cy="1780" r="3" fill="#ef4444" />
-                <circle cx="168" cy="1785" r="2.5" fill="#facc15" />
-              </g>
-            </svg>
-
-            {/* HTML INTERACTIVE ELEMENTS LAYER (100% Shared Coordinate Space with SVG!) */}
-            <div className="absolute inset-0 w-full h-full z-10 pointer-events-auto">
-              
-              {/* 1. Grand Boss Fortress Sanctuary (Summit of the Citadel, guaranteed clearance) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '36px',
-                  transform: 'translateX(-50%)'
-                }}
-                translate="no"
-                className="notranslate z-20 w-80 sm:w-96 text-center"
-              >
-              <div
-                onClick={() => {
-                  if (allLevelsDone || isBossPassed) {
-                    onOpenBoss();
-                  }
-                }}
-                className={`group rounded-3xl p-4 sm:p-5 border-4 transition-all duration-300 shadow-2xl flex flex-col items-center ${
-                  isBossPassed
-                    ? 'bg-gradient-to-b from-[#1c1828] via-[#291b35] to-[#141221] border-amber-300 shadow-purple-500/30 hover:scale-102 cursor-pointer'
-                    : allLevelsDone
-                    ? 'bg-gradient-to-b from-[#3b1218] via-[#4a1520] to-[#240c12] border-amber-400 shadow-rose-600/50 hover:scale-105 animate-pulse cursor-pointer'
-                    : 'bg-gradient-to-b from-[#181926] via-[#1e2030] to-[#12131d] border-slate-700 shadow-black/60 opacity-90 cursor-not-allowed'
-                }`}
-              >
-                {/* Castle Battlements Crown */}
-                <div className="flex items-center space-x-1.5 -mt-7 mb-1.5">
-                  <div className="w-5 h-4 bg-amber-400 rounded-t-sm shadow" />
-                  <div className="w-5 h-4 bg-amber-500 rounded-t-sm shadow" />
-                  <div className="w-6 h-5 bg-amber-300 rounded-t-sm shadow-md" />
-                  <div className="w-5 h-4 bg-amber-500 rounded-t-sm shadow" />
-                  <div className="w-5 h-4 bg-amber-400 rounded-t-sm shadow" />
-                </div>
-
-                {/* Boss Crest & Portrait */}
-                <div className="relative mb-2">
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-1 shadow-xl flex items-center justify-center border-2 border-white">
-                    <div className="w-full h-full bg-[#1e172a] rounded-xl flex items-center justify-center text-3xl sm:text-4xl">
-                      {city.bossMission.badgeIcon}
-                    </div>
-                  </div>
-                  {isBossPassed ? (
-                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                  ) : !allLevelsDone ? (
-                    <div className="absolute -bottom-1 -right-1 bg-slate-900 text-amber-400 rounded-full p-1 border-2 border-slate-600 shadow flex items-center justify-center">
-                      <Lock className="w-3.5 h-3.5" />
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-xs font-black uppercase mb-1 ${
-                  allLevelsDone || isBossPassed
-                    ? 'bg-rose-500/20 border-rose-400/50 text-rose-300'
-                    : 'bg-slate-800 border-slate-600 text-slate-400'
-                }`}>
-                  {allLevelsDone || isBossPassed ? (
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                  ) : (
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  )}
-                  <span>Misión del Jefe de {city.name}</span>
-                </div>
-
-                <h4 className="text-base sm:text-lg font-black text-white font-serif leading-tight">
-                  {city.bossMission.title}
-                </h4>
-                <p className="text-xs text-amber-300 font-bold mt-0.5">
-                  {city.bossMission.characterName} • {city.bossMission.characterRole}
-                </p>
-
-                {/* Progress bar to boss */}
-                <div className="w-full mt-2.5 px-3 py-1.5 rounded-xl bg-white/10 flex items-center justify-between text-[11px] font-bold">
-                  <span className="text-slate-300">Requisito de Entrada:</span>
-                  <span className={allLevelsDone ? 'text-emerald-400 font-black' : 'text-amber-300 font-bold'}>
-                    {!allLevelsDone && !isBossPassed && '🔒 '}
-                    {completedLevels.length} / 10 Niveles
-                  </span>
-                </div>
-                {!allLevelsDone && !isBossPassed && (
-                  <p className="text-[10px] text-amber-200/80 mt-1 font-medium">
-                    Completa los {10 - completedLevels.length} niveles restantes para desbloquear al Jefe
-                  </p>
-                )}
-
-                {/* Status and Action Button */}
-                <div className="w-full mt-2.5">
-                  <button
-                    disabled={!allLevelsDone && !isBossPassed}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (allLevelsDone || isBossPassed) {
-                        onOpenBoss();
-                      }
-                    }}
-                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 border-2 transition-transform ${
-                      isBossPassed
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-300 hover:scale-105 cursor-pointer'
-                        : allLevelsDone
-                        ? 'bg-gradient-to-r from-amber-500 via-rose-600 to-amber-500 text-white border-white hover:scale-105 shadow-amber-500/40 glow-gold cursor-pointer'
-                        : 'bg-slate-800/90 text-slate-400 border-slate-700 cursor-not-allowed opacity-90'
-                    }`}
-                  >
-                    {isBossPassed ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : allLevelsDone ? (
-                      <Play className="w-4 h-4 fill-current" />
-                    ) : (
-                      <Lock className="w-4 h-4 text-slate-400" />
-                    )}
-                    <span>
-                      {isBossPassed
-                        ? `¡Jefe Superado (${bossRecord?.scorePercent}%)! Reintentar`
-                        : allLevelsDone
-                        ? '¡Afrontar Desafío del Jefe (80% req.)!'
-                        : `Bloqueado (${completedLevels.length}/10 niveles completados)`}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Interactive Chiringuito de Tapas (Right Riverbank Terrace, opposite Level 6/7) */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '84%',
-                top: '50.0%',
-                transform: 'translate(-50%, -50%)'
-              }}
-              className="z-20 text-center"
-            >
-              {(() => {
-                const tapasId = `tapas-${city.id}`;
-                const isTapasClaimed = progress.festivalVisitedStalls.includes(tapasId);
-                const cityTapas = CITY_TAPAS_SPECIALTIES[city.id] || {
-                  title: 'Chiringuito Tradicional',
-                  foodName: 'Tapas Variadas y Refresco Típico',
-                  description: 'Deliciosas tapas locales preparadas con los mejores ingredientes de la región.',
-                  quote: '¡Buen provecho en tu viaje por España!',
-                  icon: '🥘'
-                };
-
-                return (
-                  <button
-                    onClick={() => {
-                      if (!isTapasClaimed) {
-                        visitFestivalStall(tapasId, 100);
-                        try {
-                          confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
-                        } catch {
-                          // ignore
-                        }
-                      }
-                      setShowTapasModal(true);
-                    }}
-                    className="group relative flex flex-col items-center hover:scale-110 active:scale-95 transition-transform cursor-pointer"
-                    title={`Chiringuito de Tapas de ${city.name}`}
-                  >
-                    <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-3xl bg-gradient-to-tr from-[#7c2d12] via-[#ea580c] to-[#f59e0b] p-1 shadow-2xl border-2 border-white flex flex-col items-center justify-center">
-                      <div className="text-3xl sm:text-4xl mb-0.5 filter drop-shadow">
-                        {cityTapas.icon}
-                      </div>
-                      <span className="text-[10px] font-black text-white leading-tight">
-                        Tapas
-                      </span>
-                      {!isTapasClaimed && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white font-black text-[10px] flex items-center justify-center border-2 border-white animate-pulse">
-                          !
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 px-2.5 py-0.5 rounded-full bg-[#3d1a0c] text-amber-300 border border-amber-400 text-[10px] font-black shadow whitespace-nowrap">
-                      Chiringuito {city.name}
-                    </div>
-                  </button>
-                );
-              })()}
-            </div>
-
-            {/* 3. Interactive Treasure Chest 1: Gran Cofre Real (Right bank, opposite Level 4/5) */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '82%',
-                top: '63.5%',
-                transform: 'translate(-50%, -50%)'
-              }}
-              className="z-20 text-center"
-            >
-              <button
-                onClick={() => {
-                  const chest2Id = `chest-${city.id}-2`;
-                  const isClaimed = progress.festivalVisitedStalls.includes(chest2Id);
-                  if (isClaimed) {
-                    setChestAlert({
-                      title: 'Cofre Ya Reclamado',
-                      message: `¡Ya has recogido las 250 monedas de este cofre en ${city.name}!`,
-                      coins: 0
-                    });
-                    return;
-                  }
-                  visitFestivalStall(chest2Id, 250);
-                  try {
-                    confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
-                  } catch {
-                    // ignore
-                  }
-                  setChestAlert({
-                    title: '¡Gran Cofre Real Desbloqueado!',
-                    message: `¡Enhorabuena! Has abierto el cofre real en el sendero de ${city.name}.`,
-                    coins: 250
-                  });
-                }}
-                className="group relative flex flex-col items-center hover:scale-110 active:scale-95 transition-transform cursor-pointer"
-                title="Cofre Real Secreto"
-              >
-                {(() => {
-                  const isClaimed = progress.festivalVisitedStalls.includes(`chest-${city.id}-2`);
-                  return (
-                    <>
-                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1.5 flex items-center justify-center border-2 shadow-xl ${
-                        isClaimed
-                          ? 'bg-amber-900/60 border-amber-600/50 opacity-80'
-                          : 'bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 border-white shadow-amber-500/50 animate-bounce'
-                      }`}>
-                        <span className="text-3xl sm:text-4xl filter drop-shadow">
-                          {isClaimed ? '✨' : '👑'}
-                        </span>
-                      </div>
-                      <div className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-black border shadow whitespace-nowrap ${
-                        isClaimed
-                          ? 'bg-slate-800/90 text-slate-400 border-slate-600'
-                          : 'bg-amber-400 text-slate-950 border-white'
-                      }`}>
-                        {isClaimed ? 'Reclamado (+250)' : 'Cofre Real (+250 🪙)'}
-                      </div>
-                    </>
-                  );
-                })()}
-              </button>
-            </div>
-
-            {/* 4. Interactive Treasure Chest 2: Cofre Secreto (Left bank, opposite Level 2/3) */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '18%',
-                top: '77.5%',
-                transform: 'translate(-50%, -50%)'
-              }}
-              className="z-20 text-center"
-            >
-              <button
-                onClick={() => {
-                  const chest1Id = `chest-${city.id}-1`;
-                  const isClaimed = progress.festivalVisitedStalls.includes(chest1Id);
-                  if (isClaimed) {
-                    setChestAlert({
-                      title: 'Cofre Ya Reclamado',
-                      message: `¡Ya has recogido las 150 monedas de este cofre en ${city.name}!`,
-                      coins: 0
-                    });
-                    return;
-                  }
-                  visitFestivalStall(chest1Id, 150);
-                  try {
-                    confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
-                  } catch {
-                    // ignore
-                  }
-                  setChestAlert({
-                    title: '¡Cofre Secreto Encontrado!',
-                    message: `¡Enhorabuena! Has abierto un cofre secreto en el sendero de ${city.name}.`,
-                    coins: 150
-                  });
-                }}
-                className="group relative flex flex-col items-center hover:scale-110 active:scale-95 transition-transform cursor-pointer"
-                title="Cofre de Monedas Secreto"
-              >
-                {(() => {
-                  const isClaimed = progress.festivalVisitedStalls.includes(`chest-${city.id}-1`);
-                  return (
-                    <>
-                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1.5 flex items-center justify-center border-2 shadow-xl ${
-                        isClaimed
-                          ? 'bg-amber-900/60 border-amber-600/50 opacity-80'
-                          : 'bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 border-white shadow-amber-500/50 animate-bounce'
-                      }`}>
-                        <span className="text-3xl sm:text-4xl filter drop-shadow">
-                          {isClaimed ? '✨' : '🎁'}
-                        </span>
-                      </div>
-                      <div className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-black border shadow whitespace-nowrap ${
-                        isClaimed
-                          ? 'bg-slate-800/90 text-slate-400 border-slate-600'
-                          : 'bg-amber-400 text-slate-950 border-white'
-                      }`}>
-                        {isClaimed ? 'Reclamado (+150)' : 'Cofre Secreto (+150 🪙)'}
-                      </div>
-                    </>
-                  );
-                })()}
-              </button>
-            </div>
-
-            {/* 5. The 10 River Stepping Stone Level Nodes (Perfect Organic Curve Alignment & Generous 150px Spacing!) */}
-            {[
-              { levelNum: 1, x: 41.25, y: 87.91 },
-              { levelNum: 2, x: 57.5, y: 80.93 },
-              { levelNum: 3, x: 65.0, y: 73.95 },
-              { levelNum: 4, x: 42.5, y: 66.98 },
-              { levelNum: 5, x: 26.25, y: 60.0 },
-              { levelNum: 6, x: 40.0, y: 53.02 },
-              { levelNum: 7, x: 57.5, y: 46.05 },
-              { levelNum: 8, x: 73.75, y: 39.07 },
-              { levelNum: 9, x: 66.25, y: 32.09 },
-              { levelNum: 10, x: 50.0, y: 24.65 }
-            ].map(pos => {
-              const level = city.levels[pos.levelNum - 1];
-              const idx = pos.levelNum - 1;
+          <div className="relative pl-6 sm:pl-8 space-y-3 before:content-[''] before:absolute before:left-[15px] sm:before:left-[19px] before:top-4 before:bottom-4 before:w-0.5 before:bg-[#EADFCF]">
+            {city.levels.map((level) => {
               const record = progress.completedLevels[level.id];
-              const isDone = Boolean(record);
-              const isUnlocked = isLevelUnlocked(idx);
-              const firstUnfinishedIdx = city.levels.findIndex(lvl => !progress.completedLevels[lvl.id]);
-              const currentActiveLevelIdx = firstUnfinishedIdx !== -1 ? firstUnfinishedIdx : 9;
-              const isCurrent = idx === currentActiveLevelIdx;
-              const stars = record ? record.stars : 0;
-
+              const isCompleted = Boolean(record);
+              const isUnlocked = isLevelUnlocked(level.levelNumber - 1);
               return (
                 <div
                   key={level.id}
-                  style={{
-                    position: 'absolute',
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  className="z-20 flex flex-col items-center"
+                  className={`relative flex items-center justify-between gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
+                    isCompleted
+                      ? 'bg-emerald-50/40 border-emerald-200'
+                      : isUnlocked
+                      ? 'bg-[#FFFDF9] border-[#E05615]/50 shadow-xs'
+                      : 'bg-[#FAF7F2] border-[#E8DFD5] opacity-70'
+                  }`}
                 >
-                  {/* Player Avatar Pin standing on current active node */}
-                  {isCurrent && (
-                    <div className="absolute -top-16 pointer-events-none">
-                      <PlayerAvatarPin character={progress.profile?.character} />
-                    </div>
-                  )}
-
-                  {/* 3D Stepping Stone Button */}
-                  <button
-                    disabled={!isUnlocked}
-                    onClick={() => {
-                      if (isUnlocked) {
-                        setSelectedLevelForPreview(level);
-                      }
-                    }}
-                    className={`group relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center font-black transition-all duration-300 cursor-pointer ${
-                      isDone
-                        ? 'bg-gradient-to-b from-emerald-400 via-teal-600 to-emerald-800 border-4 border-amber-300 text-white shadow-[0_8px_0_rgba(6,78,59,0.85)] hover:scale-110 active:translate-y-1'
-                        : isCurrent
-                        ? 'bg-gradient-to-b from-amber-300 via-orange-400 to-amber-500 border-4 border-white text-slate-950 shadow-[0_8px_0_rgba(180,83,9,0.9)] ring-4 ring-amber-300/80 hover:scale-110 active:translate-y-1 glow-gold'
-                        : 'bg-gradient-to-b from-slate-600 via-slate-700 to-slate-800 border-4 border-slate-500 text-slate-400 shadow-[0_6px_0_rgba(30,41,59,0.8)] cursor-not-allowed opacity-80'
+                  <div
+                    className={`absolute -left-[25px] sm:-left-[29px] w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 shadow-xs ${
+                      isCompleted
+                        ? 'bg-emerald-600 text-white border-emerald-200'
+                        : isUnlocked
+                        ? 'bg-[#E05615] text-white border-amber-200'
+                        : 'bg-[#EFE6D9] text-[#8C7A6B] border-[#E0D5C7]'
                     }`}
                   >
-                    {isDone ? (
-                      <span className="text-2xl sm:text-3xl font-black drop-shadow">
-                        {level.levelNumber}
+                    {isCompleted ? '✓' : level.levelNumber}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#B45309]">
+                        Level {level.levelNumber}
                       </span>
-                    ) : isUnlocked ? (
-                      <span className="text-2xl sm:text-3xl font-black drop-shadow">
-                        {level.levelNumber}
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E0D5C7] text-[#7A6B60] font-bold">
+                        {level.syllabusTopic}
                       </span>
-                    ) : (
-                      <Lock className="w-6 h-6 text-slate-400" />
-                    )}
-
-                    {/* Green checkmark tag when completed */}
-                    {isDone && (
-                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                    <h3 className="font-serif font-black text-sm sm:text-base text-[#24140E] truncate">
+                      {level.title}
+                    </h3>
+                    <p className="text-xs text-[#6B584D] truncate">{level.subtitle}</p>
+                  </div>
+                  <div className="flex items-center space-x-3 shrink-0">
+                    {isCompleted && (
+                      <div className="hidden sm:flex items-center space-x-0.5 text-amber-500 text-xs">
+                        {[1, 2, 3].map(s => (
+                          <span key={s}>{s <= (record?.stars || 0) ? '★' : '☆'}</span>
+                        ))}
                       </div>
                     )}
-                  </button>
-
-                  {/* 3 Golden Stars Plaque */}
-                  <div className="flex items-center space-x-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-slate-900/85 border border-slate-700 shadow-sm">
-                    {[1, 2, 3].map(sIdx => (
-                      <Star
-                        key={sIdx}
-                        className={`w-3 h-3 ${
-                          stars >= sIdx
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-600'
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Level Title Plaque: Clear, 2-line readable text that never truncates awkwardly */}
-                  <div className="mt-1.5 px-3 py-1.5 rounded-xl bg-[#24170D]/95 border-2 border-amber-500/70 text-white shadow-xl text-center max-w-[170px] backdrop-blur-sm transition-all group-hover:scale-105">
-                    <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                      Nivel {level.levelNumber}
-                    </div>
-                    <div className="text-xs font-bold leading-snug line-clamp-2 text-slate-100">
-                      {level.title}
-                    </div>
+                    <button
+                      onClick={() => isUnlocked && onOpenLevel(level.id)}
+                      disabled={!isUnlocked}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                        isCompleted
+                          ? 'bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 cursor-pointer'
+                          : isUnlocked
+                          ? 'bg-[#E05615] hover:bg-[#C2410C] text-white shadow-xs cursor-pointer'
+                          : 'bg-[#EFE6D9] text-[#8C7A6B] cursor-not-allowed'
+                      }`}
+                    >
+                      {isCompleted ? 'Review' : isUnlocked ? 'Start' : 'Locked'}
+                    </button>
                   </div>
                 </div>
               );
             })}
-
-            {/* 6. Trailhead Welcome Gate (Bottom of the river) */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '41.25%',
-                top: '94.88%',
-                transform: 'translate(-50%, -50%)'
-              }}
-              className="z-20 text-center"
-            >
-              <div className="px-4 py-2 rounded-2xl bg-[#2e1d11]/90 border-2 border-amber-400 text-white shadow-xl flex items-center space-x-2">
-                <span className="text-xl">🏁</span>
-                <div className="text-left">
-                  <div className="text-[10px] font-black uppercase text-amber-300 tracking-wider">
-                    PUNTO DE PARTIDA
-                  </div>
-                  <div className="text-xs font-bold text-slate-200">
-                    Comienza el sendero en {city.name}
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
       )}
 
       {/* VIEW MODE 2: Curriculum Grid (5 Tiers Breakdown) */}
       {viewMode === 'grid' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-              <BookOpen className="w-5 h-5 text-amber-400" />
-              <span>Niveles Curriculares por Dificultad (BAESP101)</span>
+            <h2 className="text-xl font-black text-[#24140E] font-serif flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-[#E05615]" />
+              <span>Curriculum Levels by Difficulty (BAESP101)</span>
             </h2>
-            <span className="text-xs text-slate-400">
-              5 Dificultades • 2 Niveles por Nivel
+            <span className="text-xs text-[#7A6B60] font-bold">
+              5 Tiers • 2 Levels per Tier
             </span>
           </div>
 
@@ -1186,7 +595,7 @@ export const CityScreen: React.FC<CityScreenProps> = ({
                     </span>
                   </div>
                   <span className="text-xs text-[#7A6B60] font-medium">
-                    {tierLevels.filter(l => Boolean(progress.completedLevels[l.id])).length} / 2 completados
+                    {tierLevels.filter(l => Boolean(progress.completedLevels[l.id])).length} / 2 completed
                   </span>
                 </div>
 
